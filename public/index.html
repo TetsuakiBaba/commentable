@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="en"><head>
+    <script src="p5.js"></script>    
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+
+    <meta charset="utf-8">
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      
+          <h1 class="display-4">お米ください</h1>
+          <p class="lead">Give Me a Comment !!</p>
+      <div class="input-group">
+        
+        <div class="input-group-prepend">
+          <button id="button_send" class="btn btn-outline-primary btn-sm">コメント送信</button>
+          <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="sr-only">Toggle Dropdown</span>
+          </button>
+          <div class="dropdown-menu">          
+          <li class="dropdown-item" ><input type="color" id="color_text" value="#EEEEEE">テキスト色</input></li>
+          <li class="dropdown-item"><input type="color" id="color_text_outline" value="#111111">輪郭色</input></li>
+          <li class="dropdown-item" ><input type="color" id="color_background" value="#123456">背景色</input></li>
+          <li class="dropdown-item" ><button id="button_1280x720" class="btn btn-outline-secondary">Set 1280x720</button></li>
+          <li class="dropdown-item" ><button id="button_camera" class="btn btn-outline-secondary">Activate Camera</button></li>
+          <div role="separator" class="dropdown-divider">test</div>
+          <a class="dropdown-item" href="#">Separated link</a>
+          </div>
+          
+        </div>
+        <input type="text" class="form-control" placeholder="ここにコメントを記入して，エンターキー又は「コメント送信」ボタンで送信" id="text_comment" size="40" ></input>    
+      </div>        
+    
+    
+
+    <hr>
+    <div id="sketch-holder"></div>
+    <footer class="footer">
+      <div class="container">
+        <p class="text-muted"><a href="https://github.com/TetsuakiBaba">https://github.com/TetsuakiBaba</a></p>
+      </div>
+    </footer>
+        
+  
+  </div>
+
+  <script src="sketch.js"></script>   
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body></html>
