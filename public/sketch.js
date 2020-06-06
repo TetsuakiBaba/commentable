@@ -67,7 +67,7 @@ function setup() {
   background(100);
   //socket = io.connect('http://125.100.98.172:3000');
   //socket = io.connect('http://localhost:3000');
-  socket = id.connect('https://commentable.lolipop.io')
+  socket = io.connect('https://commentable.lolipop.io')
   socket.on('comment', newComment);
   select("#button_send").mouseClicked(sendComment);
   select("#color_background").changed(changeBackgroundColor);
