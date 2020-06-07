@@ -125,7 +125,7 @@ function newComment(data)
 function draw() {
   //newComment("一般的には一秒間に30コマの静止画がある為，静止画と同じように扱うと，Processingでは処理落ちしてしまいます．");
   background(color_background);
-  if(capture){
+  if(flg_camera_is_opened){
     image(capture, 0,0, width, height);
   }
 
@@ -202,17 +202,22 @@ function changeTextOutlineColor()
   color_text_stroke = this.value();
 }
 function windowResized() {
-  resizeCanvas(windowWidth-30, windowHeight/1.5);
+  if( flg_camera_is_opened ){
+  //  resizeCanvas(windowWidth-30, windowHeight/1.5);
+  }
+  resizeCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0));
 }
 
 function setCanvas1280x720()
 {
   resizeCanvas(1280,720);
-  }
+}
 
+var flg_camera_is_opened = false;
 function toggleCamera()
 {
-  if( !capture ){
+  if( flg_camera_is_opened == false ){
+    flg_camera_is_opened = true;
     capture = createCapture({
     audio:false,
     video:{
@@ -224,8 +229,12 @@ function toggleCamera()
     },function(){
         console.log('capture ready');
         capture.hide();
-    });  
+        document.getElementById("button_camera").html("Stop Camera");
+    });
+    windowResized();
   }
   else{
+    flg_camera_is_opened = false;
+    capture.stop();
   }
 }
