@@ -11,6 +11,11 @@ class Comment{
     this.life = 1; // 0 - 255
     this.size = 72;
   }
+  setColor(_color_text, _color_text_stroke)
+  {
+    this.color_text = _color_text;
+    this.color_text_stroke = _color_text_stroke;
+  }
   setLife(_life){
     this.life = _life;    
   }
@@ -46,14 +51,14 @@ class Comment{
 
 var color_background;
 var color_text;
-var color_text_outline;
+var color_text_stroke;
 var capture;
 function setup() {
   var canvas = createCanvas(windowWidth-30, windowHeight/1.5);
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
-  color_text_outline = document.getElementById("color_text_outline").value;
+  color_text_stroke = document.getElementById("color_text_stroke").value;
   for( var i = 0; i < max_number_of_comment; i++ ){
     comments[i] = new Comment();
     comments[i].setLife(0);
@@ -72,7 +77,7 @@ function setup() {
   select("#button_send").mouseClicked(sendComment);
   select("#color_background").changed(changeBackgroundColor);
   select("#color_text").changed(changeTextColor);
-  select("#color_text_outline").changed(changeTextOutlineColor);
+  select("#color_text_stroke").changed(changeTextOutlineColor);
   select("#button_1280x720").mouseClicked(setCanvas1280x720);
   select("#button_camera").mouseClicked(toggleCamera);
   
@@ -82,8 +87,12 @@ function setup() {
 
 function newComment(data)
 {
+  let my_room_name = document.getElementById("text_room_name").value;  
+  if( data.room_name != my_room_name ){
+    return;
+  }
   let id = -1;
-  if( data.length > 20 ){
+  if( data.comment.length > 20 ){
     alert("一度に遅れる文字数は40文字までです．");
     return;
   }
@@ -91,13 +100,14 @@ function newComment(data)
     if( comments[i].getLife() == 0 ){
       id = i;
       i = max_number_of_comment;
-    }   
+    }
   }
   if( id >= 0 ){
     comments[id].setLife(255);
-    comments[id].setText(data);
+    comments[id].setText(data.comment);
     comments[id].setX(random(100, width-100));
     comments[id].setY(random(100, height-100));
+    comments[id].setColor(data.color_text, data.color_text_stroke);
   }
   
   console.log(data);
@@ -114,10 +124,10 @@ function draw() {
     
     if( comments[i].getLife() > 0 ){
       comments[i].update();
-      strokeWeight(5);
-      stroke(color_text_outline+str(hex(comments[i].alpha,2)) );
-      fill(color_text+str(hex(comments[i].alpha,2)));
-      //stroke(color_text_outline);
+      strokeWeight(5.0*comments[i].alpha/255.0);
+      stroke(comments[i].color_text_stroke+str(hex(comments[i].alpha,2)));
+      fill(comments[i].color_text+str(hex(comments[i].alpha,2)));
+      //stroke(color_text_stroke);
       //fill(color_text);
       comments[i].draw();      
     }
@@ -133,11 +143,17 @@ function draw() {
 function sendComment()
 {
   let str_comment = document.getElementById("text_comment").value;
-  console.log(str_comment);
-  if( str_comment.length > 0 ){
-    socket.emit("comment", str_comment);
+  let str_room_name = document.getElementById("text_room_name").value;
+  var data = {
+    room_name:str_room_name,
+    comment:str_comment,
+    color_text:color_text,
+    color_text_stroke:color_text_stroke
   }
-  newComment(str_comment);
+  if( str_comment.length > 0 ){
+    socket.emit("comment", data);
+  }
+  newComment(data);
   clearTextBox();
 }
 
@@ -159,8 +175,12 @@ function clearTextBox()
 
 function changeBackgroundColor()
 {
-  console.log(this.value());
   color_background = this.value();
+}
+
+function changeRoomName()
+{
+
 }
 
 function changeTextColor()
@@ -170,7 +190,7 @@ function changeTextColor()
 
 function changeTextOutlineColor()
 {
-  color_text_outline = this.value();
+  color_text_stroke = this.value();
 }
 function windowResized() {
   resizeCanvas(windowWidth-30, windowHeight/1.5);
@@ -179,8 +199,7 @@ function windowResized() {
 function setCanvas1280x720()
 {
   resizeCanvas(1280,720);
-  console.log("changed");
-}
+  }
 
 function toggleCamera()
 {
