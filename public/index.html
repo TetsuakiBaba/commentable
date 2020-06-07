@@ -9,12 +9,15 @@
 
   </head>
   <body>
+
     <div class="container-fluid">
       
-          <h1 class="display-4">Commentable Camera</h1>
-          <p class="lead">Give Me a Comment !!</p>
+          <!-- <h1 class="display-4">Commentable Camera</h1> -->
+          <p class="lead">Commentable Camera beta</p>
+          <div id="sketch-holder"></div>
+          <hr>
 
-      <div class="input-group input-group-sm">
+          <div class="input-group input-group-sm">
         
           <div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm">コメント送信</button></div>
           <div class="input-group-prepend">
@@ -27,8 +30,10 @@
             <li class="dropdown-item" ><input type="color" id="color_background" value="#123456">背景色</input></li>
             <li class="dropdown-item" ><button id="button_1280x720" class="btn btn-outline-secondary">Set 1280x720</button></li>
             <li class="dropdown-item" ><button id="button_camera" class="btn btn-outline-secondary">Activate Camera</button></li>
+            <!--
             <div role="separator" class="dropdown-divider">test</div>
             <a class="dropdown-item" href="#">Separated link</a>
+            -->
             </div>
           </div>
         
@@ -39,10 +44,13 @@
     
          
       
-    <hr>
-    <div id="sketch-holder"></div>
+    
+    <div class="input-group input-group-sm">
+    <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History"></textarea>
+  </div>
     <footer class="footer">
-      <div class="container">
+      <div class="container-fluid">
+    
         <p class="text-muted"><a href="https://github.com/TetsuakiBaba">https://github.com/TetsuakiBaba</a></p>
       </div>
     </footer>

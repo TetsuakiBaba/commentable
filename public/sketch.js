@@ -96,6 +96,9 @@ function newComment(data)
     alert("一度に遅れる文字数は40文字までです．");
     return;
   }
+  else if( data.comment.length <= 0 ){
+    return;
+  }
   for( var i = 0; i < max_number_of_comment; i++ ){
     if( comments[i].getLife() == 0 ){
       id = i;
@@ -110,6 +113,12 @@ function newComment(data)
     comments[id].setColor(data.color_text, data.color_text_stroke);
   }
   
+  let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+  select("#textarea_comment_history").html(comment_format, true);
+  var psconsole = $('#textarea_comment_history');
+  psconsole.scrollTop(
+      psconsole[0].scrollHeight - psconsole.height()
+  );
   console.log(data);
 }
 
