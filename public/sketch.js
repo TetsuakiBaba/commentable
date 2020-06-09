@@ -3,13 +3,17 @@ var socket;
 var comments = []; //new Array(50);
 var max_number_of_comment = 500;
 class Comment{
-  contructor(){
+  constructor(){
     this.x = random(100);
     this.y = random(100);
     this.text = "test";
     this.alpha = random(100);
     this.life = 1; // 0 - 255
     this.size = 72;
+    imageMode(CENTER);
+    this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
+    this.flg_img = false;
+    
   }
   setColor(_color_text, _color_text_stroke)
   {
@@ -33,18 +37,30 @@ class Comment{
   setY(_y){
     this.y = _y;
   }
+  useImage(_id){
+    this.flg_img = true;
+  }
   update()
   {
     if( this.life > 0 ){
       this.alpha = this.life;
       this.size = abs((height/20)*sin(0.5*PI*this.life/255.0));
-      this.life = this.life - 1;            
+      this.life = this.life - 1;
+      if( this.life == 0 ){
+        this.flg_img = false;
+      }         
     }
     return;
   }
   draw(){
-    textSize(this.size);
-    text(this.text,this.x,this.y);
+    
+    if( this.flg_img == false){
+      textSize(this.size);
+      text(this.text,this.x,this.y);  
+    }
+    else{
+      image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
+    }
     return;
   }
 }
@@ -53,7 +69,9 @@ var color_background;
 var color_text;
 var color_text_stroke;
 var capture;
+
 function setup() {
+  
   var canvas = createCanvas(windowWidth-30, windowHeight/1.5);
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
@@ -80,45 +98,69 @@ function setup() {
   select("#color_text_stroke").changed(changeTextOutlineColor);
   select("#button_1280x720").mouseClicked(setCanvas1280x720);
   select("#button_camera").mouseClicked(toggleCamera);
-  
+  select("#button_image_reaction_01").mouseClicked(sendImageReaction01);
   frameRate(30);
   
 }
 
 function newComment(data)
 {
-  let my_room_name = document.getElementById("text_room_name").value;  
+  let my_room_name = document.getElementById("text_room_name").value;
   if( data.room_name != my_room_name ){
     return;
   }
-  let id = -1;
-  if( data.comment.length > 20 ){
-    alert("一度に遅れる文字数は40文字までです．");
-    return;
-  }
-  else if( data.comment.length <= 0 ){
-    return;
-  }
-  for( var i = 0; i < max_number_of_comment; i++ ){
-    if( comments[i].getLife() == 0 ){
-      id = i;
-      i = max_number_of_comment;
-    }
-  }
-  if( id >= 0 ){
-    comments[id].setLife(255);
-    comments[id].setText(data.comment);
-    comments[id].setX(random(100, width-100));
-    comments[id].setY(random(100, height-100));
-    comments[id].setColor(data.color_text, data.color_text_stroke);
-  }
   
-  let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
-  select("#textarea_comment_history").html(comment_format, true);
-  var psconsole = $('#textarea_comment_history');
-  psconsole.scrollTop(
-      psconsole[0].scrollHeight - psconsole.height()
-  );
+  if( data.flg_image == false ){
+    let id = -1;
+    if( data.comment.length > 20 ){
+      alert("一度に遅れる文字数は40文字までです．");
+      return;
+    }
+    else if( data.comment.length <= 0 ){
+      return;
+    }
+    for( var i = 0; i < max_number_of_comment; i++ ){
+      if( comments[i].getLife() == 0 ){
+        id = i;
+        i = max_number_of_comment;
+      }
+    }
+    if( id >= 0 ){
+      comments[id].setLife(255);
+      comments[id].setText(data.comment);
+      comments[id].setX(random(100, width-100));
+      comments[id].setY(random(100, height-100));
+      comments[id].setColor(data.color_text, data.color_text_stroke);
+    }
+  
+    let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+    select("#textarea_comment_history").html(comment_format, true);
+    var psconsole = $('#textarea_comment_history');
+    psconsole.scrollTop(
+        psconsole[0].scrollHeight - psconsole.height()
+    );
+  }
+  else{  // image reaction
+    for( var i = 0; i < max_number_of_comment; i++ ){
+      if( comments[i].getLife() == 0 ){
+        id = i;
+        i = max_number_of_comment;
+      }
+    }
+    if( id >= 0 ){
+      comments[id].setLife(255);
+      comments[id].setX(random(100, width-100));
+      comments[id].setY(random(100, height-100));
+      comments[id].useImage(0);
+    }
+    
+    let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+"image reaction"+"\n";
+    select("#textarea_comment_history").html(comment_format, true);
+    var psconsole = $('#textarea_comment_history');
+    psconsole.scrollTop(
+        psconsole[0].scrollHeight - psconsole.height()
+    );
+  }
   console.log(data);
 }
 
@@ -128,7 +170,7 @@ function draw() {
   if(flg_camera_is_opened){
     image(capture, 0,0, width, height);
   }
-
+  
   for( var i = 0; i < max_number_of_comment; i++ ){
     
     if( comments[i].getLife() > 0 ){
@@ -149,28 +191,49 @@ function draw() {
   */
 }
 
-function sendComment()
+function sendComment(_str_comment, _str_room_name, _flg_img, _id_img)
 {
-  let str_comment = document.getElementById("text_comment").value;
-  let str_room_name = document.getElementById("text_room_name").value;
-  var data = {
-    room_name:str_room_name,
-    comment:str_comment,
-    color_text:color_text,
-    color_text_stroke:color_text_stroke
+  if( _flg_img == false ){
+    if( _str_comment.length <= 0 ){
+      return;
+    }
+    var data = {
+      room_name:_str_room_name,
+      comment:_str_comment,
+      color_text:color_text,
+      color_text_stroke:color_text_stroke,
+      flg_image:false,
+      id_image:0
+    }
+    if( _str_comment.length > 0 ){
+      socket.emit("comment", data);
+    }
+    newComment(data);
+    clearTextBox();
   }
-  if( str_comment.length > 0 ){
+  else{
+    var data = {
+      room_name:_str_room_name,
+      comment:"",
+      color_text:color_text,
+      color_text_stroke:color_text_stroke,
+      flg_image:true,
+      id_image:0
+    }
     socket.emit("comment", data);
+    newComment(data);
   }
-  newComment(data);
-  clearTextBox();
+  
 }
 
 
 function keyPressed()
 {
-  if( key == "Enter"){
-    sendComment();
+  if( key == "Enter"){    
+    sendComment(
+      document.getElementById("text_comment").value,
+      document.getElementById("text_room_name").value,
+      false, 0);
   }
   else{
     
@@ -212,6 +275,14 @@ function setCanvas1280x720()
 {
   resizeCanvas(1280,720);
 }
+
+function sendImageReaction01()
+{
+  sendComment(
+    document.getElementById("text_comment").value,
+    document.getElementById("text_room_name").value,
+    true, 0);
+  }
 
 var flg_camera_is_opened = false;
 function toggleCamera()
