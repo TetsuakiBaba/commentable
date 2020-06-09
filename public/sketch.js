@@ -10,7 +10,6 @@ class Comment{
     this.alpha = random(100);
     this.life = 1; // 0 - 255
     this.size = 72;
-    imageMode(CENTER);
     this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
     this.flg_img = false;
     
@@ -59,6 +58,7 @@ class Comment{
       text(this.text,this.x,this.y);  
     }
     else{
+      imageMode(CENTER);
       image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
     }
     return;
@@ -168,6 +168,7 @@ function draw() {
   //newComment("一般的には一秒間に30コマの静止画がある為，静止画と同じように扱うと，Processingでは処理落ちしてしまいます．");
   background(color_background);
   if(flg_camera_is_opened){
+    imageMode(CORNER);
     image(capture, 0,0, width, height);
   }
   
