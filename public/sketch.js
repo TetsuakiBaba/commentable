@@ -12,7 +12,7 @@ class Comment{
     this.alpha = random(100);
     this.life = 1; // 0 - 255
     this.size = 72;
-    this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
+    //this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
     this.flg_img = false;
     //this.sound = [loadSound('assets/camera-shutter1.mp3'), loadSound('assets/he.wav'),loadSound('assets/chottomatte.wav'),loadSound('assets/OK.wav')];
     this.volume = 0.1;
@@ -69,8 +69,8 @@ class Comment{
       text(this.text,this.x,this.y);
     }
     else{
-      imageMode(CENTER);
-      image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
+      //imageMode(CENTER);
+      //image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
     }
     return;
   }
