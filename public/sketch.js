@@ -1,5 +1,6 @@
 var socket;
 
+var flg_sound_mute = true;
 var comments = []; //new Array(50);
 var max_number_of_comment = 100;
 class Comment{
@@ -12,6 +13,8 @@ class Comment{
     this.size = 72;
     this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
     this.flg_img = false;
+    this.sound = [loadSound('assets/camera-shutter1.mp3'), loadSound('assets/he.wav'),loadSound('assets/chottomatte.wav'),loadSound('assets/OK.wav')];
+    this.volume = 0.1;
     
   }
   setColor(_color_text, _color_text_stroke)
@@ -39,6 +42,13 @@ class Comment{
   useImage(_id){
     this.flg_img = true;
   }
+  setVolume(_volume){
+    this.volume = _volume;
+  }
+  playSound(){
+    this.sound[this.id_sound].setVolume(this.volume);
+    this.sound[this.id_sound].play();
+  }
   update()
   {
     if( this.life > 0 ){
@@ -55,7 +65,7 @@ class Comment{
     
     if( this.flg_img == false){
       textSize(this.size);
-      text(this.text,this.x,this.y);  
+      text(this.text,this.x,this.y);
     }
     else{
       imageMode(CENTER);
@@ -69,7 +79,7 @@ var color_background;
 var color_text;
 var color_text_stroke;
 var capture;
-
+var volume = 0.1;
 function setup() {
   
   var canvas = createCanvas(windowWidth-30, windowHeight/1.5);
@@ -98,11 +108,26 @@ function setup() {
   select("#color_text_stroke").changed(changeTextOutlineColor);
   select("#button_1280x720").mouseClicked(setCanvas1280x720);
   select("#button_camera").mouseClicked(toggleCamera);
-  select("#button_image_reaction_01").mouseClicked(sendImageReaction01);
+  //select("#button_image_reaction_01").mouseClicked(sendImageReaction01);
+  select("#button_emoji_reaction_01").mouseClicked(sendEmojiReaction);
+  select("#button_emoji_reaction_02").mouseClicked(sendEmojiReaction);
+  select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
+  
+  select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_02").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_03").mouseClicked(sendSoundReaction);
+  select("#slider_volume").changed(changeVolume);
+  select("#button_sound_mute").mouseClicked(toggleSoundMute);
   frameRate(30);
   
 }
 
+function touchStarted() {
+  if (getAudioContext().state !== 'running') {
+    getAudioContext().resume();
+  }
+}
 function newComment(data)
 {
   let my_room_name = document.getElementById("text_room_name").value;
@@ -127,6 +152,15 @@ function newComment(data)
       comments[id].setX(random(100, width-100));
       comments[id].setY(random(100, height-100));
       comments[id].setColor(data.color_text, data.color_text_stroke);
+      comments[id].flg_image = data.flg_img;
+      comments[id].id_image = data.id_img;
+      comments[id].flg_sound = data.flg_sound;
+      comments[id].id_sound = data.id_sound;
+
+      if( data.flg_sound == true && flg_sound_mute == false){
+        comments[id].setVolume(volume);
+        comments[id].playSound();
+      }
     }
   
     let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
@@ -188,7 +222,7 @@ function draw() {
   */
 }
 
-function sendComment(_str_comment, _str_room_name, _flg_img, _id_img)
+function sendComment(_str_comment, _str_room_name, _flg_img, _id_img, _flg_sound, _id_sound)
 {
   if( _flg_img == false ){
     if( _str_comment.length <= 0 ){
@@ -204,7 +238,9 @@ function sendComment(_str_comment, _str_room_name, _flg_img, _id_img)
       color_text:color_text,
       color_text_stroke:color_text_stroke,
       flg_image:false,
-      id_image:0
+      id_image:0,
+      flg_sound:_flg_sound,
+      id_sound:_id_sound
     }
     if( _str_comment.length > 0 ){
       socket.emit("comment", data);
@@ -219,7 +255,9 @@ function sendComment(_str_comment, _str_room_name, _flg_img, _id_img)
       color_text:color_text,
       color_text_stroke:color_text_stroke,
       flg_image:true,
-      id_image:0
+      id_image:0,
+      flg_sound:_flg_sound,
+      id_sound:_id_sound
     }
     socket.emit("comment", data);
     newComment(data);
@@ -234,6 +272,7 @@ function keyPressed()
     sendComment(
       document.getElementById("text_comment").value,
       document.getElementById("text_room_name").value,
+      false, 0,
       false, 0);
   }
   else{
@@ -282,8 +321,52 @@ function sendImageReaction01()
   sendComment(
     document.getElementById("text_comment").value,
     document.getElementById("text_room_name").value,
-    true, 0);
+    true, 0,
+    false, 0);
+}
+
+function sendEmojiReaction()
+{
+  sendComment(
+    this.html(),
+    document.getElementById("text_room_name").value,
+    false,0,
+    false,0
+    );  
+}
+function sendSoundReaction()
+{
+
+  //var id_sound = document.getElementById("button_sound_reaction_00").getAttribute("value");
+  var id_sound = this.attribute("value");
+  //console.log(this.attribute("value"));
+  sendComment(
+    this.html(),
+    document.getElementById("text_room_name").value,
+    false,0,
+    true,id_sound
+    );  
+}
+
+function changeVolume()
+{
+  console.log(this.value())
+  volume = this.value();
+  if( volume == 0 ){
+    
   }
+}
+
+function toggleSoundMute()
+{
+  flg_sound_mute = !flg_sound_mute;
+  if( flg_sound_mute == true ){
+    this.html("Sound:OFF");
+  }
+  else{
+    this.html("Sound:ON");    
+  }
+}
 
 var flg_camera_is_opened = false;
 function toggleCamera()
