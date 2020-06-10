@@ -3,6 +3,7 @@ var socket;
 var flg_sound_mute = true;
 var comments = []; //new Array(50);
 var max_number_of_comment = 100;
+var sound;
 class Comment{
   constructor(){
     this.x = random(100);
@@ -13,7 +14,7 @@ class Comment{
     this.size = 72;
     this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
     this.flg_img = false;
-    this.sound = [loadSound('assets/camera-shutter1.mp3'), loadSound('assets/he.wav'),loadSound('assets/chottomatte.wav'),loadSound('assets/OK.wav')];
+    //this.sound = [loadSound('assets/camera-shutter1.mp3'), loadSound('assets/he.wav'),loadSound('assets/chottomatte.wav'),loadSound('assets/OK.wav')];
     this.volume = 0.1;
     
   }
@@ -46,8 +47,8 @@ class Comment{
     this.volume = _volume;
   }
   playSound(){
-    this.sound[this.id_sound].setVolume(this.volume);
-    this.sound[this.id_sound].play();
+    sound[this.id_sound].setVolume(this.volume);
+    sound[this.id_sound].play();
   }
   update()
   {
@@ -87,6 +88,12 @@ function preload()
     comments[i] = new Comment();
     comments[i].setLife(0);
   }
+
+  sound = [loadSound('assets/camera-shutter1.mp3'), 
+  loadSound('assets/he.wav'),
+  loadSound('assets/chottomatte.wav'),
+  loadSound('assets/OK.wav')];
+
 }
 
 
