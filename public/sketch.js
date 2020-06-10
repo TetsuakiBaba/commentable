@@ -1,7 +1,7 @@
 var socket;
 
 var comments = []; //new Array(50);
-var max_number_of_comment = 500;
+var max_number_of_comment = 100;
 class Comment{
   constructor(){
     this.x = random(100);
@@ -111,12 +111,8 @@ function newComment(data)
   }
   
   if( data.flg_image == false ){
-    let id = -1;
-    if( data.comment.length > 20 ){
-      alert("一度に遅れる文字数は40文字までです．");
-      return;
-    }
-    else if( data.comment.length <= 0 ){
+    let id = -1;    
+    if( data.comment.length <= 0 ){
       return;
     }
     for( var i = 0; i < max_number_of_comment; i++ ){
@@ -196,6 +192,10 @@ function sendComment(_str_comment, _str_room_name, _flg_img, _id_img)
 {
   if( _flg_img == false ){
     if( _str_comment.length <= 0 ){
+      return;
+    }
+    if( _str_comment.length > 50 ){
+      alert("一度に遅れる文字数は50文字までです．");
       return;
     }
     var data = {
