@@ -80,6 +80,16 @@ var color_text;
 var color_text_stroke;
 var capture;
 var volume = 0.1;
+
+function preload()
+{
+  for( var i = 0; i < max_number_of_comment; i++ ){
+    comments[i] = new Comment();
+    comments[i].setLife(0);
+  }
+}
+
+
 function setup() {
   
   var canvas = createCanvas(windowWidth-30, windowHeight/1.5);
@@ -87,10 +97,7 @@ function setup() {
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
   color_text_stroke = document.getElementById("color_text_stroke").value;
-  for( var i = 0; i < max_number_of_comment; i++ ){
-    comments[i] = new Comment();
-    comments[i].setLife(0);
-  }
+
   
   stroke(0);
   strokeWeight(1);
