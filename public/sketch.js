@@ -92,7 +92,8 @@ function preload()
   sound = [loadSound('assets/camera-shutter1.mp3'), 
   loadSound('assets/he.wav'),
   loadSound('assets/chottomatte.wav'),
-  loadSound('assets/OK.wav')];
+  loadSound('assets/OK.wav'),
+  loadSound('assets/taisei_fight.wav')];
 
 }
 
@@ -131,6 +132,7 @@ function setup() {
   select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_02").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_03").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_04").mouseClicked(sendSoundReaction);
   select("#slider_volume").changed(changeVolume);
   select("#button_sound_mute").mouseClicked(toggleSoundMute);
   frameRate(30);
