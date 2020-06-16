@@ -2,7 +2,7 @@ var socket;
 
 var flg_sound_mute = true;
 var comments = []; //new Array(50);
-var max_number_of_comment = 100;
+var max_number_of_comment = 50;
 var sound;
 class Comment{
   constructor(){
@@ -128,6 +128,7 @@ function setup() {
   select("#button_emoji_reaction_01").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_02").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
+  select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
   
   select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
