@@ -15,12 +15,21 @@
 
     <div class="container-fluid">
       
-          <!-- <h1 class="display-4">Commentable Camera</h1> -->
-          <p class="lead">Commentable Camera beta</p>
-          <div class="input-group">
-          <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">部屋名</span></div>
-          <input type="text" id="text_room_name" class="form-control" value="testroom" placeholder="部屋名" id="text_comment" ></input>   
-        </div>
+    <!-- <h1 class="display-4">Commentable Camera</h1> -->
+    <p class="lead">Commentable Camera beta</p>
+    <div class="input-group">
+    <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">部屋名</span></div>
+    <input type="text" id="text_room_name" class="form-control" value="testroom" placeholder="部屋名" id="text_comment" ></input> 
+    <div class="input-group-prepend"><button id="button_sound_mute"  class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
+          <div class="input-group-prepend">
+          <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="sr-only">Toggle Dropdown</span>Volume
+          </button>
+          <div class="dropdown-menu">          
+              <li class="dropdown-item" ><div class="input-group-prepend"><input id="slider_volume" class="custom-range" type="range" value="0.1" step="0.01" min="0.00" max="0.30">&#x1f508;</input></div></li>
+            </div>
+          </div>
+    </div>
         <hr>
           <div id="sketch-holder"></div>
           <hr>
@@ -29,37 +38,37 @@
         
           <div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm">コメント送信</button></div>
           <div class="input-group-prepend">
-          <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span class="sr-only">Toggle Dropdown</span>
-          </button>
-          <div class="dropdown-menu">          
-            <li class="dropdown-item" ><input type="color" id="color_text" value="#EEEEEE">テキスト色</input></li>
-            <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">輪郭色</input></li>
-            <li class="dropdown-item" ><input type="color" id="color_background" value="#123456">背景色</input></li>
-            <li class="dropdown-item" ><button id="button_1280x720" class="btn btn-outline-secondary">Set 1280x720</button></li>
-            <li class="dropdown-item" ><button id="button_camera" class="btn btn-outline-secondary">Camera ON/OFF</button></li>
-            <!--
-            <div role="separator" class="dropdown-divider">test</div>
-            <a class="dropdown-item" href="#">Separated link</a>
-            -->
-            </div>
+            <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <span class="sr-only">Toggle Dropdown</span>
+            </button>
+            <div class="dropdown-menu">          
+              <li class="dropdown-item" ><input type="color" id="color_text" value="#EEEEEE">テキスト色</input></li>
+              <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">輪郭色</input></li>
+              <li class="dropdown-item" ><input type="color" id="color_background" value="#123456">背景色</input></li>
+              <li class="dropdown-item" ><button id="button_1280x720" class="btn btn-outline-secondary">Set 1280x720</button></li>
+              <li class="dropdown-item" ><button id="button_camera" class="btn btn-outline-secondary">Camera ON/OFF</button></li>
+              <!--
+              <div role="separator" class="dropdown-divider">test</div>
+              <a class="dropdown-item" href="#">Separated link</a>
+              -->
+              </div>
           </div>
         
           <input type="text" class="form-control" placeholder="ここにコメントを記入して，エンターキー又は「コメント送信」ボタンで送信" id="text_comment" size="40" ></input>
           <!--<div class="input-group-prepend"><button id="button_image_reaction_01" class="btn btn-outline-primary btn-sm"><img src="assets/logo_shisakunoyaiba.png" width=20></img></button></div>-->
-          <div class="input-group-prepend"><button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button></div>
+
+          <div class="input-group-prepend"></span><button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button></div>
           <div class="input-group-prepend"><button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🎉</button></div>
           <div class="input-group-prepend"><button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙏</button></div>
           
           
           <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">📷</button></div>
-          <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">へぇ〜</button></div>        
-          <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">ちょっとまって</button></div>
-          <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">オーケー</button></div>
-          <div class="input-group-prepend"><button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">たいせい頑張れ</button></div>
-          <div class="input-group-prepend"><input  id="slider_volume" class="form-control-range" type="range" name="volume" value="0.1" step="0.01" min="0.00" max="0.30">&#x1f508;</input></div>
-          <div class="input-group-prepend"><button id="button_sound_mute"  class="btn btn-outline-danger btn-sm">Sound:OFF</button></div>
-        
+          <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">👏</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">へぇ〜</button></div>        
+          <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">ちょっとまって</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">オーケー</button></div>
+          
+          
       </div>
 
       

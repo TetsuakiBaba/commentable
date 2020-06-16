@@ -89,12 +89,13 @@ function preload()
     comments[i].setLife(0);
   }
 
-  sound = [loadSound('assets/camera-shutter1.mp3'), 
-  loadSound('assets/he.wav'),
-  loadSound('assets/chottomatte.wav'),
-  loadSound('assets/OK.wav'),
-  loadSound('assets/taisei_fight.wav')];
-
+  sound = [
+    loadSound('assets/camera-shutter1.mp3'), 
+    loadSound('assets/clap.wav'), 
+    loadSound('assets/he.wav'),
+    loadSound('assets/chottomatte.wav'),
+    loadSound('assets/OK.wav')
+  ]
 }
 
 
@@ -366,21 +367,21 @@ function sendSoundReaction()
 
 function changeVolume()
 {
-  console.log(this.value())
+  this.html("test",false);
   volume = this.value();
   if( volume == 0 ){
-    
-  }
+    console.log(this);
+      }
 }
 
 function toggleSoundMute()
 {
   flg_sound_mute = !flg_sound_mute;
   if( flg_sound_mute == true ){
-    this.html("Sound:OFF");
+    this.html("&#x1f507;");
   }
   else{
-    this.html("Sound:ON");    
+    this.html("&#x1f508;");    
   }
 }
 
@@ -400,7 +401,6 @@ function toggleCamera()
     },function(){
         console.log('capture ready');
         capture.hide();
-        document.getElementById("button_camera").html("Stop Camera");
     });
     windowResized();
   }
