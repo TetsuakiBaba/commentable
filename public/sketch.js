@@ -250,9 +250,11 @@ function draw() {
     
   }
   
+  /*
   fill(255);
   textSize(10);
   text((int)(frameRate()),20,20);
+  */
   
 }
 
