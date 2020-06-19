@@ -11,10 +11,8 @@ class Comment{
     this.text = "test";
     this.alpha = random(100);
     this.life = 1; // 0 - 255
-    this.size = 72;
-    //this.img = [loadImage('assets/logo_shisakunoyaiba.png')];
+    this.size = 72.0;
     this.flg_img = false;
-    //this.sound = [loadSound('assets/camera-shutter1.mp3'), loadSound('assets/he.wav'),loadSound('assets/chottomatte.wav'),loadSound('assets/OK.wav')];
     this.volume = 0.1;
     
   }
@@ -47,8 +45,16 @@ class Comment{
     this.volume = _volume;
   }
   playSound(){
-    sound[this.id_sound].setVolume(this.volume);
-    sound[this.id_sound].play();
+          
+    if( sound[this.id_sound].length > 1){
+      let number = int(random(sound[this.id_sound].length));
+      sound[this.id_sound][number].setVolume(this.volume);
+      sound[this.id_sound][number].play();
+    }
+    else{
+      sound[this.id_sound].setVolume(this.volume);
+      sound[this.id_sound].play();
+    }
   }
   update()
   {
@@ -66,6 +72,10 @@ class Comment{
     
     if( this.flg_img == false){
       textSize(this.size);
+      strokeWeight(5.0*this.alpha/255.0);
+      stroke(this.color_text_stroke+str(hex(this.alpha,2)));
+      noStroke();
+      fill(this.color_text+str(hex(this.alpha,2)));
       text(this.text,this.x,this.y);
     }
     else{
@@ -90,18 +100,23 @@ function preload()
   }
 
   sound = [
-    loadSound('assets/camera-shutter1.mp3'), 
-    loadSound('assets/clap.wav'), 
+    [loadSound('assets/camera1.mp3'),loadSound('assets/camera2.mp3'), loadSound('assets/camera3.mp3')],
+    [loadSound('assets/clap1.mp3'), loadSound('assets/clap2.mp3'), loadSound('assets/clap3.mp3'), loadSound('assets/clap4.mp3'), loadSound('assets/clap5.mp3'), loadSound('assets/clap6.mp3'), loadSound('assets/clap7.mp3'), loadSound('assets/clap8.mp3')],
+    loadSound('assets/cracker.mp3'),
     loadSound('assets/he.wav'),
     loadSound('assets/chottomatte.wav'),
-    loadSound('assets/OK.wav')
+    loadSound('assets/OK.wav'),
+    loadSound('assets/laugh1.mp3'),
+    loadSound('assets/laugh2.mp3'),
+    loadSound('assets/laugh3.mp3')
   ]
 }
 
 
 function setup() {
   
-  var canvas = createCanvas(windowWidth-30, windowHeight/1.5);
+    var canvas = createCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0), P2D);
+
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
@@ -118,7 +133,7 @@ function setup() {
   //socket = io.connect('http://localhost:3000');
   socket = io.connect('https://commentable.lolipop.io')
   socket.on('comment', newComment);
-  select("#button_send").mouseClicked(sendComment);
+  select("#button_send").mouseClicked(pushedSendButton);
   select("#color_background").changed(changeBackgroundColor);
   select("#color_text").changed(changeTextColor);
   select("#color_text_stroke").changed(changeTextOutlineColor);
@@ -128,13 +143,17 @@ function setup() {
   select("#button_emoji_reaction_01").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_02").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
-  select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
   
   select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_02").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_03").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_04").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_05").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_06").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_07").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
+
   select("#slider_volume").changed(changeVolume);
   select("#button_sound_mute").mouseClicked(toggleSoundMute);
   frameRate(30);
@@ -209,12 +228,14 @@ function newComment(data)
         psconsole[0].scrollHeight - psconsole.height()
     );
   }
-  console.log(data);
+  //console.log(data);
 }
 
 function draw() {
+  
   //newComment("一般的には一秒間に30コマの静止画がある為，静止画と同じように扱うと，Processingでは処理落ちしてしまいます．");
   background(color_background);
+
   if(flg_camera_is_opened){
     imageMode(CORNER);
     image(capture, 0,0, width, height);
@@ -224,30 +245,34 @@ function draw() {
     
     if( comments[i].getLife() > 0 ){
       comments[i].update();
-      strokeWeight(5.0*comments[i].alpha/255.0);
-      stroke(comments[i].color_text_stroke+str(hex(comments[i].alpha,2)));
-      fill(comments[i].color_text+str(hex(comments[i].alpha,2)));
-      //stroke(color_text_stroke);
-      //fill(color_text);
       comments[i].draw();      
     }
     
   }
-  /*
+  
   fill(255);
   textSize(10);
   text((int)(frameRate()),20,20);
-  */
+  
 }
 
+function pushedSendButton()
+{
+  sendComment(
+    document.getElementById("text_comment").value,
+    document.getElementById("text_room_name").value,
+    false, 0,
+    false, 0);
+}
 function sendComment(_str_comment, _str_room_name, _flg_img, _id_img, _flg_sound, _id_sound)
 {
+  
   if( _flg_img == false ){
     if( _str_comment.length <= 0 ){
       return;
     }
-    if( _str_comment.length > 50 ){
-      alert("一度に遅れる文字数は50文字までです．");
+    if( _str_comment.length > 80 ){
+      alert("一度に遅れる文字数は80文字までです．");
       return;
     }
     var data = {
@@ -260,10 +285,12 @@ function sendComment(_str_comment, _str_room_name, _flg_img, _id_img, _flg_sound
       flg_sound:_flg_sound,
       id_sound:_id_sound
     }
-    if( _str_comment.length > 0 ){
-      socket.emit("comment", data);
+    if( _str_comment.length > 0 ){      
+      socket.emit("comment", data);    
     }
     newComment(data);
+
+    
     clearTextBox();
   }
   else{
@@ -371,7 +398,7 @@ function changeVolume()
   this.html("test",false);
   volume = this.value();
   if( volume == 0 ){
-    console.log(this);
+    //console.log(this);
       }
 }
 

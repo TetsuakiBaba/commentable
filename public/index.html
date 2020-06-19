@@ -26,17 +26,21 @@
             <span class="sr-only">Toggle Dropdown</span>Volume
           </button>
           <div class="dropdown-menu">          
-              <li class="dropdown-item" ><div class="input-group-prepend"><input id="slider_volume" class="custom-range" type="range" value="0.1" step="0.01" min="0.00" max="0.30">&#x1f508;</input></div></li>
+              <li class="dropdown-item" ><div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range" value="0.1" step="0.01" min="0.00" max="0.30">大</input></div></li>
             </div>
           </div>
     </div>
+
         <hr>
+        <i class="fas fa-paper-plane"></i>
           <div id="sketch-holder"></div>
           <hr>
 
           <div class="input-group input-group-sm">
-        
-          <div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm">コメント送信</button></div>
+            
+          <div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm">
+            送信
+          </button></div>
           <div class="input-group-prepend">
             <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               <span class="sr-only">Toggle Dropdown</span>
@@ -54,19 +58,23 @@
               </div>
           </div>
         
-          <input type="text" class="form-control" placeholder="ここにコメントを記入して，エンターキー又は「コメント送信」ボタンで送信" id="text_comment" size="40" ></input>
+          <input type="text" class="form-control" placeholder="ここにコメントを記入して，エンターキー又は「送信」ボタンで送信" id="text_comment" size="40" ></input>
           <!--<div class="input-group-prepend"><button id="button_image_reaction_01" class="btn btn-outline-primary btn-sm"><img src="assets/logo_shisakunoyaiba.png" width=20></img></button></div>-->
 
           <div class="input-group-prepend"></span><button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button></div>
-          <div class="input-group-prepend"><button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🎉</button></div>
-          <div class="input-group-prepend"><button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙏</button></div>
-          <div class="input-group-prepend"><button id="button_emoji_reaction_04" class="btn btn-outline-primary btn-sm">🙋</button></div>
+          <div class="input-group-prepend"><button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🙏</button></div>
+          <div class="input-group-prepend"><button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙋</button></div>
           
+                    
           <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">📷</button></div>
           <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">👏</button></div>
-          <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">へぇ〜</button></div>        
-          <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">ちょっとまって</button></div>
-          <div class="input-group-prepend"><button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">オーケー</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">🎉</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">へぇ〜</button></div>        
+          <div class="input-group-prepend"><button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">ちょっとまって</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_05" value="5" class="btn btn-outline-danger btn-sm">OK</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_06" value="6" class="btn btn-outline-danger btn-sm">小笑</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_07" value="7" class="btn btn-outline-danger btn-sm">中笑</button></div>
+          <div class="input-group-prepend"><button id="button_sound_reaction_08" value="8" class="btn btn-outline-danger btn-sm">大笑</button></div>
           
           
       </div>
@@ -79,13 +87,15 @@
     <div class="input-group input-group-sm">
     <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History"></textarea>
   </div>
-    <footer class="footer">
-      <div class="container-fluid">
-    
-        <p class="text-muted"><a href="https://tetsuakibaba.jp">https://tetsuakibaba.jp</a></p>
-      </div>
-    </footer>
+<hr>
+  <footer class="page-footer font-small">
+    <div class="footer-copyright text-center py-3">
+    <a href="https://tetsuakibaba.jp">https://tetsuakibaba.jp</a><br>
+      一部の音源は<a href="https://soundeffect-lab.info/">効果音ラボ</a>, <a href="https://sounddictionary.info/">効果音辞典</a>，<a href="https://taira-komori.jpn.org/">無料効果音で遊ぼう</a>から利用させていただいております．その他の音源についてはMITライセンスにて配布しております．
+    </div>
+      </footer>
         
+
   
   </div>
 
