@@ -73,8 +73,7 @@ class Comment{
     if( this.flg_img == false){
       textSize(this.size);
       strokeWeight(5.0*this.alpha/255.0);
-      stroke(this.color_text_stroke+str(hex(this.alpha,2)));
-      noStroke();
+      stroke(this.color_text_stroke+str(hex(this.alpha,2)));      
       fill(this.color_text+str(hex(this.alpha,2)));
       text(this.text,this.x,this.y);
     }
