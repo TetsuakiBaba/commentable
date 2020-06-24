@@ -4,6 +4,28 @@ var flg_sound_mute = true;
 var comments = []; //new Array(50);
 var max_number_of_comment = 50;
 var sound;
+
+class Flash{
+  constructor(){
+    this.alpha = 0;
+    this.status = false;    
+  }
+  do(){
+    this.status = true;
+    this.alpha = 100;
+  }
+  draw(){
+    if( this.status ){
+      noStroke();
+      fill(255, this.alpha);
+      rect(0,0,width,height);
+      this.alpha = this.alpha/10.0;
+      if( this.alpha < 1.0 ){
+        this.status = false;
+      }
+    }
+  }
+}
 class Comment{
   constructor(){
     this.x = random(100);
@@ -90,6 +112,7 @@ var color_text;
 var color_text_stroke;
 var capture;
 var volume = 0.1;
+var flash;
 
 function preload()
 {
@@ -114,14 +137,14 @@ function preload()
 
 function setup() {
   
-    var canvas = createCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0), P2D);
+  var canvas = createCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0), P2D);
 
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
   color_text_stroke = document.getElementById("color_text_stroke").value;
 
-  
+  flash = new Flash();
   stroke(0);
   strokeWeight(1);
   textAlign(CENTER);
@@ -155,6 +178,7 @@ function setup() {
 
   select("#slider_volume").changed(changeVolume);
   select("#button_sound_mute").mouseClicked(toggleSoundMute);
+  select("#button_screenshot").mouseClicked(takeScreenShot);
   frameRate(30);
   
 }
@@ -249,6 +273,7 @@ function draw() {
     
   }
   
+  flash.draw();
   /*
   fill(255);
   textSize(10);
@@ -382,16 +407,27 @@ function sendEmojiReaction()
 }
 function sendSoundReaction()
 {
-
-  //var id_sound = document.getElementById("button_sound_reaction_00").getAttribute("value");
   var id_sound = this.attribute("value");
-  //console.log(this.attribute("value"));
   sendComment(
     this.html(),
     document.getElementById("text_room_name").value,
     false,0,
     true,id_sound
     );  
+}
+
+
+function takeScreenShot()
+{
+  var id_sound = this.attribute("value");
+  sendComment(
+    this.html(),
+    document.getElementById("text_room_name").value,
+    false,0,
+    true,id_sound
+  );
+  save(str(year())+str(nf(month(),2))+str(nf(day(),2))+str(nf(hour(),2))+str(nf(minute(),2))+str(nf(second(),2))+".png");
+  flash.do();
 }
 
 function changeVolume()
