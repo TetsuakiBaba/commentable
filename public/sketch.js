@@ -4,6 +4,15 @@ var flg_sound_mute = true;
 var comments = []; //new Array(50);
 var max_number_of_comment = 50;
 var sound;
+var sound_chime;
+var flg_chime;
+var flg_clock;
+var time_start;
+var time_start_hour;
+var time_start_minute;
+var time_end;
+var time_end_hour;
+var time_end_minute;
 
 class Flash{
   constructor(){
@@ -120,7 +129,7 @@ function preload()
     comments[i] = new Comment();
     comments[i].setLife(0);
   }
-
+  sound_chime = loadSound('assets/chime.mp3');
   sound = [
     [loadSound('assets/camera1.mp3'),loadSound('assets/camera2.mp3'), loadSound('assets/camera3.mp3')],
     [loadSound('assets/clap1.mp3'), loadSound('assets/clap2.mp3'), loadSound('assets/clap3.mp3'), loadSound('assets/clap4.mp3'), loadSound('assets/clap5.mp3'), loadSound('assets/clap6.mp3'), loadSound('assets/clap7.mp3'), loadSound('assets/clap8.mp3')],
@@ -152,8 +161,8 @@ function setup() {
   textStyle(BOLD);
   background(100);
   //socket = io.connect('http://125.100.98.172:3000');
-  //socket = io.connect('http://localhost:3000');
-  socket = io.connect('https://commentable.lolipop.io')
+  socket = io.connect('http://localhost');
+  //socket = io.connect('https://commentable.lolipop.io')
   socket.on('comment', newComment);
   select("#button_send").mouseClicked(pushedSendButton);
   select("#color_background").changed(changeBackgroundColor);
@@ -178,7 +187,19 @@ function setup() {
 
   select("#slider_volume").changed(changeVolume);
   select("#button_sound_mute").mouseClicked(toggleSoundMute);
-  select("#button_screenshot").mouseClicked(takeScreenShot);
+
+  select("#checkbox_chime").mouseClicked(toggleChime);
+  select("#checkbox_clock").mouseClicked(toggleClock);
+  
+  select("#time_start").changed(updateStartTime);
+  select("#time_end").changed(updateEndTime);
+
+  select("#download_all_comments").mouseClicked(downloadAllComments);
+  flg_chime = document.getElementById("checkbox_chime").checked;
+  flg_clock = document.getElementById("checkbox_clock").checked;
+  time_start = document.getElementById("time_start").value;
+  time_end = document.getElementById("time_end").value;
+  sound_chime.setVolume(volume);
   frameRate(30);
   
 }
@@ -274,6 +295,23 @@ function draw() {
   }
   
   flash.draw();
+
+  if( flg_clock ){
+    fill(255);
+    stroke(0);
+    textSize(32);
+    text(str(nf(hour(),2))+":"+str(nf(minute(),2)), 50,30);
+  }
+
+  if( flg_chime && !sound_chime.isPlaying() ){
+    let time_now = str(nf(hour(),2))+":"+str(nf(minute(),2))+":"+str(nf(second(),2));        
+    if( (time_start+":00") == time_now ){
+      sound_chime.play();
+    }
+    else if( (time_end+":00" == time_now )){
+      sound_chime.play();
+    }
+  }
   /*
   fill(255);
   textSize(10);
@@ -414,21 +452,11 @@ function sendSoundReaction()
     false,0,
     true,id_sound
     );  
+    if( id_sound == 0 ){ // Camera
+      flash.do();
+    }
 }
 
-
-function takeScreenShot()
-{
-  var id_sound = this.attribute("value");
-  sendComment(
-    this.html(),
-    document.getElementById("text_room_name").value,
-    false,0,
-    true,id_sound
-  );
-  save(str(year())+str(nf(month(),2))+str(nf(day(),2))+str(nf(hour(),2))+str(nf(minute(),2))+str(nf(second(),2))+".png");
-  flash.do();
-}
 
 function changeVolume()
 {
@@ -473,4 +501,32 @@ function toggleCamera()
     flg_camera_is_opened = false;
     capture.stop();
   }
+}
+
+function toggleChime()
+{
+  print(this.checked());
+  flg_chime = this.checked();
+}
+
+function toggleClock()
+{
+  flg_clock = this.checked();
+}
+
+function updateStartTime()
+{
+  time_start = this.value();
+  var tmp_time = time_start.split(":");
+  time_start_hour = int(tmp_time[0]);
+  time_start_minute = int(tmp_time[1]);
+}
+
+function updateEndTime()
+{
+  time_end = this.value();
+  var tmp = time_end.split(":");
+  time_end_hour = int(tmp[0]);
+  time_end_minute = int(tmp[1]);
+    
 }

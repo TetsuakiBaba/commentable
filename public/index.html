@@ -3,6 +3,7 @@
     <script src="p5.dom.min.js"></script>
     <script src="p5.sound.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="utils.js"></script>
     
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -18,19 +19,38 @@
     <!-- <h1 class="display-4">Commentable Camera</h1> -->
     <p class="lead">Commentable Camera beta</p>
     <div class="input-group ">
-    <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">部屋名</span></div>
-    <input type="text" id="text_room_name" class="form-control" value="testroom" placeholder="部屋名" id="text_comment" ></input> 
-    <div class="input-group-prepend"><button id="button_screenshot"  value="0" class="btn btn-outline-secondary btn-sm">&#x1f4f8;</button></div>
-    <div class="input-group-prepend"><button id="button_sound_mute"  class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
-          <div class="input-group-prepend">
-          <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span class="sr-only">Toggle Dropdown</span>Volume
-          </button>
-          <div class="dropdown-menu">          
-              <li class="dropdown-item" ><div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range" value="0.1" step="0.01" min="0.00" max="0.30">大</input></div></li>
+      <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">授業名</span></div>
+      <input type="text" id="text_room_name" class="form-control" value="プロトタイピング基礎"></input> 
+      
+      <div class="input-group-prepend"><button id="button_sound_mute"  class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
+            <div class="input-group-prepend">
+            <button type="button"  class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <span class="sr-only">Toggle Dropdown</span>Volume
+            </button>
+            <div class="dropdown-menu">          
+                <li class="dropdown-item" ><div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range" value="0.1" step="0.01" min="0.00" max="0.30">大</input></div></li>
+              </div>
             </div>
-          </div>
-    </div>
+      </div>
+      
+      <div class="input-group input-group-sm">
+        <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">開始時刻</span></div>
+        <input type="time" id="time_start" class="form-control" value="13:00"></input> 
+        <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">終了時刻</span></div>
+
+        
+        <input type="time" id="time_end" class="form-control" value="14:30"></input> 
+        <div class="form-check form-check-inline">
+          <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_chime" value="option1">
+          <label class="form-check-label form-control-sm" for="inlineCheckbox1">開始と終了時刻にチャイムを鳴らす</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_clock" value="option2">
+          <label class="form-check-label form-control-sm" for="inlineCheckbox2">時刻表示</label>
+        </div>
+      </div>
+      
+  
 
         <hr>
         <i class="fas fa-paper-plane"></i>
@@ -66,8 +86,8 @@
           <div class="input-group-prepend"><button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🙏</button></div>
           <div class="input-group-prepend"><button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙋</button></div>
           
-                    
-          <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">📷</button></div>
+
+          <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">&#x1f4f8;</button></div>
           <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">👏</button></div>
           <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">🎉</button></div>
           <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">へぇ〜</button></div>        
@@ -78,16 +98,14 @@
           <div class="input-group-prepend"><button id="button_sound_reaction_08" value="8" class="btn btn-outline-danger btn-sm">大笑</button></div>
           
           
-      </div>
-
-      
-      
-         
+      </div>                     
       
     
     <div class="input-group input-group-sm">
     <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History"></textarea>
-  </div>
+  
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="download_all_comments">Download Comments</button>
 <hr>
   <footer class="page-footer font-small">
     <div class="footer-copyright text-center py-3">
