@@ -238,12 +238,13 @@ function newComment(data)
       comments[id].flg_sound = data.flg_sound;
       comments[id].id_sound = data.id_sound;
 
+      if( data.id_sound == 0 ){  // camera
+        flash.do();
+      }
       if( data.flg_sound == true && flg_sound_mute == false){
         comments[id].setVolume(volume);
         comments[id].playSound();
-        if( data.id_sound == 0 ){  // camera
-          flash.do();
-        }
+
       }
     }
   
