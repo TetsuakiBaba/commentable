@@ -241,6 +241,9 @@ function newComment(data)
       if( data.flg_sound == true && flg_sound_mute == false){
         comments[id].setVolume(volume);
         comments[id].playSound();
+        if( data.id_sound == 0 ){  // camera
+          flash.do();
+        }
       }
     }
   
