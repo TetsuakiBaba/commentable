@@ -120,6 +120,7 @@ var color_background;
 var color_text;
 var color_text_stroke;
 var capture;
+var capture_screen;
 var volume = 0.1;
 var flash;
 
@@ -147,7 +148,6 @@ function preload()
 function setup() {
   
   var canvas = createCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0), P2D);
-
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
@@ -168,7 +168,6 @@ function setup() {
   select("#color_background").changed(changeBackgroundColor);
   select("#color_text").changed(changeTextColor);
   select("#color_text_stroke").changed(changeTextOutlineColor);
-  select("#button_1280x720").mouseClicked(setCanvas1280x720);
   select("#button_camera").mouseClicked(toggleCamera);
   //select("#button_image_reaction_01").mouseClicked(sendImageReaction01);
   select("#button_emoji_reaction_01").mouseClicked(sendEmojiReaction);
@@ -193,6 +192,7 @@ function setup() {
   
   select("#time_start").changed(updateStartTime);
   select("#time_end").changed(updateEndTime);
+  select("#button_toggle_screen_capture").mouseClicked(toggleScreenCapture);
 
   select("#download_all_comments").mouseClicked(downloadAllComments);
   flg_chime = document.getElementById("checkbox_chime").checked;
@@ -200,7 +200,9 @@ function setup() {
   time_start = document.getElementById("time_start").value;
   time_end = document.getElementById("time_end").value;
   sound_chime.setVolume(volume);
+  document.getElementById("screen_size").value = str(int(width))+"x"+str(int(height));
   frameRate(30);
+  
   
 }
 
@@ -238,13 +240,12 @@ function newComment(data)
       comments[id].flg_sound = data.flg_sound;
       comments[id].id_sound = data.id_sound;
 
-      if( data.id_sound == 0 ){  // camera
+      if( data.flg_sound == true && data.id_sound == 0 ){  // camera
         flash.do();
       }
       if( data.flg_sound == true && flg_sound_mute == false){
         comments[id].setVolume(volume);
         comments[id].playSound();
-
       }
     }
   
@@ -280,14 +281,17 @@ function newComment(data)
 }
 
 function draw() {
-  
   //newComment("一般的には一秒間に30コマの静止画がある為，静止画と同じように扱うと，Processingでは処理落ちしてしまいます．");
   background(color_background);
 
-  if(flg_camera_is_opened){
+  if(flg_camera_is_opened){    
     imageMode(CORNER);
-    image(capture, 0,0, width, height);
+    image(capture.c, 0,0, width, height);    
   }
+  if( capture_screen ){
+    image(capture_screen.c, 0,0, width, height);
+  }
+
   
   for( var i = 0; i < max_number_of_comment; i++ ){
     
@@ -417,16 +421,22 @@ function changeTextOutlineColor()
 {
   color_text_stroke = this.value();
 }
-function windowResized() {
-  if( flg_camera_is_opened ){
-  //  resizeCanvas(windowWidth-30, windowHeight/1.5);
-  }
-  resizeCanvas(windowWidth-30,(windowWidth-30)*(9.0/16.0));
-}
 
-function setCanvas1280x720()
-{
-  resizeCanvas(1280,720);
+function windowResized() {
+  let rate = 9.0/16.0;
+
+  if( capture ){
+    rate = capture.c.height/float(capture.c.width);
+    
+  }
+  else if( capture_screen ){
+    rate = capture_screen.c.height/float(capture_screen.c.width);
+  }
+  else{
+
+  }
+  resizeCanvas(windowWidth-30,(windowWidth-30)*rate);
+  document.getElementById("screen_size").value = str(int(width))+"x"+str(int(height));
 }
 
 function sendImageReaction01()
@@ -487,7 +497,9 @@ function toggleCamera()
 {
   if( flg_camera_is_opened == false ){
     flg_camera_is_opened = true;
-    capture = createCapture({
+
+    
+    capture = createCameraCapture({
     audio:false,
     video:{
       //deviceId:'5740d2acadab60d7cbd5071039f32d9f0e4881b77ec41732add14a79b2d54f91',
@@ -497,14 +509,33 @@ function toggleCamera()
     }
     },function(){
         console.log('capture ready');
-        capture.hide();
+        capture.c.hide();
     });
-    windowResized();
+    /*
+   let constraints = {
+         video: {
+           mandatory: {
+             minWidth: 1280,
+             minHeight: 720
+           },
+           optional: [{ maxFrameRate: 10 }]
+         },
+         audio: false
+       };
+   capture = createCameraCapture(VIDEO);
+   */
+   capture.c.hide();
+   this.attribute('class',"btn btn-danger btn-sm");
   }
   else{
     flg_camera_is_opened = false;
-    capture.stop();
+    let tracks = capture.element.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    capture.element.srcObject = null;
+    capture = null;
+    this.attribute('class',"btn btn-outline-secondary btn-sm");
   }
+  resizeCanvas(windowWidth-30,(windowWidth-30)*9.0/16.0);
 }
 
 function toggleChime()
@@ -533,4 +564,24 @@ function updateEndTime()
   time_end_hour = int(tmp[0]);
   time_end_minute = int(tmp[1]);
     
+}
+
+function toggleScreenCapture()
+{
+  if( !capture_screen ){
+    capture_screen = createScreenCapture(VIDEO);
+    capture_screen.c.hide();
+    console.log(this.className);
+    console.log(this.attribute("class"));
+    this.attribute('class',"btn btn-danger btn-sm");
+  }
+  else{
+    let tracks = capture_screen.element.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    capture_screen.element.srcObject = null;
+    capture_screen = null;
+    this.attribute('class',"btn btn-outline-secondary btn-sm");
+  }
+
+  resizeCanvas(windowWidth-30,(windowWidth-30)*10.0/16.0);
 }
