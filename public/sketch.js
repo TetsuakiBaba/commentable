@@ -307,8 +307,9 @@ function draw() {
   if( flg_clock ){
     fill(255);
     stroke(0);
+    strokeWeight(5.0);
     textSize(32);
-    text(str(nf(hour(),2))+":"+str(nf(minute(),2)), 50,30);
+    text(str(nf(hour(),2))+":"+str(nf(minute(),2)), 70,40);
   }
 
   if( flg_chime && !sound_chime.isPlaying() ){
