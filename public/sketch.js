@@ -140,7 +140,8 @@ function preload()
     loadSound('assets/OK.wav'),
     loadSound('assets/laugh1.mp3'),
     loadSound('assets/laugh2.mp3'),
-    loadSound('assets/laugh3.mp3')
+    loadSound('assets/laugh3.mp3'),
+    [loadSound('assets/kusa00.mp3'),loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'),loadSound('assets/kusa03.mp3')],
   ]
 }
 
@@ -183,6 +184,7 @@ function setup() {
   select("#button_sound_reaction_06").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_07").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
+  select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);  
 
   select("#slider_volume").changed(changeVolume);
   select("#button_sound_mute").mouseClicked(toggleSoundMute);
