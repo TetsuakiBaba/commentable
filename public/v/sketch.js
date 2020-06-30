@@ -187,7 +187,7 @@ function setup() {
   select("#button_sound_reaction_07").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);  
-
+  select("#download_all_comments").mouseClicked(downloadAllComments);
 
 
   frameRate(30);
@@ -238,7 +238,13 @@ function newComment(data)
       }
     }
   
-    let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+    let comment_format;
+    if( data.flg_sound == true ){
+      comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+" [sound]\n";
+    }
+    else{
+      comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+    }
     select("#textarea_comment_history").html(comment_format, true);
     var psconsole = $('#textarea_comment_history');
     psconsole.scrollTop(
@@ -425,7 +431,6 @@ function windowResized() {
 
   }
   resizeCanvas(windowWidth-30,(windowWidth-30)*rate);
-  document.getElementById("screen_size").value = str(int(width))+"x"+str(int(height));
 }
 
 function sendImageReaction01()

@@ -251,7 +251,13 @@ function newComment(data)
       }
     }
   
-    let comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+    let comment_format;
+    if( data.flg_sound == true ){
+      comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+" [sound]\n";
+    }
+    else{
+      comment_format = "["+nf(year(),4)+":"+nf(month(),2)+":"+nf(day(),2)+":"+nf(hour(),2)+":"+nf(minute(),2)+":"+nf(second(),2)+"] "+data.comment+"\n";
+    }
     select("#textarea_comment_history").html(comment_format, true);
     var psconsole = $('#textarea_comment_history');
     psconsole.scrollTop(
