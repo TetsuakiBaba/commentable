@@ -141,7 +141,7 @@ function preload()
     loadSound('assets/laugh1.mp3'),
     loadSound('assets/laugh2.mp3'),
     loadSound('assets/laugh3.mp3'),
-    [loadSound('assets/kusa00.mp3'),loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'),loadSound('assets/kusa03.mp3')],
+    [loadSound('assets/kusa00.mp3'),loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'),loadSound('assets/kusa03.mp3'),loadSound('assets/kusa04.mp3'),loadSound('assets/kusa05.mp3')]
   ]
 }
 
