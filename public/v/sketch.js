@@ -1,5 +1,4 @@
 var socket;
-
 var flg_sound_mute = true;
 var comments = []; //new Array(50);
 var max_number_of_comment = 50;
@@ -14,27 +13,7 @@ var time_end;
 var time_end_hour;
 var time_end_minute;
 
-class Flash{
-  constructor(){
-    this.alpha = 0;
-    this.status = false;    
-  }
-  do(){
-    this.status = true;
-    this.alpha = 100;
-  }
-  draw(){
-    if( this.status ){
-      noStroke();
-      fill(255, this.alpha);
-      rect(0,0,width,height);
-      this.alpha = this.alpha/10.0;
-      if( this.alpha < 1.0 ){
-        this.status = false;
-      }
-    }
-  }
-}
+
 class Comment{
   constructor(){
     this.x = random(100);
@@ -126,6 +105,7 @@ var flash;
 
 function preload()
 {
+  json = loadJSON('../api_key.json', preloadJSON);
   for( var i = 0; i < max_number_of_comment; i++ ){
     comments[i] = new Comment();
     comments[i].setLife(0);
@@ -146,7 +126,10 @@ function preload()
   ]
   */
 }
-
+function preloadJSON(jsonData){
+  data = jsonData;
+  api_key = data.key;
+}
 
 function setup() {
   
@@ -343,6 +326,7 @@ function sendComment(_str_comment, _str_room_name, _flg_img, _id_img, _flg_sound
       return;
     }
     var data = {
+      key:api_key,
       room_name:_str_room_name,
       comment:_str_comment,
       color_text:color_text,
