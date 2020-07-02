@@ -1,3 +1,6 @@
+var use_require_json = require('./api_key.json');
+var key = use_require_json.key;
+
 var express = require('express');
 var app = express();
 var server = app.listen(80);
@@ -17,7 +20,9 @@ function newConnection(socket){
     //console.log('new connection: ' + socket.id + '('+ socket.handshake.address + ')');
     socket.on('comment', commentMsg);
     function commentMsg(data){
-        socket.broadcast.emit('comment', data);
-        //console.log(data);
+        if( data.key == key ){
+            socket.broadcast.emit('comment', data);
+            console.log(data);
+        }
     }
 } 

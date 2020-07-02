@@ -12,3 +12,25 @@ function downloadAllComments() {
     a.download = ('comments.txt');
     a.click();
   };
+
+  class Flash{
+    constructor(){
+      this.alpha = 0;
+      this.status = false;    
+    }
+    do(){
+      this.status = true;
+      this.alpha = 100;
+    }
+    draw(){
+      if( this.status ){
+        noStroke();
+        fill(255, this.alpha);
+        rect(0,0,width,height);
+        this.alpha = this.alpha/10.0;
+        if( this.alpha < 1.0 ){
+          this.status = false;
+        }
+      }
+    }
+  }

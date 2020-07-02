@@ -1,1 +1,3 @@
 node_modules
+api_key.json
+public/api_key.json
