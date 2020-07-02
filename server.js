@@ -21,8 +21,7 @@ function newConnection(socket){
     socket.on('comment', commentMsg);
     function commentMsg(data){
         if( data.key == key ){
-            socket.broadcast.emit('comment', data);
-            console.log(data);
+            socket.broadcast.emit('comment', data);            
         }
     }
 } 
