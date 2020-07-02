@@ -189,8 +189,8 @@ function setup() {
   sound_chime.setVolume(volume);
   document.getElementById("screen_size").value = str(int(width))+"x"+str(int(height));
   let params = getURLParams();
-  if( params.roomname ){
-    document.getElementById("text_room_name").value = decodeURIComponent(params.roomname);
+  if( params.room ){
+    document.getElementById("text_room_name").value = decodeURIComponent(params.room);
   }
   frameRate(30);    
 }

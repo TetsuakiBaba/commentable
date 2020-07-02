@@ -172,7 +172,10 @@ function setup() {
   select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);  
   select("#download_all_comments").mouseClicked(downloadAllComments);
 
-
+  let params = getURLParams();
+  if( params.room ){
+    document.getElementById("text_room_name").value = decodeURIComponent(params.room);
+  }
   frameRate(30);
   
   
