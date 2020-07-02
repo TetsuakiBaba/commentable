@@ -161,6 +161,7 @@ function setup() {
   textSize(32);
   textStyle(BOLD);
   background(100);
+  
   //socket = io.connect('http://125.100.98.172:3000');
   //socket = io.connect('http://localhost');
   socket = io.connect('https://commentable.lolipop.io')
