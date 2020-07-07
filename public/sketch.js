@@ -276,6 +276,7 @@ function newComment(data)
 }
 
 function draw() {
+
   //newComment("一般的には一秒間に30コマの静止画がある為，静止画と同じように扱うと，Processingでは処理落ちしてしまいます．");
   background(color_background);
 
@@ -283,8 +284,11 @@ function draw() {
     imageMode(CORNER);
     image(capture.c, 0,0, width, height);    
   }
+  
   if( capture_screen ){
-    image(capture_screen.c, 0,0, width, height);
+    if(capture_screen.c.loadedmetadata){
+      image(capture_screen.c, 0,0, width, height);
+    }
   }
 
   
@@ -566,15 +570,23 @@ function updateEndTime()
 function toggleScreenCapture()
 {
   if( !capture_screen ){
-    capture_screen = createScreenCapture(VIDEO);
+    if( capture_screen = createScreenCapture(VIDEO) ){
+      console.log("hello");
+    }
+    else{
+      console.log("else");
+    }
+
     capture_screen.c.hide();
     console.log(this.className);
     console.log(this.attribute("class"));
     this.attribute('class',"btn btn-danger btn-sm");
   }
   else{
+    if( capture_screen.c.loadedmetadata ){
     let tracks = capture_screen.element.srcObject.getTracks();
-    tracks.forEach(track => track.stop());
+    tracks.forEach(track => track.stop());        
+    }
     capture_screen.element.srcObject = null;
     capture_screen = null;
     this.attribute('class',"btn btn-outline-secondary btn-sm");
