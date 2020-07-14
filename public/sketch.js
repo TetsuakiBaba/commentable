@@ -139,6 +139,7 @@ function setup() {
     speech.loadVoices();
   };
   p5_captures = new P5Captures();
+  textFont("Kosugi Maru");
 
   var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0), P2D);
   canvas.parent('sketch-holder');
@@ -151,7 +152,7 @@ function setup() {
   strokeWeight(1);
   textAlign(CENTER);
   textSize(32);
-  textStyle(BOLD);
+  //textStyle(BOLD);
   background(100);
 
   //socket = io.connect('http://localhost');
@@ -356,7 +357,7 @@ function draw() {
     stroke(0);
     strokeWeight(5.0);
     textSize(32);
-    text(str(nf(hour(), 2)) + ":" + str(nf(minute(), 2)), 70, 40);
+    text(str(nf(hour(), 2)) + ":" + str(nf(minute(), 2)), 100, 70);
   }
 
   if (flg_chime && !sound_chime.isPlaying()) {
