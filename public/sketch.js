@@ -13,8 +13,19 @@ var time_start_minute;
 var time_end;
 var time_end_hour;
 var time_end_minute;
+var is_streaming = false;
 
 var p5_captures;
+
+let peerConnection;
+const config = {
+  iceServers: [
+    {
+      urls: ["stun:stun.l.google.com:19302"]
+    }
+  ]
+};
+
 
 class Comment {
   constructor() {
@@ -94,6 +105,7 @@ class Comment {
   }
 }
 
+
 var color_background;
 var color_text;
 var color_text_stroke;
@@ -130,7 +142,7 @@ function preloadJSON(jsonData) {
   api_key = data.key;
 }
 
-
+const video = document.querySelector("video");
 function setup() {
   // Execute loadVoices.
   speech = new Speech();
@@ -141,7 +153,7 @@ function setup() {
   p5_captures = new P5Captures();
   textFont("Kosugi Maru");
 
-  var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0), P2D);
+  var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0) - 60, P2D);
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
@@ -155,8 +167,64 @@ function setup() {
   //textStyle(BOLD);
   background(100);
 
-  //socket = io.connect('http://localhost');
-  socket = io.connect('https://commentable.lolipop.io')
+  socket = io.connect('http://localhost');
+  //socket = io.connect('https://commentable.lolipop.io')
+
+
+  socket.on("offer", (id, description) => {
+
+    peerConnection = new RTCPeerConnection(config);
+    peerConnection
+      .setRemoteDescription(description)
+      .then(() => peerConnection.createAnswer())
+      .then(sdp => peerConnection.setLocalDescription(sdp))
+      .then(() => {
+        socket.emit("answer", id, peerConnection.localDescription);
+      });
+
+    peerConnection.ontrack = event => {
+      video.srcObject = event.streams[0];
+      print(video.srcObject);
+      select("#stream_video").style('display:flex');
+      select("#sketch-holder").style('position:absolute');
+      is_streaming = true;
+
+    };
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        socket.emit("candidate", id, event.candidate);
+      }
+    };
+  });
+
+  socket.on("candidate", (id, candidate) => {
+    peerConnection
+      .addIceCandidate(new RTCIceCandidate(candidate))
+      .catch(e => console.error(e));
+  });
+
+  socket.on("connect", () => {
+    socket.emit("watcher");
+
+  });
+
+  socket.on("broadcaster", () => {
+    socket.emit("watcher");
+    var element = document.getElementById("stream_video");
+    print(element.videoWidth, element.videoHeight);
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 50);
+
+  });
+
+  socket.on("disconnectPeer", () => {
+    peerConnection.close();
+  });
+
+  window.onunload = window.onbeforeunload = () => {
+    socket.close();
+  };
+
+
   socket.on('comment', newComment);
   socket.on('disconnect', () => {
     log('you have been disconnected');
@@ -331,7 +399,11 @@ function newComment(data) {
 }
 
 function draw() {
-  background(color_background);
+  //background(color_background);
+  clear();
+  //  noFill();
+  //  stroke(255, 0, 0);
+  //  rect(0, 0, width, height);
 
   if (flg_camera_is_opened) {
     p5_captures.drawCamera(0, 0, width, height);
@@ -463,20 +535,16 @@ function changeTextOutlineColor() {
 }
 
 function windowResized() {
-  let rate = 9.0 / 16.0;
-
-  if (capture) {
-    rate = capture.c.height / float(capture.c.width);
-
-  }
-  else if (capture_screen) {
-    rate = capture_screen.c.height / float(capture_screen.c.width);
+  if (is_streaming) {
+    var element = document.getElementById("stream_video");
+    print(element.videoWidth, element.videoHeight);
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 60);
   }
   else {
-
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9 / 16 - 100);
   }
-  resizeCanvas(windowWidth - 30, (windowWidth - 30) * rate);
-  document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height));
+  print(windowWidth, windowHeight);
+  document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height + 60));
 }
 
 function sendImageReaction01() {

@@ -5,6 +5,7 @@ var express = require('express');
 var app = express();
 var server = app.listen(80);
 app.use(express.static('./public'));
+let broadcaster;
 //console.log("My socket server is runnning");
 var socket = require('socket.io');
 const options = {
@@ -32,6 +33,7 @@ function newConnection(socket) {
 var numUsers = 0;
 
 io.on('connection', (socket) => {
+
     var addedUser = false;
     // when the client emits 'new message', this listens and executes
     socket.on('new message', (data) => {
@@ -80,6 +82,24 @@ io.on('connection', (socket) => {
         });
     });
 
+
+    socket.on("broadcaster", () => {
+        broadcaster = socket.id;
+        socket.broadcast.emit("broadcaster");
+    });
+    socket.on("watcher", () => {
+        socket.to(broadcaster).emit("watcher", socket.id);
+    });
+    socket.on("offer", (id, message) => {
+        socket.to(id).emit("offer", socket.id, message);
+    });
+    socket.on("answer", (id, message) => {
+        socket.to(id).emit("answer", socket.id, message);
+    });
+    socket.on("candidate", (id, message) => {
+        socket.to(id).emit("candidate", socket.id, message);
+    });
+
     // when the user disconnects.. perform this
     socket.on('disconnect', () => {
 
@@ -91,6 +111,7 @@ io.on('connection', (socket) => {
                 username: socket.username,
                 numUsers: numUsers
             });
+            socket.to(broadcaster).emit("disconnectPeer", socket.id);
         }
     });
 });

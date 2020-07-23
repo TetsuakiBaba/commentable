@@ -24,7 +24,7 @@
   <div class="container-fluid">
 
     <!-- <h1 class="display-4">Commentable Camera</h1> -->
-    <p class="lead">Commentable beta ( <a href="https://commentable.lolipop.io/v">視聴用簡易版はこちら</a> )</p>
+    <p class="lead"><img src="assets/logo.png"></p>
     <div class="input-group">
       <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">授業名</span></div>
       <input type="text" id="text_room_name" class="form-control" value="testroom"></input>
@@ -94,7 +94,10 @@
 
 
     <hr>
-    <div id="sketch-holder"></div>
+    <div class="layer">
+      <video id="stream_video" playsinline autoplay muted controls></video>
+      <div id="sketch-holder"></div>
+    </div>
     <hr>
 
     <div class="input-group input-group-sm">
@@ -176,6 +179,7 @@
 
 
 
+
   <script src="sketch.js"></script>
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
@@ -186,6 +190,7 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
+
 </body>
 
 </html>
