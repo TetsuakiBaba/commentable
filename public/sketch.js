@@ -167,8 +167,8 @@ function setup() {
   //textStyle(BOLD);
   background(100);
 
-  socket = io.connect('http://localhost');
-  //socket = io.connect('https://commentable.lolipop.io')
+  //socket = io.connect('http://localhost');
+  socket = io.connect('https://commentable.lolipop.io')
 
 
   socket.on("offer", (id, description) => {
