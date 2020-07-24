@@ -168,8 +168,8 @@ function setup() {
   background(100);
 
   //socket = io.connect('http://localhost');
-  socket = io.connect('https://commentable.lolipop.io')
-
+  //socket = io.connect('https://commentable.lolipop.io')
+  socket = io.connect(window.location.origin);
 
   socket.on("offer", (id, description) => {
 
@@ -184,7 +184,6 @@ function setup() {
 
     peerConnection.ontrack = event => {
       video.srcObject = event.streams[0];
-      print(video.srcObject);
       select("#stream_video").style('display:flex');
       select("#sketch-holder").style('position:absolute');
       is_streaming = true;
@@ -195,6 +194,10 @@ function setup() {
         socket.emit("candidate", id, event.candidate);
       }
     };
+
+
+
+
   });
 
   socket.on("candidate", (id, candidate) => {
@@ -210,9 +213,6 @@ function setup() {
 
   socket.on("broadcaster", () => {
     socket.emit("watcher");
-    var element = document.getElementById("stream_video");
-    print(element.videoWidth, element.videoHeight);
-    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 50);
 
   });
 
@@ -404,6 +404,11 @@ function draw() {
   //  noFill();
   //  stroke(255, 0, 0);
   //  rect(0, 0, width, height);
+  var element = document.getElementById("stream_video");
+  if (is_streaming) {
+    //    print("streaming video size: ", element.videoWidth, element.videoHeight);
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 60);
+  }
 
   if (flg_camera_is_opened) {
     p5_captures.drawCamera(0, 0, width, height);

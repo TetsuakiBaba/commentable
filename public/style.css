@@ -38,8 +38,12 @@ h1, h2, h3, h4, h5, h6 {
 .layer{
   position:relative;  
   justify-content:center;
-  align-items:center;
-  
+  align-items:center;  
+}
+
+#button_toggle{
+  background-color:transparent;
+  color:black;
 }
 
 textarea{

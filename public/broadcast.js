@@ -7,6 +7,29 @@ const config = {
   ]
 };
 
+var is_streaming = false;
+function toggleBroadcasting() {
+  if (is_streaming) {
+    getStream();
+    document.getElementById("button_toggle").innerHTML = "Start Broadcasting";
+    select("#button_toggle").style("background-color", "transparent");
+    is_streaming = false;
+  }
+  else {
+    socket.emit("broadcaster");
+    this.html("Stop Broadcasting");
+    print("stop Stream()");
+    select("#button_toggle").style("background-color", "red");
+    is_streaming = true;
+  }
+
+}
+function setup() {
+  select("#button_toggle").mouseClicked(toggleBroadcasting);
+  noCanvas();
+}
+
+
 const socket = io.connect(window.location.origin);
 
 socket.on("answer", (id, description) => {
@@ -14,6 +37,9 @@ socket.on("answer", (id, description) => {
 });
 
 socket.on("watcher", id => {
+  if (is_streaming == false) {
+    return;
+  }
   const peerConnection = new RTCPeerConnection(config);
   peerConnections[id] = peerConnection;
 
@@ -39,6 +65,9 @@ socket.on("candidate", (id, candidate) => {
 });
 
 socket.on("disconnectPeer", id => {
+  if (is_streaming == false) {
+    return;
+  }
   peerConnections[id].close();
   delete peerConnections[id];
 });
@@ -105,9 +134,13 @@ function gotStream(stream) {
     option => option.text === stream.getVideoTracks()[0].label
   );
   videoElement.srcObject = stream;
-  socket.emit("broadcaster");
+  is_streaming = false;
+  //socket.emit("broadcaster");
 }
 
 function handleError(error) {
   console.error("Error: ", error);
 }
+
+
+
