@@ -17,6 +17,7 @@ function toggleBroadcasting() {
     document.getElementById("button_toggle").innerHTML = "📺Start";
     select("#button_toggle").style("background-color", "transparent");
     is_streaming = false;
+    socket.emit("stop streaming");
   }
   else {
 

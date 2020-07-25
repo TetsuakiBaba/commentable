@@ -32,14 +32,18 @@ class ProtofessionalEffect {
     this.is_activating = false;
     this.effect_duration = 7000;
     this.sound = loadSound('assets/protofessional.mp3');
+    this.volume = 0.5;
   }
   activate() {
-
     this.is_activating = true;
     this.timestamp = millis();
     if (flg_sound_mute == false) {
+      this.sound.setVolume(this.volume);
       this.sound.play();
     }
+  }
+  setVolume(_volume) {
+    this.volume = _volume;
   }
   setText(_interview_message) {
     this.interview_message = _interview_message;
@@ -188,7 +192,7 @@ function setup() {
     speech.loadVoices();
   };
   p5_captures = new P5Captures();
-  textFont("Kosugi Maru");
+  textFont("Noto Sans JP");
 
   var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0), P2D);
   canvas.parent('sketch-holder');
@@ -219,7 +223,6 @@ function setup() {
   // Whenever the server emits 'user joined', log it in the chat body
   socket.on('user joined', (data) => {
     log(data.username + ' joined');
-    console.log(data);
     document.getElementById('text_number_of_joined').value = str(data.numUsers);
   });
   // Whenever the server emits 'user left', log it in the chat body
@@ -262,9 +265,6 @@ function setup() {
       }
     };
 
-
-
-
   });
 
   socket.on("candidate", (id, candidate) => {
@@ -280,7 +280,14 @@ function setup() {
 
   socket.on("broadcaster", () => {
     socket.emit("watcher", socket.id);
+  });
 
+  socket.on("stop streaming", () => {
+    select("#stream_video").style('display:none');
+    select("#sketch-holder").style('position:relative');
+    select("#button_stream_status").class('btn btn-secondary btn-sm');
+    select("#button_stream_status").html("Streaming Off");
+    is_streaming = false;
   });
 
   socket.on("disconnectPeer", () => {
@@ -364,7 +371,7 @@ function touchStarted() {
 var count_comment = 0;
 function newComment(data) {
   count_comment++;
-  console.log(data.hidden);
+
   // 隠しコマンド
   if (data.hidden >= 0) {
     let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
@@ -378,6 +385,7 @@ function newComment(data) {
       psconsole[0].scrollHeight - psconsole.height()
     );
     protofessional_effect.setText(data.comment);
+    protofessional_effect.setVolume(volume);
     protofessional_effect.activate();
   }
   else if (data.flg_image == false) {
@@ -451,7 +459,7 @@ function newComment(data) {
     );
   }
 
-  //console.log(data);
+
 }
 
 function draw() {
@@ -772,8 +780,6 @@ function updateEndTime() {
 function toggleScreenCapture() {
   if (!p5_captures.screen) {
     p5_captures.openScreen();
-    console.log(this.className);
-    console.log(this.attribute("class"));
     this.attribute('class', "btn btn-danger btn-sm");
   }
 

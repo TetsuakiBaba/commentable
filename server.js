@@ -50,12 +50,16 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('comment', data);
     });
 
+    socket.on('stop streaming', () => {
+        socket.broadcast.emit('stop streaming');
+    });
+
     // when the client emits 'add user', this listens and executes
     socket.on('add user', (username) => {
         if (addedUser) return;
 
         // we store the username in the socket session for this client
-        socket.username = socket.id;//username;
+        socket.username = socket.id; //username;
         ++numUsers;
         addedUser = true;
         socket.emit('login', {
@@ -87,6 +91,7 @@ io.on('connection', (socket) => {
         broadcaster = socket.id;
         socket.broadcast.emit("broadcaster");
     });
+
     socket.on("watcher", () => {
         socket.to(broadcaster).emit("watcher", socket.id, numUsers);
     });
