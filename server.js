@@ -1,9 +1,9 @@
 var use_require_json = require('./api_key.json');
 var key = use_require_json.key;
-
+var port = process.env.PORT || 80;
 var express = require('express');
 var app = express();
-var server = app.listen(80);
+var server = app.listen(port);
 app.use(express.static('./public'));
 let broadcaster;
 //console.log("My socket server is runnning");
