@@ -5,6 +5,7 @@ var comments = []; //new Array(50);
 var max_number_of_comment = 50;
 var sound;
 var sound_chime;
+
 var flg_chime;
 var flg_clock;
 var time_start;
@@ -26,6 +27,40 @@ const config = {
   ]
 };
 
+class ProtofessionalEffect {
+  constructor() {
+    this.is_activating = false;
+    this.effect_duration = 7000;
+    this.sound = loadSound('assets/protofessional.mp3');
+  }
+  activate() {
+
+    this.is_activating = true;
+    this.timestamp = millis();
+    if (flg_sound_mute == false) {
+      this.sound.play();
+    }
+  }
+  setText(_interview_message) {
+    this.interview_message = _interview_message;
+  }
+  draw() {
+
+    if (this.is_activating == true &&
+      (millis() - this.timestamp) < this.effect_duration) {
+      let alpha = 255 * cos(radians(90 * (millis() - this.timestamp) / this.effect_duration));
+      background(0, 0, 0, alpha);
+      noStroke();
+      fill(255, 255, 255, alpha);
+      textSize(height / 20);
+      text(this.interview_message, width / 2, height / 2);
+
+    }
+    else {
+      this.is_activating = false;
+    }
+  }
+}
 
 class Comment {
   constructor() {
@@ -116,8 +151,6 @@ var flash;
 
 var speech;
 function preload() {
-
-
   json = loadJSON('api_key.json', preloadJSON);
   for (var i = 0; i < max_number_of_comment; i++) {
     comments[i] = new Comment();
@@ -136,6 +169,8 @@ function preload() {
     loadSound('assets/laugh3.mp3'),
     [loadSound('assets/kusa00.mp3'), loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'), loadSound('assets/kusa03.mp3'), loadSound('assets/kusa04.mp3'), loadSound('assets/kusa05.mp3')]
   ]
+  protofessional_effect = new ProtofessionalEffect();
+
 }
 function preloadJSON(jsonData) {
   data = jsonData;
@@ -144,6 +179,8 @@ function preloadJSON(jsonData) {
 
 const video = document.querySelector("video");
 function setup() {
+  let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名")
+  select("#text_my_name").value(str_name);
   // Execute loadVoices.
   speech = new Speech();
   //speech.loadVoices();
@@ -153,7 +190,7 @@ function setup() {
   p5_captures = new P5Captures();
   textFont("Kosugi Maru");
 
-  var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0) - 60, P2D);
+  var canvas = createCanvas(windowWidth - 30, (windowWidth - 30) * (9.0 / 16.0), P2D);
   canvas.parent('sketch-holder');
   color_background = document.getElementById("color_background").value;
   color_text = document.getElementById("color_text").value;
@@ -170,59 +207,9 @@ function setup() {
   //socket = io.connect('http://localhost');
   //socket = io.connect('https://commentable.lolipop.io')
   socket = io.connect(window.location.origin);
+  // Tell the server your username
+  socket.emit('add user', "test user");
 
-  socket.on("offer", (id, description) => {
-
-    peerConnection = new RTCPeerConnection(config);
-    peerConnection
-      .setRemoteDescription(description)
-      .then(() => peerConnection.createAnswer())
-      .then(sdp => peerConnection.setLocalDescription(sdp))
-      .then(() => {
-        socket.emit("answer", id, peerConnection.localDescription);
-      });
-
-    peerConnection.ontrack = event => {
-      video.srcObject = event.streams[0];
-      select("#stream_video").style('display:flex');
-      select("#sketch-holder").style('position:absolute');
-      is_streaming = true;
-
-    };
-    peerConnection.onicecandidate = event => {
-      if (event.candidate) {
-        socket.emit("candidate", id, event.candidate);
-      }
-    };
-
-
-
-
-  });
-
-  socket.on("candidate", (id, candidate) => {
-    peerConnection
-      .addIceCandidate(new RTCIceCandidate(candidate))
-      .catch(e => console.error(e));
-  });
-
-  socket.on("connect", () => {
-    socket.emit("watcher");
-
-  });
-
-  socket.on("broadcaster", () => {
-    socket.emit("watcher");
-
-  });
-
-  socket.on("disconnectPeer", () => {
-    peerConnection.close();
-  });
-
-  window.onunload = window.onbeforeunload = () => {
-    socket.close();
-  };
 
 
   socket.on('comment', newComment);
@@ -249,6 +236,60 @@ function setup() {
   socket.on('login', (data) => {
     document.getElementById('text_number_of_joined').value = str(data.numUsers);
   });
+
+  socket.on("offer", (id, description) => {
+
+    peerConnection = new RTCPeerConnection(config);
+    peerConnection
+      .setRemoteDescription(description)
+      .then(() => peerConnection.createAnswer())
+      .then(sdp => peerConnection.setLocalDescription(sdp))
+      .then(() => {
+        socket.emit("answer", id, peerConnection.localDescription);
+      });
+
+    peerConnection.ontrack = event => {
+      video.srcObject = event.streams[0];
+      select("#stream_video").style('display:flex');
+      select("#sketch-holder").style('position:absolute');
+      select("#button_stream_status").class('btn btn-danger btn-sm');
+      select("#button_stream_status").html("Streaming On");
+      is_streaming = true;
+    };
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        socket.emit("candidate", id, event.candidate);
+      }
+    };
+
+
+
+
+  });
+
+  socket.on("candidate", (id, candidate) => {
+    peerConnection
+      .addIceCandidate(new RTCIceCandidate(candidate))
+      .catch(e => console.error(e));
+  });
+
+  socket.on("connect", () => {
+    socket.emit("watcher", socket.id);
+
+  });
+
+  socket.on("broadcaster", () => {
+    socket.emit("watcher", socket.id);
+
+  });
+
+  socket.on("disconnectPeer", () => {
+    peerConnection.close();
+  });
+
+  window.onunload = window.onbeforeunload = () => {
+    socket.close();
+  };
 
 
   select("#button_send").mouseClicked(pushedSendButton);
@@ -284,6 +325,9 @@ function setup() {
   select("#time_end").changed(updateEndTime);
   select("#button_toggle_screen_capture").mouseClicked(toggleScreenCapture);
 
+  select("#slider_stream_volume").changed(changeStreamVolume);
+  select("#button_stream_sound_mute").mouseClicked(toggleStreamMute);
+
   select("#download_all_comments").mouseClicked(downloadAllComments);
   flg_chime = document.getElementById("checkbox_chime").checked;
   flg_clock = document.getElementById("checkbox_clock").checked;
@@ -294,8 +338,8 @@ function setup() {
   sound_chime.setVolume(volume);
   document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height));
   let params = getURLParams();
-  if (params.room) {
-    document.getElementById("text_room_name").value = decodeURIComponent(params.room);
+  if (params.name) {
+    document.getElementById("text_my_name").value = decodeURIComponent(params.room);
   }
 
   // Check for browser support
@@ -308,8 +352,7 @@ function setup() {
   }
 
 
-  // Tell the server your username
-  socket.emit('add user', "test user");
+
   frameRate(30);
 }
 
@@ -321,12 +364,23 @@ function touchStarted() {
 var count_comment = 0;
 function newComment(data) {
   count_comment++;
-  let my_room_name = document.getElementById("text_room_name").value;
-  if (data.room_name != my_room_name) {
-    return;
+  console.log(data.hidden);
+  // 隠しコマンド
+  if (data.hidden >= 0) {
+    let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    comment_format += data.comment;
+    comment_format += " [hidden]";
+    comment_format += "[" + data.my_name + "]" + "\n";
+    //here
+    select("#textarea_comment_history").html(comment_format, true);
+    var psconsole = $('#textarea_comment_history');
+    psconsole.scrollTop(
+      psconsole[0].scrollHeight - psconsole.height()
+    );
+    protofessional_effect.setText(data.comment);
+    protofessional_effect.activate();
   }
-
-  if (data.flg_image == false) {
+  else if (data.flg_image == false) {
     let id = -1;
     if (data.comment.length <= 0) {
       return;
@@ -361,12 +415,13 @@ function newComment(data) {
     }
 
     let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    comment_format += data.comment;
     if (data.flg_sound == true) {
-      comment_format += data.comment + " [sound]\n";
+      comment_format += " [sound]";
     }
-    else {
-      comment_format += data.comment + "\n";
-    }
+
+    comment_format += "[" + data.my_name + "]" + "\n";
+    //here
     select("#textarea_comment_history").html(comment_format, true);
     var psconsole = $('#textarea_comment_history');
     psconsole.scrollTop(
@@ -395,21 +450,23 @@ function newComment(data) {
       psconsole[0].scrollHeight - psconsole.height()
     );
   }
+
   //console.log(data);
 }
 
 function draw() {
-  //background(color_background);
-  clear();
-  //  noFill();
-  //  stroke(255, 0, 0);
-  //  rect(0, 0, width, height);
-  var element = document.getElementById("stream_video");
-  if (is_streaming) {
-    //    print("streaming video size: ", element.videoWidth, element.videoHeight);
-    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 60);
-  }
 
+
+  if (is_streaming) {
+    clear();
+    var element = document.getElementById("stream_video");
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth));
+    document.getElementById("stream_time").value = nf(element.currentTime, 4);
+    document.getElementById("stream_resolution").value = str(element.videoWidth) + "x" + str(element.videoHeight);
+  }
+  else {
+    background(color_background);
+  }
   if (flg_camera_is_opened) {
     p5_captures.drawCamera(0, 0, width, height);
   }
@@ -427,6 +484,7 @@ function draw() {
 
   }
 
+  protofessional_effect.draw();
   flash.draw();
 
   if (flg_clock) {
@@ -451,11 +509,18 @@ function draw() {
 function pushedSendButton() {
   sendComment(
     document.getElementById("text_comment").value, false,
-    document.getElementById("text_room_name").value,
+    document.getElementById("text_my_name").value,
     false, 0,
     false, 0);
 }
-function sendComment(_str_comment, _flg_emoji, _str_room_name, _flg_img, _id_img, _flg_sound, _id_sound) {
+
+
+function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound) {
+  sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, -1);
+}
+
+// _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
+function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
   if (_flg_img == false) {
     if (_str_comment.length <= 0) {
@@ -467,7 +532,7 @@ function sendComment(_str_comment, _flg_emoji, _str_room_name, _flg_img, _id_img
     }
     var data = {
       key: api_key,
-      room_name: _str_room_name,
+      my_name: _str_my_name,
       comment: _str_comment,
       flg_speech: flg_speech,
       color_text: color_text,
@@ -476,7 +541,8 @@ function sendComment(_str_comment, _flg_emoji, _str_room_name, _flg_img, _id_img
       flg_image: false,
       id_image: 0,
       flg_sound: _flg_sound,
-      id_sound: _id_sound
+      id_sound: _id_sound,
+      hidden: _hidden
     }
     if (_str_comment.length > 0) {
       socket.emit("comment", data);
@@ -505,14 +571,31 @@ function sendComment(_str_comment, _flg_emoji, _str_room_name, _flg_img, _id_img
 }
 
 
+var is_control_pressed = false;
+function keyReleased() {
+  if (keyCode == CONTROL) {
+    is_control_pressed = false;
+  }
+}
 function keyPressed() {
+  if (keyCode == CONTROL) {
+    is_control_pressed = true;
+  }
   if (key == "Enter") {
+    let hidden = -1;
+    if (is_control_pressed) {
+      hidden = 0;
+    }
+
     sendComment(
       document.getElementById("text_comment").value,
       false,
-      document.getElementById("text_room_name").value,
+      document.getElementById("text_my_name").value,
       false, 0,
-      false, 0);
+      false, 0,
+      hidden
+    );
+
   }
   else {
 
@@ -543,19 +626,19 @@ function windowResized() {
   if (is_streaming) {
     var element = document.getElementById("stream_video");
     print(element.videoWidth, element.videoHeight);
-    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth) - 60);
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth));
   }
   else {
     resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9 / 16 - 100);
   }
   print(windowWidth, windowHeight);
-  document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height + 60));
+  document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height));
 }
 
 function sendImageReaction01() {
   sendComment(
     document.getElementById("text_comment").value, false,
-    document.getElementById("text_room_name").value,
+    document.getElementById("text_my_name").value,
     true, 0,
     false, 0);
 }
@@ -563,7 +646,7 @@ function sendImageReaction01() {
 function sendEmojiReaction() {
   sendComment(
     this.html(), true,
-    document.getElementById("text_room_name").value,
+    document.getElementById("text_my_name").value,
     false, 0,
     false, 0
   );
@@ -572,7 +655,7 @@ function sendSoundReaction() {
   var id_sound = this.attribute("value");
   sendComment(
     this.html(), false,
-    document.getElementById("text_room_name").value,
+    document.getElementById("text_my_name").value,
     false, 0,
     true, id_sound
   );
@@ -589,16 +672,48 @@ function changeVolume() {
     //console.log(this);
   }
 }
+function changeStreamVolume() {
+  var element = document.getElementById("stream_video");
+  element.volume = this.value();
+}
 
 function toggleSoundMute() {
   flg_sound_mute = !flg_sound_mute;
+  // no sound
   if (flg_sound_mute == true) {
     this.html("&#x1f507;");
   }
+  // with sound
   else {
     this.html("&#x1f508;");
   }
 }
+
+function toggleStreamMute() {
+  print(this.value());
+  // no sound
+  if (this.value() == "true") this.value("false");
+  else this.value("true");
+
+  if (this.value() == "true") {
+    this.html("&#x1f507;");
+    // turn off broadcasting sound    
+    if (is_streaming) {
+      var element = document.getElementById("stream_video");
+      element.muted = true;
+    }
+  }
+  // with sound
+  else {
+    this.html("&#x1f508;");
+    // turn on broadcasting sound
+    if (is_streaming) {
+      var element = document.getElementById("stream_video");
+      element.muted = false;
+    }
+  }
+}
+
 
 var flg_camera_is_opened = false;
 

@@ -26,8 +26,8 @@
     <!-- <h1 class="display-4">Commentable Camera</h1> -->
     <p class="lead"><img src="assets/logo.png"></p>
     <div class="input-group">
-      <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">授業名</span></div>
-      <input type="text" id="text_room_name" class="form-control" value="testroom"></input>
+      <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">お名前</span></div>
+      <input type="text" id="text_my_name" class="form-control" value="--"></input>
 
       <div class="input-group-prepend">
         <span class="input-group-text" id="icon_number_of_joined">👤（接続数） </span>
@@ -42,8 +42,8 @@
           class="btn btn-outline-secondary btn-sm">🖥️</button></div>
       <div class="input-group-prepend"><button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
       </div>
-      <div class="input-group-prepend"><button id="button_sound_mute"
-          class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
+      <div class="input-group-prepend">
+        <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
       <div class="input-group-prepend">
         <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -98,6 +98,38 @@
       <video id="stream_video" playsinline autoplay muted controls></video>
       <div id="sketch-holder"></div>
     </div>
+
+    <!-- Video controls -->
+    <div class="input-group mb-3">
+      <div class="input-group-prepend">
+        <button type="button" id="button_stream_status" class="btn btn-secondary" disabled>Streaming Off</button>
+        <span class="input-group-text" id="basic-addon1">Current Time</span>
+      </div>
+      <input type="text" id="stream_time" class="form-control " value="--:--"></input>
+
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Resolution</span>
+      </div>
+      <input type="text" id="stream_resolution" class="form-control " value="-- x --"></input>
+
+
+      <div class="input-group-prepend">
+        <button id="button_stream_sound_mute" class="btn btn-outline-secondary btn-sm" value="true">&#x1f507;</button>
+      </div>
+      <div class="input-group-prepend">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="sr-only">Toggle Dropdown</span>Volume
+        </button>
+        <div class="dropdown-menu">
+          <li class="dropdown-item">
+            <div class="input-group-prepend">小<input id="slider_stream_volume" class="custom-range" type="range"
+                value="0.70" step="0.01" min="0.01" max="0.99">大</input></div>
+          </li>
+        </div>
+      </div>
+    </div>
+
     <hr>
 
     <div class="input-group input-group-sm">
@@ -114,7 +146,7 @@
         <div class="dropdown-menu">
           <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> テキスト色</input></li>
           <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> 輪郭色</input></li>
-          <li class="dropdown-item"><input type="color" id="color_background" value="#123456"> 背景色</input></li>
+          <li class="dropdown-item"><input type="color" id="color_background" value="#FFFBF2"> 背景色</input></li>
           <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> 音声読み上げ</li>
         </div>
       </div>

@@ -1,3 +1,4 @@
+var number_of_viewers = 0;
 const peerConnections = {};
 const config = {
   iceServers: [
@@ -11,13 +12,16 @@ var is_streaming = false;
 function toggleBroadcasting() {
   if (is_streaming) {
     getStream();
-    document.getElementById("button_toggle").innerHTML = "Start Broadcasting";
+    number_of_viewers = 0;
+    document.getElementById('text_number_of_joined').value = str(number_of_viewers);
+    document.getElementById("button_toggle").innerHTML = "📺Start";
     select("#button_toggle").style("background-color", "transparent");
     is_streaming = false;
   }
   else {
+
     socket.emit("broadcaster");
-    this.html("Stop Broadcasting");
+    this.html("📺Stop");
     print("stop Stream()");
     select("#button_toggle").style("background-color", "red");
     is_streaming = true;
@@ -26,6 +30,9 @@ function toggleBroadcasting() {
 }
 function setup() {
   select("#button_toggle").mouseClicked(toggleBroadcasting);
+  select("#camera_width").changed(getStream);
+  select("#camera_height").changed(getStream);
+  select("#camera_framerate").changed(getStream);
   noCanvas();
 }
 
@@ -36,10 +43,21 @@ socket.on("answer", (id, description) => {
   peerConnections[id].setRemoteDescription(description);
 });
 
-socket.on("watcher", id => {
+// Whenever the server emits 'user joined', log it in the chat body
+socket.on('user joined', (data) => {
+  log(data.username + ' joined');
+  console.log(data);
+
+  //  document.getElementById('text_number_of_joined').value = str(data.numUsers);
+});
+
+socket.on("watcher", (id, numUsers) => {
   if (is_streaming == false) {
     return;
   }
+  number_of_viewers++;
+  document.getElementById('text_number_of_joined').value = str(number_of_viewers);
+
   const peerConnection = new RTCPeerConnection(config);
   peerConnections[id] = peerConnection;
 
@@ -64,10 +82,12 @@ socket.on("candidate", (id, candidate) => {
   peerConnections[id].addIceCandidate(new RTCIceCandidate(candidate));
 });
 
-socket.on("disconnectPeer", id => {
+socket.on("disconnectPeer", (id, numUsers) => {
   if (is_streaming == false) {
     return;
   }
+  number_of_viewers--;
+  document.getElementById('text_number_of_joined').value = str(number_of_viewers);
   peerConnections[id].close();
   delete peerConnections[id];
 });
@@ -108,16 +128,27 @@ function gotDevices(deviceInfos) {
 }
 
 function getStream() {
+  number_of_viewers = 0;
   if (window.stream) {
     window.stream.getTracks().forEach(track => {
       track.stop();
     });
   }
+  document.getElementById("button_toggle").innerHTML = "📺Start";
+  document.getElementById("button_toggle").style.background = "transparent";
+  is_streaming = false;
+
   const audioSource = audioSelect.value;
   const videoSource = videoSelect.value;
+  const cameraWidth = document.getElementById("camera_width").value;
+  const cameraHeight = document.getElementById("camera_height").value;
+  const camera_framerate = document.getElementById("camera_framerate").value;
   const constraints = {
     audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-    video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+    video: {
+      deviceId: videoSource ? { exact: videoSource } : undefined,
+      width: { max: cameraWidth }, height: { max: cameraHeight }, frameRate: { max: camera_framerate }
+    }
   };
   return navigator.mediaDevices
     .getUserMedia(constraints)

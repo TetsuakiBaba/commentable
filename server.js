@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
         socket.broadcast.emit("broadcaster");
     });
     socket.on("watcher", () => {
-        socket.to(broadcaster).emit("watcher", socket.id);
+        socket.to(broadcaster).emit("watcher", socket.id, numUsers);
     });
     socket.on("offer", (id, message) => {
         socket.to(id).emit("offer", socket.id, message);
@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
                 username: socket.username,
                 numUsers: numUsers
             });
-            socket.to(broadcaster).emit("disconnectPeer", socket.id);
+            socket.to(broadcaster).emit("disconnectPeer", socket.id, numUsers);
         }
     });
 });

@@ -4,26 +4,66 @@
 <head>
   <title>Broadcaster</title>
   <meta charset="UTF-8" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body>
-  <section class="select">
-    <label for="audioSource">Audio source: </label>
-    <select id="audioSource"></select>
-  </section>
+  <div class="container-fluid">
+    <p class="lead"><img src="assets/logo.png"></p>
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Audio Source</span>
+      </div>
+      <select class="form-control" id="audioSource"></select>
 
-  <section class="select">
-    <label for="videoSource">Video source: </label>
-    <select id="videoSource"></select>
-  </section>
+      <div class="input-group-prepend">
+        <span class="input-group-text">Video Souce</span>
+      </div>
+      <select class="form-control" id="videoSource"></select>
+    </div>
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text">Resolution</span>
+      </div>
+      <input class="form-control" type="text" id="camera_width" value="640"></input>
+      <input class="form-control" type="text" id="camera_height" value="360"></input>
+      <div class="input-group-prepend">
+        <span class="input-group-text">Frame Rate</span>
+      </div>
+      <input class="form-control" type="text" id="camera_framerate" value="15"></input>
 
-  <button id="button_toggle">
-    Start Broadcasting
-  </button>
 
+      <button class="form-control" id="button_toggle">
+        📺Start
+      </button>
+    </div>
 
-  <video id="broadcasting_video" playsinline autoplay muted></video>
+    <video id="broadcasting_video" playsinline autoplay controls muted></video>
+
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="icon_number_of_joined">👤（視聴者数） </span>
+      </div>
+      <input class="form-control" size="5" type="text" id="text_number_of_joined" placeholder="--" readonly></input>
+
+    </div>
+
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading">接続数とカメラ設定の目安</h4>
+      <ul>
+        <li>1-2: 1920x1080 30fps</li>
+        <li>3-5: 1280x720 15fps</li>
+        <li>6-10: 640x360 15fps</li>
+      </ul>
+      <p>
+        解像度とframerateを下げるほどPC負荷は減ります。時々に応じて設定を変更するとよいでしょう。
+        設定を変更すると自動的に配信が止まるので、再度Startボタンを押して配信を再開してください。
+      </p>
+    </div>
+
+  </div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/broadcast.js"></script>
   <script src="p5.js"></script>
