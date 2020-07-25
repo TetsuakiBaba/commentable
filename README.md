@@ -1,8 +1,9 @@
 ![](./public/assets/logo.png)
 # Commentableとは
 ![](./teaser.gif)
+
 授業中に気軽に学生にコメントしてほしい。このシンプルな欲求から開発をスタートしました。
-[commentscreen](https://commentscreen.com/) が素晴らしく、たくさんインスパイアされました。ただ、、
+[commentscreen](https://commentscreen.com/)が素晴らしく、たくさんインスパイアされました。ただ、、
   * OSBと連携したい（OBSのVirtual Cameraにコメントを載せたい）
   * 音声読み上げや、リアクション、授業に特化したコメント機能を手軽に追加（プロトタイピング）したい
   * ブラウザだけで動作して、なんならzoomとかなくても最悪配信できちゃいたい
