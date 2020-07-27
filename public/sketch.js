@@ -57,6 +57,7 @@ class ProtofessionalEffect {
       noStroke();
       fill(255, 255, 255, alpha);
       textSize(height / 20);
+      textAlign(CENTER, CENTER);
       text(this.interview_message, width / 2, height / 2);
 
     }
