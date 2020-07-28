@@ -145,7 +145,14 @@ function getStream() {
   const cameraHeight = document.getElementById("camera_height").value;
   const camera_framerate = document.getElementById("camera_framerate").value;
   const constraints = {
-    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+    audio: {
+      echoCancellation: false,
+      autoGainControl: false,
+      noiseSuppression: false,
+      deviceId: audioSource ? { exact: audioSource } : undefined,
+      sampleRate: { ideal: 48000 },
+      channelCount: { ideal: 2 }
+    },
     video: {
       deviceId: videoSource ? { exact: videoSource } : undefined,
       width: { max: cameraWidth }, height: { max: cameraHeight }, frameRate: { max: camera_framerate }
