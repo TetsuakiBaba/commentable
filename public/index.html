@@ -6,9 +6,6 @@
   <!--<script src="p5.dom.min.js"></script>-->
   <script src="p5.sound.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="utils.js"></script>
-  <script src="speech.js"></script>
-  <script src="P5Captures.js"></script>
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
     integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
@@ -40,24 +37,17 @@
         <span class="input-group-text" id="basic-addon1">画面サイズ</span>
       </div>
       <input class="form-control" size="5" type="text" id="screen_size" placeholder="ScreenSize:" readonly></input>
-      <div class="input-group-prepend"><button id="button_toggle_screen_capture"
-          class="btn btn-outline-secondary btn-sm">🖥️</button></div>
-      <div class="input-group-prepend"><button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
-      </div>
+
       <div class="input-group-prepend">
-        <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
-      <div class="input-group-prepend">
-        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <span class="sr-only">Toggle Dropdown</span>Volume
-        </button>
-        <div class="dropdown-menu">
-          <li class="dropdown-item">
-            <div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range" value="0.1"
-                step="0.01" min="0.01" max="0.30">大</input></div>
-          </li>
-        </div>
+        <button id="button_toggle_screen_capture" class="btn btn-outline-secondary btn-sm">🖥️</button>
       </div>
+
+      <div class="input-group-prepend">
+        <button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
+      </div>
+      <select class="form-control" id="videoSource"></select>
+
+
     </div>
 
     <div class="input-group input-group-sm mb-3">
@@ -188,6 +178,21 @@
           class="btn btn-outline-danger btn-sm">大笑</button></div>
       <div class="input-group-prepend"><button id="button_sound_reaction_09" value="9"
           class="btn btn-outline-danger btn-sm">w</button></div>
+
+      <div class="input-group-prepend">
+        <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button></div>
+      <div class="input-group-prepend">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="sr-only">Toggle Dropdown</span>Volume
+        </button>
+        <div class="dropdown-menu">
+          <li class="dropdown-item">
+            <div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range" value="0.1"
+                step="0.01" min="0.01" max="0.30">大</input></div>
+          </li>
+        </div>
+      </div>
     </div>
 
 
@@ -216,6 +221,10 @@
   </div>
 
   <script src="sketch.js"></script>
+  <script src="utils.js"></script>
+  <script src="speech.js"></script>
+  <script src="P5Captures.js"></script>
+
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
     crossorigin="anonymous"></script>

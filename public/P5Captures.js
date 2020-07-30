@@ -1,16 +1,17 @@
 class P5Captures {
     constructor() { }
-    openCamera() {
+    openCamera(_deviceId) {
+        //console.log(_deviceId);
         this.camera = createCameraCapture({
             audio: false,
             video: {
-                //deviceId:'5740d2acadab60d7cbd5071039f32d9f0e4881b77ec41732add14a79b2d54f91',
+                deviceId: _deviceId,
                 width: 1280,
                 height: 720,
                 //optional: [{ maxFrameRate: 10 }]
             }
         }, function () {
-            console.log('capture ready');
+            //console.log('capture ready');
         });
         this.camera.c.hide();
     }
@@ -29,10 +30,10 @@ class P5Captures {
 
     openScreen() {
         if (this.screen = createScreenCapture(VIDEO)) {
-            console.log("hello");
+            //console.log("hello");
         }
         else {
-            console.log("else");
+            //console.log("else");
         }
 
         this.screen.c.hide();

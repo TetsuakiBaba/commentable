@@ -184,8 +184,15 @@ function preloadJSON(jsonData) {
 
 const video = document.querySelector("video");
 function setup() {
-  let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名")
+  let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
   select("#text_my_name").value(str_name);
+
+  getStream()
+    .then(getDevices)
+    .then(gotDevices);
+
+
+
   // Execute loadVoices.
   speech = new Speech();
   //speech.loadVoices();
@@ -464,8 +471,6 @@ function newComment(data) {
 }
 
 function draw() {
-
-
   if (is_streaming) {
     clear();
     var element = document.getElementById("stream_video");
@@ -638,7 +643,7 @@ function windowResized() {
     resizeCanvas(windowWidth - 30, (windowWidth - 30) * (element.videoHeight / element.videoWidth));
   }
   else {
-    resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9 / 16 - 100);
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9 / 16);
   }
   print(windowWidth, windowHeight);
   document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height));
@@ -729,7 +734,9 @@ var flg_camera_is_opened = false;
 function toggleCamera() {
   if (flg_camera_is_opened == false) {
     flg_camera_is_opened = true;
-    p5_captures.openCamera();
+    var videoSelect = document.querySelector("select#videoSource");
+    console.log(videoSelect.value);
+    p5_captures.openCamera(videoSelect.value);
     this.attribute('class', "btn btn-danger btn-sm");
   }
   else {
