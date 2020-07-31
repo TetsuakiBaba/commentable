@@ -1,12 +1,12 @@
 ![](./public/assets/logo.png)
 
-| <img src="./commentable_sample.gif" /> | 
+| ![](./commentable_sample.gif) | 
 |:--:|
 |mmhmmのVritual カメラにコメントを載せたところ|
 
 
 
-| <img src="./teaser.gif" /> | 
+| ![](./teaser.gif) | 
 |:--:|
 | broadcast機能を使って、お手軽配信しているところ。左がviewerページ、右が配信ページ  |
 
