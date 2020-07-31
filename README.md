@@ -1,14 +1,14 @@
 ![](./public/assets/logo.png)
 
-<figure>
-<img src="./commentable_sample.gif" />
-<figcaption>mmhmmのVritual カメラにコメントを載せたところ</figcaption>
-</figure>
+| <img src="./commentable_sample.gif" /> | 
+|:--:|
+|mmhmmのVritual カメラにコメントを載せたところ|
 
-<figure>
-<img src="./teaser.gif" />
-<figcaption>broadcast機能を使って、お手軽配信しているところ。左がviewerページ、右が配信ページ </figcaption>
-</figure>
+
+
+| <img src="./teaser.gif" /> | 
+|:--:|
+| broadcast機能を使って、お手軽配信しているところ。左がviewerページ、右が配信ページ  |
 
 # Commentableとは
 授業中に気軽に学生にコメントしてほしい。このシンプルな欲求から開発をスタートしました。
@@ -34,6 +34,39 @@
 下記の受信、コメントページを開き、画面共有ボタンを押し、ブラウザ窓または、表示箇所を個別に配信に利用してください。配信者は受信、自身の画面キャプチャやカメラ画像の上にコメントが表示されるので、その内容をZoomやhangoutなどを利用して共有してください。
   * 受信、コメントページ：https://commentable-demo.herokuapp.com/
 
+# Installation
+local環境での実行手順を示します。デプロイするときはデプロイ先の指示に従ってください。
+
+```
+$ git clone https://github.com/TetsuakiBaba/commentable.git
+$ cd commentable
+$ npm install
+$ node server.js
+open http://localhost on Chrome/Firefox browser for viewer mode
+open http://localhost/broadcast.html on Chrome/Firefox browser for broadcasting mode
+```
+
+# Technical Details
+## broadcast.html について
+WebRTCによるP2P接続を利用していますので、利用するネットワーク環境（特に組織内ローカルネット等）によってはいわゆるNAT超えができずに映像配信が行えない場合がありますので、ご注意ください。
+
+## Limitation
+javascriptを利用したキャンバス上にコメントが表示されますが、これらをNDIやVritual Camera等を通じて直接他の配信ツールに映像を渡すことが現状では実装できていません。broadcast機能を利用して直接配信する分には問題はありませんが、多人数（殆どがこのケースでの利用かなと思います）の場合は他の配信ツールを利用してこのキャンバスをどうにかして配信することになると思います。Zoomの場合は画面の領域を直接キャプチャできる機能があるので、それをお使いください。
+
+# Contribution
+本プロジェクトをサポートしてくれる方、いらっしゃればご連絡いただけると幸いです。謝礼も検討できます。欲しい機能は次のとおりです。
+  - js canvasイメージのNDI送信
+  - リファクタリング
+  - 自動翻訳機能の実装
+
+# Requirement
+  - node.js: https://nodejs.org/en/
+  - p5.js( revised by Tetsuaki Baba ): https://p5js.org
+  - p5.sound.js: 
+  - WebRTC: https://developer.mozilla.org/ja/docs/Web/API/WebRTC_API
+  - speechSynthesis: https://developer.mozilla.org/ja/docs/Web/API/Window/speechSynthesis
+
+
 
 # Author
   * Tetsuaki Baba
@@ -41,4 +74,4 @@
     * https://tetsuakibaba.jp
 
 # License
-一部の音声ファイルを除き、CommentableはMITライセンスにて配布しています。
+一部の音声ファイルを除き、Commentableは MIT ライセンスにて配布しています。
