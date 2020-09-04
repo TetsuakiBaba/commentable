@@ -84,6 +84,7 @@ function getStream() {
 }
 
 function gotStream(stream) {
+
   window.stream = stream;
   videoSelect.selectedIndex = [...videoSelect.options].findIndex(
     option => option.text === stream.getVideoTracks()[0].label

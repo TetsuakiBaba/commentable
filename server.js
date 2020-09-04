@@ -33,7 +33,7 @@ function newConnection(socket) {
 var numUsers = 0;
 
 io.on('connection', (socket) => {
-
+    console.log(socket.id);
     var addedUser = false;
     // when the client emits 'new message', this listens and executes
     socket.on('new message', (data) => {
@@ -46,7 +46,8 @@ io.on('connection', (socket) => {
 
     // when the client emits 'new message', this listens and executes
     socket.on('comment', (data) => {
-        // we tell the client to execute 'new message'
+        // we tell the cli"ent to execute 'new message'
+        console.log("hello", socket.broadcast);
         socket.broadcast.emit('comment', data);
     });
 

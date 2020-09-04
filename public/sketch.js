@@ -182,14 +182,24 @@ function preloadJSON(jsonData) {
   api_key = data.key;
 }
 
+function changedVideoDevice() {
+  console.log('Device Id:', this.value());
+}
+
 const video = document.querySelector("video");
 function setup() {
   let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
   select("#text_my_name").value(str_name);
 
-  getStream()
-    .then(getDevices)
-    .then(gotDevices);
+  // getStream()
+  //   .then(getDevices)
+  //   .then(gotDevices);
+  // set all available video/audio devices to #videoSource
+  attachVideoDevicesToSelect("#videoSource");
+
+  var video_device = document.getElementById("videoSource");
+  console.log(video_device);
+  select("#videoSource").changed(changedVideoDevice);
 
 
 
