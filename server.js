@@ -10,7 +10,8 @@ let broadcaster;
 var socket = require('socket.io');
 const options = {
     serveClient: true,
-    pingTimeout: 60000 * 120
+    pingTimeout: 5000,
+    allowUpgrades: false
     //pingInterval: 5000,
     //transports: ['polling']
     //transports: ['websockets']

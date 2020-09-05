@@ -536,13 +536,10 @@ function pushedSendButton() {
     document.getElementById("text_comment").value, false,
     document.getElementById("text_my_name").value,
     false, 0,
-    false, 0);
+    false, 0,
+    -1);
 }
 
-
-function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound) {
-  sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, -1);
-}
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
@@ -572,6 +569,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     if (_str_comment.length > 0) {
       socket.emit("comment", data);
     }
+
     newComment(data);
 
 
@@ -665,7 +663,8 @@ function sendImageReaction01() {
     document.getElementById("text_comment").value, false,
     document.getElementById("text_my_name").value,
     true, 0,
-    false, 0);
+    false, 0,
+    -1);
 }
 
 function sendEmojiReaction() {
@@ -673,7 +672,8 @@ function sendEmojiReaction() {
     this.html(), true,
     document.getElementById("text_my_name").value,
     false, 0,
-    false, 0
+    false, 0,
+    -1
   );
 }
 function sendSoundReaction() {
@@ -682,7 +682,8 @@ function sendSoundReaction() {
     this.html(), false,
     document.getElementById("text_my_name").value,
     false, 0,
-    true, id_sound
+    true, id_sound,
+    -1
   );
   if (id_sound == 0) { // Camera
     flash.do();
