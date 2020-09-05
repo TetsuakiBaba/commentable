@@ -10,9 +10,10 @@ let broadcaster;
 var socket = require('socket.io');
 const options = {
     serveClient: true,
-    pingTimeout: 30000,
-    pingInterval: 5000
-    // transports: ['polling']
+    pingTimeout: 60000 * 120
+    //pingInterval: 5000,
+    //transports: ['polling']
+    //transports: ['websockets']
 }
 var io = socket(server, options);
 //io.sockets.on('connection', newConnection);
@@ -47,7 +48,6 @@ io.on('connection', (socket) => {
     // when the client emits 'new message', this listens and executes
     socket.on('comment', (data) => {
         // we tell the cli"ent to execute 'new message'
-        console.log("hello", socket.broadcast);
         socket.broadcast.emit('comment', data);
     });
 

@@ -189,8 +189,9 @@ function changedVideoDevice() {
 const video = document.querySelector("video");
 function setup() {
   let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
-  select("#text_my_name").value(str_name);
+  //setupOsc(12000, 3334);
 
+  select("#text_my_name").value(str_name);
   // getStream()
   //   .then(getDevices)
   //   .then(gotDevices);
