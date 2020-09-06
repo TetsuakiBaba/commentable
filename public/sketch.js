@@ -507,7 +507,7 @@ function draw() {
   for (var i = 0; i < max_number_of_comment; i++) {
     if (comments[i].getLife() > 0) {
       comments[i].update();
-      comments[i].draw();
+      if (flg_noDraw == false) comments[i].draw();
     }
 
   }
@@ -788,11 +788,11 @@ function toggleDraw() {
   flg_noDraw = this.checked();
   let canvas_element = document.getElementById("sketch-holder");
   if (flg_noDraw) {
-    noLoop();
+    //noLoop();
     canvas_element.style.display = "none";
   }
   else {
-    loop();
+    //loop();
     canvas_element.style.display = "block";
   }
 }
