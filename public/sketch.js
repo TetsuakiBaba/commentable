@@ -8,6 +8,7 @@ var sound_chime;
 
 var flg_chime;
 var flg_clock;
+var flg_noDraw;
 var time_start;
 var time_start_hour;
 var time_start_minute;
@@ -346,6 +347,7 @@ function setup() {
   select("#checkbox_chime").mouseClicked(toggleChime);
   select("#checkbox_clock").mouseClicked(toggleClock);
   select("#checkbox_speech").mouseClicked(toggleSpeech);
+  select("#checkbox_noDraw").mouseClicked(toggleDraw);
 
   select("#time_start").changed(updateStartTime);
   select("#time_end").changed(updateEndTime);
@@ -358,6 +360,7 @@ function setup() {
   flg_chime = document.getElementById("checkbox_chime").checked;
   flg_clock = document.getElementById("checkbox_clock").checked;
   flg_speech = document.getElementById("checkbox_speech").checked;
+  flg_noDraw = document.getElementById("checkbox_noDraw").checked;
 
   time_start = document.getElementById("time_start").value;
   time_end = document.getElementById("time_end").value;
@@ -778,6 +781,19 @@ function toggleSpeech() {
   else {
     // set normal(primary) button class
     document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
+  }
+}
+
+function toggleDraw() {
+  flg_noDraw = this.checked();
+  let canvas_element = document.getElementById("sketch-holder");
+  if (flg_noDraw) {
+    noLoop();
+    canvas_element.style.display = "none";
+  }
+  else {
+    loop();
+    canvas_element.style.display = "block";
   }
 }
 
