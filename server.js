@@ -9,9 +9,8 @@ let broadcaster;
 //console.log("My socket server is runnning");
 var socket = require('socket.io');
 const options = {
-    serveClient: true,
-    pingTimeout: 5000,
-    allowUpgrades: false
+    serveClient: true
+    //pingTimeout: 25000,
     //pingInterval: 5000,
     //transports: ['polling']
     //transports: ['websockets']
