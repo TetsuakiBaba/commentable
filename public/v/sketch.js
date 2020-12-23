@@ -182,9 +182,7 @@ function setup() {
     });
     socket.on('reconnect', () => {
         log('you have been reconnected');
-        if (username) {
-            socket.emit('add user', username);
-        }
+        socket.emit('add user', "vuser");
     });
     socket.on('login', (data) => {
         document.getElementById('text_number_of_joined').value = str(data.numUsers);
