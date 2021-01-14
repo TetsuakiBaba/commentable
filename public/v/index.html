@@ -4,7 +4,8 @@
 <head>
 
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
 
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
@@ -21,10 +22,6 @@
         <!-- <h1 class="display-4">Commentable Camera</h1> -->
         <p class="lead"><img src="../assets/logo.png"></p>
 
-
-
-
-
         <div class="input-group">
             <div class="input-group-prepend">
                 <span class="input-group-text" id="name">Name </span>
@@ -34,32 +31,52 @@
             <div class="input-group-prepend">
                 <span class="input-group-text" id="icon_number_of_joined">👤 </span>
             </div>
-            <input class="form-control" size="5" type="text" id="text_number_of_joined" placeholder="Number of connected user" readonly></input>
+            <input class="form-control" size="5" type="text" id="text_number_of_joined"
+                placeholder="Number of connected user" readonly></input>
         </div>
 
 
         <hr>
 
+        <button id="button_emoji_reaction_01" class="btn btn-primary btn-lg">👍</button>
+        <button id="button_emoji_reaction_02" class="btn btn-primary btn-lg">🙏</button>
+        <button id="button_emoji_reaction_03" class="btn btn-primary btn-lg">🙋</button>
+        <button id="button_emoji_reaction_04" class="btn btn-primary btn-lg">🥺</button>
+        <button id="button_sound_reaction_00" value="0" class="btn btn-danger btn-lg">&#x1f4f8;</button>
+        <button id="button_sound_reaction_01" value="1" class="btn btn-danger btn-lg">👏</button>
+        <button id="button_sound_reaction_02" value="2" class="btn btn-danger btn-lg">🎉</button>
+        <button id="button_sound_reaction_03" value="3" class="btn btn-danger btn-lg">へぇ〜</button>
+        <button id="button_sound_reaction_05" value="5" class="btn btn-danger btn-lg">OK</button>
+        <button id="button_sound_reaction_08" value="8" class="btn btn-danger btn-lg">LOL</button>
+        <button id="button_sound_reaction_09" value="9" class="btn btn-danger btn-lg">w</button>
+
+
+
+
+        <hr>
 
 
         <div class="input-group input-group-lg">
             <div class="input-group-prepend">
-                <button id="button_send" class="btn btn-outline-primary btn-sm">
-                Send
+                <button id="button_send" class="btn btn-outline-primary btn-lg">
+                    Send
                 </button>
             </div>
             <div class="input-group-prepend">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
                 <span class="sr-only">Toggle Dropdown</span>
 
                 <div class="dropdown-menu">
                     <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text Color</input>
                     </li>
-                    <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> outline color</input>
+                    <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> Outline
+                        color</input>
                     </li>
-                    <li class="dropdown-item"><input type="color" id="color_background" value="#FFFBF2">background</input>
+                    <li class="dropdown-item"><input type="color" id="color_background" value="#FFFBF2">
+                        Background</input>
                     </li>
-                    <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2">speech</li>
+                    <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li>
                 </div>
             </div>
 
@@ -67,30 +84,14 @@
             <input type="text" class="form-control" placeholder="type your comment" id="text_comment" size="40"></input>
         </div>
         <hr>
-        <div class="input-group input-group-lg">
-            <div class="input-group-prepend">
-                <button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button>
-            </div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-lg">🙏</button></div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-lg">🙋</button></div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_04" class="btn btn-outline-primary btn-lg">🥺</button></div>
 
-
-            <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-lg">&#x1f4f8;</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-lg">👏</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-lg">🎉</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_05" value="5" class="btn btn-outline-danger btn-lg">OK</button></div>
-
-
-        </div>
-
-        <hr>
         <div class="input-group input-group-sm">
-            <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History"></textarea>
+            <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
+                placeholder="Comment History"></textarea>
 
         </div>
         <button type="button" class="btn btn-outline-secondary btn-sm" id="download_all_comments">Download
-      Comments</button>
+            Comments</button>
         <hr>
 
 
@@ -116,9 +117,15 @@
 
 
 
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
 
 </body>
 
