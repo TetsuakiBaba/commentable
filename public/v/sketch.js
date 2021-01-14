@@ -83,7 +83,7 @@ function setup() {
                 socket.emit("answer", id, peerConnection.localDescription);
             });
 
-        peerConnection.ontrack = event => {};
+        peerConnection.ontrack = event => { };
         peerConnection.onicecandidate = event => {
             if (event.candidate) {
                 socket.emit("candidate", id, event.candidate);
@@ -131,10 +131,12 @@ function setup() {
     select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
     select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
 
+
     select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_02").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_03").mouseClicked(sendSoundReaction);
+    select("#button_sound_reaction_04").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_05").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
     select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);
