@@ -134,5 +134,9 @@ textarea{
   color: hsl(30, 70%, 50%);
 }
 .nav a:active {
-  background: #f5f5f5;
+  background: #b7ffcf;
+}
+
+.nav a.sound:active {
+  background: #ffc5c5;
 }

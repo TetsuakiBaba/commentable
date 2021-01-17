@@ -10,10 +10,10 @@ let broadcaster;
 var socket = require('socket.io');
 const options = {
     serveClient: true
-    //pingTimeout: 25000,
-    //pingInterval: 5000,
-    //transports: ['polling']
-    //transports: ['websockets']
+        //pingTimeout: 25000,
+        //pingInterval: 5000,
+        //transports: ['polling']
+        //transports: ['websockets']
 }
 var io = socket(server, options);
 //io.sockets.on('connection', newConnection);
@@ -53,6 +53,11 @@ io.on('connection', (socket) => {
 
     socket.on('stop streaming', () => {
         socket.broadcast.emit('stop streaming');
+    });
+
+    socket.on('telop', (data) => {
+        socket.broadcast.emit('telop', data);
+        console.log(data);
     });
 
     // when the client emits 'add user', this listens and executes
@@ -121,4 +126,3 @@ io.on('connection', (socket) => {
         }
     });
 });
-

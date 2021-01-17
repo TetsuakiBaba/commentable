@@ -2,13 +2,20 @@ var api_key;
 var socket;
 var flg_sound_mute = true;
 var comments = []; //new Array(50);
+var telop;
 var max_number_of_comment = 50;
 var sound;
 var sound_chime;
+var sound_dodon;
+var sound_drumroll;
+var sound_dora;
+var sound_deden;
+var sound_pingpong;
 
 var flg_chime;
 var flg_clock;
 var flg_noDraw;
+
 var time_start;
 var time_start_hour;
 var time_start_minute;
@@ -19,12 +26,18 @@ var is_streaming = false;
 
 var p5_captures;
 
+var myRec = new p5.SpeechRec('', parseResult); // new P5.SpeechRec object
+var is_recognition_activated = false;
+
+
+
 let peerConnection;
 const config = {
     iceServers: [{
         urls: ["stun:stun.l.google.com:19302"]
     }]
 };
+
 
 class ProtofessionalEffect {
     constructor() {
@@ -141,6 +154,57 @@ class Comment {
     }
 }
 
+class Telop {
+    constructor() {
+        this.x = width / 2;
+        this.y = height / 2;
+        this.text = "sample text";
+        this.alpha = 255;
+        this.size = 72;
+    }
+    setColor(_color_text, _color_text_stroke) {
+        this.color_text = _color_text;
+        this.color_text_stroke = _color_text_stroke;
+    }
+    setText(_text) {
+        this.text = _text;
+        return;
+    }
+    setX(_x) {
+        this.x = _x;
+    }
+    setY(_y) {
+        this.y = _y;
+    }
+    playSound() {
+        // if (sound[this.id_sound].length > 1) {
+        //     let number = int(random(sound[this.id_sound].length));
+        //     sound[this.id_sound][number].setVolume(this.volume);
+        //     sound[this.id_sound][number].play();
+        // } else {
+        //     sound[this.id_sound].setVolume(this.volume);
+        //     sound[this.id_sound].play();
+        // }
+    }
+    update() {
+        return;
+    }
+    draw() {
+        this.size = width / 10.0;
+        textAlign(CENTER, CENTER);
+        textSize(this.size);
+        strokeWeight(5.0 * this.alpha / 255.0);
+        stroke(this.color_text_stroke + str(hex(this.alpha, 2)));
+        fill(this.color_text + str(hex(this.alpha, 2)));
+        text(this.text, this.x, this.y);
+
+        //imageMode(CENTER);
+        //image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
+
+        return;
+    }
+}
+
 
 var color_background;
 var color_text;
@@ -158,6 +222,7 @@ function preload() {
         comments[i] = new Comment();
         comments[i].setLife(0);
     }
+    telop = new Telop();
     sound_chime = loadSound('assets/chime.mp3');
     sound = [
         [loadSound('assets/camera1.mp3'), loadSound('assets/camera2.mp3'), loadSound('assets/camera3.mp3')],
@@ -170,6 +235,11 @@ function preload() {
         loadSound('assets/laugh2.mp3'),
         loadSound('assets/laugh3.mp3'), [loadSound('assets/kusa00.mp3'), loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'), loadSound('assets/kusa03.mp3'), loadSound('assets/kusa04.mp3'), loadSound('assets/kusa05.mp3')]
     ]
+    sound_dodon = loadSound('assets/和太鼓でドドン.mp3');
+    sound_drumroll = loadSound('assets/ドラムロールの音.mp3');
+    sound_dora = loadSound('assets/バーン.mp3');
+    sound_deden = loadSound('assets/クイズ出題1.mp3');
+    sound_pingpong = loadSound('assets/クイズ正解1.mp3');
     protofessional_effect = new ProtofessionalEffect();
 
 }
@@ -199,8 +269,6 @@ function setup() {
     var video_device = document.getElementById("videoSource");
     console.log(video_device);
     select("#videoSource").changed(changedVideoDevice);
-
-
 
     // Execute loadVoices.
     speech = new Speech();
@@ -234,6 +302,8 @@ function setup() {
 
 
     socket.on('comment', newComment);
+    socket.on('telop', newTelop);
+
     socket.on('disconnect', () => {
         log('you have been disconnected');
     });
@@ -377,10 +447,108 @@ function setup() {
         $("#msg").html("👍Your browser supports speech synthesis.");
     }
 
-
+    myRec.onEnd = endSpeech;
+    myRec.onStart = startSpeech();
+    myRec.continuous = false; // no continuous recognition
+    myRec.interimResults = true; // allow partial recognition (faster, less accurate)
+    //myRec.onResult = parseResult; // now in the constructor
+    is_recognition_activated = false;
+    myRec.rec.lang = 'ja';
+    select("#toggle_speech_recognition").mouseClicked(toggleSpeechRecognition);
 
     frameRate(30);
 }
+
+function toggleSpeechRecognition() {
+    is_recognition_activated = !is_recognition_activated;
+    if (is_recognition_activated == true) {
+        myRec.rec.lang = 'ja'; //document.getElementById("lang_speaking").value;
+        myRec.start();
+        this.html("音声認識中");
+        this.attribute('class', "btn btn-danger btn-sm");
+    } else {
+        myRec.stop();
+        this.html("音声認識を起動");
+        this.attribute('class', "btn btn-outline-primary btn-sm");
+    }
+}
+
+function parseResult() {
+    //document.getElementById("label").innerHTML = "speaking...";
+    document.getElementById("text_speech").value = myRec.resultString;
+
+    // リアルタイム文字起こしテロップを送信
+    var data = {
+        key: api_key,
+        name: document.getElementById('text_my_name').value,
+        text: myRec.resultString,
+        color_text: color_text,
+        color_text_stroke: color_text_stroke,
+    }
+    if (myRec.resultString.length > 0) {
+        socket.emit("telop", data);
+    }
+
+    newTelop(data);
+}
+
+
+function startSpeech() {
+    console.log("start");
+}
+
+function endSpeech() {
+    if (is_recognition_activated == true) {
+        if (!myRec.resultValue) {
+            myRec.start(); // start engine
+            return;
+        }
+        if (myRec.resultString.length > 0) {
+            console.log("End");
+            //document.getElementById("label").innerHTML = "quiet";
+            //document.getElementById("text_speech").innerHTML += myRec.resultString + "。";
+            //here
+            // 効果音再生コマンド文言がある場合は該当する効果音を再生
+            if (myRec.resultString.indexOf('どどん') !== -1 ||
+                myRec.resultString.indexOf('ドドン') !== -1) {
+                sound_dodon.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_dodon.play();
+            } else if (myRec.resultString.indexOf('ドラムロール') !== -1) {
+                sound_drumroll.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_drumroll.play();
+            } else if (myRec.resultString.indexOf('ドラ') !== -1) {
+                sound_dora.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_dora.play();
+            } else if (myRec.resultString.indexOf('問題です') !== -1) {
+                sound_deden.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_deden.play();
+
+            } else if (myRec.resultString.indexOf('正解です') !== -1) {
+                sound_pingpong.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_pingpong.play();
+            }
+
+
+            document.getElementById("text_speech").value = "";
+            myRec.resultString = '';
+            telop.setText('');
+            // リアルタイム文字起こしテロップを送信
+            var data = {
+                key: api_key,
+                name: document.getElementById('text_my_name').value,
+                text: '',
+                color_text: color_text,
+                color_text_stroke: color_text_stroke,
+            }
+            socket.emit("telop", data);
+
+        }
+        myRec.start(); // start engine
+    }
+}
+
+
+
 
 function touchStarted() {
     if (getAudioContext().state !== 'running') {
@@ -388,6 +556,29 @@ function touchStarted() {
     }
 }
 var count_comment = 0;
+
+function newTelop(data) {
+    count_comment++;
+    console.log(data);
+
+    let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    comment_format += data.text;
+    comment_format += " [telop]";
+
+    comment_format += "[" + data.name + "]" + "\n";
+    //here
+    select("#textarea_comment_history").html(comment_format, true);
+    var psconsole = $('#textarea_comment_history');
+    psconsole.scrollTop(
+        psconsole[0].scrollHeight - psconsole.height()
+    );
+
+    telop.setText(data.text);
+    telop.setX(width / 2);
+    telop.setY(height / 2);
+    telop.setColor(data.color_text, data.color_text_stroke);
+
+}
 
 function newComment(data) {
     count_comment++;
@@ -488,7 +679,9 @@ function draw() {
         document.getElementById("stream_time").value = nf(element.currentTime, 4);
         document.getElementById("stream_resolution").value = str(element.videoWidth) + "x" + str(element.videoHeight);
     } else {
-        background(color_background);
+        //background(color_background);
+        clear();
+        background(0, 0, 0, 0);
     }
     if (flg_camera_is_opened) {
         p5_captures.drawCamera(0, 0, width, height);
@@ -504,8 +697,13 @@ function draw() {
             comments[i].update();
             if (flg_noDraw == false) comments[i].draw();
         }
-
     }
+
+    if (document.getElementById('checkbox_telop').checked) {
+        telop.draw();
+    }
+
+
 
     protofessional_effect.draw();
     flash.draw();

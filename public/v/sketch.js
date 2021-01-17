@@ -25,8 +25,6 @@ const config = {
 };
 
 
-
-var color_background;
 var color_text;
 var color_text_stroke;
 var capture;
@@ -37,9 +35,9 @@ var flash;
 var speech;
 
 function setup() {
+
     textFont("Noto Sans JP");
 
-    color_background = document.getElementById("color_background").value;
     color_text = document.getElementById("color_text").value;
     color_text_stroke = document.getElementById("color_text_stroke").value;
 
@@ -83,7 +81,7 @@ function setup() {
                 socket.emit("answer", id, peerConnection.localDescription);
             });
 
-        peerConnection.ontrack = event => { };
+        peerConnection.ontrack = event => {};
         peerConnection.onicecandidate = event => {
             if (event.candidate) {
                 socket.emit("candidate", id, event.candidate);
@@ -121,7 +119,7 @@ function setup() {
 
 
     select("#button_send").mouseClicked(pushedSendButton);
-    select("#color_background").changed(changeBackgroundColor);
+    select("#checkbox_speech").mouseClicked(toggleSpeech);
     select("#color_text").changed(changeTextColor);
     select("#color_text_stroke").changed(changeTextOutlineColor);
 
@@ -271,9 +269,7 @@ function clearTextBox() {
     document.getElementById("text_comment").value = "";
 }
 
-function changeBackgroundColor() {
-    color_background = this.value();
-}
+
 
 function changeRoomName() {
 
@@ -289,14 +285,6 @@ function changeTextOutlineColor() {
 
 function windowResized() {
 
-}
-
-function sendImageReaction01() {
-    sendComment(
-        document.getElementById("text_comment").value, false,
-        document.getElementById("text_my_name").value,
-        true, 0,
-        false, 0, -1);
 }
 
 function sendEmojiReaction() {
