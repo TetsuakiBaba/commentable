@@ -11,6 +11,8 @@ var sound_drumroll;
 var sound_dora;
 var sound_deden;
 var sound_pingpong;
+var sound_chin;
+var sound_kansei;
 
 var flg_chime;
 var flg_clock;
@@ -240,6 +242,8 @@ function preload() {
     sound_dora = loadSound('../assets/dora.mp3');
     sound_deden = loadSound('../assets/quiz.mp3');
     sound_pingpong = loadSound('../assets/seikai.mp3');
+    sound_chin = loadSound('../assets/chin.mp3');
+    sound_kansei = loadSound('../assets/kansei.mp3');
     protofessional_effect = new ProtofessionalEffect();
 
 }
@@ -528,6 +532,12 @@ function endSpeech() {
             } else if (myRec.resultString.indexOf('正解です') !== -1) {
                 sound_pingpong.setVolume(parseFloat(document.getElementById('slider_volume').value));
                 sound_pingpong.play();
+            } else if (myRec.resultString.indexOf('残念') !== -1) {
+                sound_chin.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_chin.play();
+            } else if (myRec.resultString.indexOf('歓声') !== -1) {
+                sound_kansei.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_kansei.play();
             }
 
 
