@@ -235,8 +235,8 @@ function preload() {
         loadSound('assets/laugh2.mp3'),
         loadSound('assets/laugh3.mp3'), [loadSound('assets/kusa00.mp3'), loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'), loadSound('assets/kusa03.mp3'), loadSound('assets/kusa04.mp3'), loadSound('assets/kusa05.mp3')]
     ]
-    sound_dodon = loadSound('assets/和太鼓でドドン.mp3');
-    sound_drumroll = loadSound('assets/ドラムロールの音.mp3');
+    sound_dodon = loadSound('assets/dodon.mp3');
+    sound_drumroll = loadSound('assets/.mp3');
     sound_dora = loadSound('assets/バーン.mp3');
     sound_deden = loadSound('assets/クイズ出題1.mp3');
     sound_pingpong = loadSound('assets/クイズ正解1.mp3');
@@ -273,7 +273,7 @@ function setup() {
     // Execute loadVoices.
     speech = new Speech();
     //speech.loadVoices();
-    window.speechSynthesis.onvoiceschanged = function(e) {
+    window.speechSynthesis.onvoiceschanged = function (e) {
         speech.loadVoices();
     };
     p5_captures = new P5Captures();
