@@ -236,10 +236,10 @@ function preload() {
         loadSound('assets/laugh3.mp3'), [loadSound('assets/kusa00.mp3'), loadSound('assets/kusa01.mp3'), loadSound('assets/kusa02.mp3'), loadSound('assets/kusa03.mp3'), loadSound('assets/kusa04.mp3'), loadSound('assets/kusa05.mp3')]
     ]
     sound_dodon = loadSound('assets/dodon.mp3');
-    sound_drumroll = loadSound('assets/.mp3');
-    sound_dora = loadSound('assets/バーン.mp3');
-    sound_deden = loadSound('assets/クイズ出題1.mp3');
-    sound_pingpong = loadSound('assets/クイズ正解1.mp3');
+    sound_drumroll = loadSound('assets/drumroll.mp3');
+    sound_dora = loadSound('assets/dora.mp3');
+    sound_deden = loadSound('assets/quiz.mp3');
+    sound_pingpong = loadSound('assets/seikai.mp3');
     protofessional_effect = new ProtofessionalEffect();
 
 }
