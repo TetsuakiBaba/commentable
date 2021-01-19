@@ -260,7 +260,7 @@ function changedVideoDevice() {
 const video = document.querySelector("video");
 
 function setup() {
-    let str_name = prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
+    let str_name = "管理人"; //prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
     //setupOsc(12000, 3334);
 
     select("#text_my_name").value(str_name);
@@ -321,6 +321,15 @@ function setup() {
         log(data.username + ' left');
         document.getElementById('text_number_of_joined').value = str(data.numUsers);
     });
+
+    socket.on('display_clock', (data) => {
+        flg_clock = data.show;
+        document.getElementById('checkbox_clock').checked = flg_clock;
+
+        //here
+    });
+
+
     socket.on('reconnect', () => {
         log('you have been reconnected');
         if (username) {
@@ -965,6 +974,15 @@ function toggleChime() {
 
 function toggleClock() {
     flg_clock = this.checked();
+
+    // 時計表示メッセージ送信
+    var data = {
+        key: api_key,
+        name: document.getElementById('text_my_name').value,
+        show: this.checked()
+    }
+    socket.emit("display_clock", data);
+
 }
 
 function toggleSpeech() {
