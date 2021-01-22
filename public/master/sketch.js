@@ -13,6 +13,7 @@ var sound_deden;
 var sound_pingpong;
 var sound_chin;
 var sound_kansei;
+var sound_applause;
 
 var flg_chime;
 var flg_clock;
@@ -244,6 +245,7 @@ function preload() {
     sound_pingpong = loadSound('../assets/seikai.mp3');
     sound_chin = loadSound('../assets/chin.mp3');
     sound_kansei = loadSound('../assets/kansei.mp3');
+    sound_applause = loadSound('../assets/applause.mp3');
     protofessional_effect = new ProtofessionalEffect();
 
 }
@@ -439,6 +441,7 @@ function setup() {
     select("#button_sound_dora").mouseClicked(makeSound);
     select("#button_sound_chime").mouseClicked(makeSound);
     select("#button_sound_chin").mouseClicked(makeSound);
+    select("#button_sound_applause").mouseClicked(makeSound);
 
     select("#download_all_comments").mouseClicked(downloadAllComments);
     flg_chime = document.getElementById("checkbox_chime").checked;
@@ -490,6 +493,10 @@ function makeSound() {
     else if (this.value() == "sound_chin") {
         sound_chin.setVolume(parseFloat(document.getElementById('slider_volume').value));
         sound_chin.play();
+    }
+    else if (this.value() == "sound_applause") {
+        sound_applause.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_applause.play();
     }
 
 }
@@ -568,6 +575,10 @@ function endSpeech() {
             } else if (myRec.resultString.indexOf('歓声') !== -1) {
                 sound_kansei.setVolume(parseFloat(document.getElementById('slider_volume').value));
                 sound_kansei.play();
+            }
+            else if (myRec.resultString.indexOf('拍手') !== -1) {
+                sound_applause.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_applause.play();
             }
 
 
