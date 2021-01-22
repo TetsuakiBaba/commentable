@@ -59,6 +59,14 @@ textarea{
 
 
 
+:root{
+  --font-size: 3em;
+  --line-height:2em;
+  --width: 2.0em;
+  --height: 2.0em;
+  --margin:0.5em;
+}
+
 .nav {
   list-style: none;
   margin: 0;
@@ -88,13 +96,13 @@ textarea{
   box-shadow: 0 3px 8px #aaa, inset 0 2px 3px #fff;
   color: #878787;
   display: block;
-  font-size: 72px;
-  line-height: 144px;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
   text-decoration: none;
-  margin: 36px;
+  margin: var(--margin);
   position: relative;
-  width: 144px;
-  height: 144px;
+  width: var(--width);
+  height: var(--height);
 }
 
 .nav a.sound {
@@ -104,13 +112,13 @@ textarea{
   box-shadow: 0 3px 8px #aaa, inset 0 2px 3px #fff;
   color: #878787;
   display: block;
-  font-size: 72px;
-  line-height: 144px;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
   text-decoration: none;
-  margin: 36px;
+  margin: var(--margin);
   position: relative;
-  width: 144px;
-  height: 144px;
+  width: var(--width);
+  height: var(--height);
 }
 
 .nav a:before {

@@ -436,6 +436,10 @@ function setup() {
     select("#slider_stream_volume").changed(changeStreamVolume);
     select("#button_stream_sound_mute").mouseClicked(toggleStreamMute);
 
+    select("#button_sound_dora").mouseClicked(makeSound);
+    select("#button_sound_chime").mouseClicked(makeSound);
+    select("#button_sound_chin").mouseClicked(makeSound);
+
     select("#download_all_comments").mouseClicked(downloadAllComments);
     flg_chime = document.getElementById("checkbox_chime").checked;
     flg_clock = document.getElementById("checkbox_clock").checked;
@@ -472,6 +476,23 @@ function setup() {
     frameRate(30);
 }
 
+function makeSound() {
+    console.log(this.value());
+
+    if (this.value() == "sound_dora") {
+        sound_dora.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_dora.play();
+    }
+    else if (this.value() == "sound_chime") {
+        sound_chime.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_chime.play();
+    }
+    else if (this.value() == "sound_chin") {
+        sound_chin.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_chin.play();
+    }
+
+}
 function toggleSpeechRecognition() {
     is_recognition_activated = !is_recognition_activated;
     if (is_recognition_activated == true) {
