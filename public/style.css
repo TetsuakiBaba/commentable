@@ -105,6 +105,10 @@ textarea{
   height: var(--height);
 }
 
+.nav a .description{
+  font-size: 5px;
+}
+
 .nav a.sound {
   background-color: #f7f7f7;
   background-image: linear-gradient(#f7f7f7, #ffc5c5);

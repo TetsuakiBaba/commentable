@@ -231,12 +231,13 @@ function preload() {
         [loadSound('../assets/camera1.mp3'), loadSound('../assets/camera2.mp3'), loadSound('../assets/camera3.mp3')],
         [loadSound('../assets/clap1.mp3'), loadSound('../assets/clap2.mp3'), loadSound('../assets/clap3.mp3'), loadSound('../assets/clap4.mp3'), loadSound('../assets/clap5.mp3'), loadSound('../assets/clap6.mp3'), loadSound('../assets/clap7.mp3'), loadSound('../assets/clap8.mp3')],
         loadSound('../assets/cracker.mp3'),
+        loadSound('../assets/kansei.mp3'),
         loadSound('../assets/he.wav'),
         loadSound('../assets/chottomatte.wav'),
         loadSound('../assets/OK.wav'),
-        loadSound('../assets/laugh1.mp3'),
-        loadSound('../assets/laugh2.mp3'),
-        loadSound('../assets/laugh3.mp3'), [loadSound('../assets/kusa00.mp3'), loadSound('../assets/kusa01.mp3'), loadSound('../assets/kusa02.mp3'), loadSound('../assets/kusa03.mp3'), loadSound('../assets/kusa04.mp3'), loadSound('../assets/kusa05.mp3')]
+        loadSound('../assets/punch.mp3'),
+        loadSound('../assets/laugh3.mp3'),
+        [loadSound('../assets/kusa00.mp3'), loadSound('../assets/kusa01.mp3'), loadSound('../assets/kusa02.mp3'), loadSound('../assets/kusa03.mp3'), loadSound('../assets/kusa04.mp3'), loadSound('../assets/kusa05.mp3')]
     ]
     sound_dodon = loadSound('../assets/dodon.mp3');
     sound_drumroll = loadSound('../assets/drumroll.mp3');
@@ -566,6 +567,9 @@ function endSpeech() {
                 sound_deden.setVolume(parseFloat(document.getElementById('slider_volume').value));
                 sound_deden.play();
 
+            } else if (myRec.resultString.indexOf('チャイム') !== -1) {
+                sound_chime.setVolume(parseFloat(document.getElementById('slider_volume').value));
+                sound_chime.play();
             } else if (myRec.resultString.indexOf('正解です') !== -1) {
                 sound_pingpong.setVolume(parseFloat(document.getElementById('slider_volume').value));
                 sound_pingpong.play();
@@ -919,6 +923,7 @@ function sendEmojiReaction() {
 
 function sendSoundReaction() {
     var id_sound = this.attribute("value");
+    console.log(id_sound);
     sendComment(
         this.html(), false,
         document.getElementById("text_my_name").value,
