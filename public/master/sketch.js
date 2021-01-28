@@ -331,8 +331,8 @@ function setup() {
     //socket = io.connect('https://commentable.lolipop.io')
     socket = io.connect(window.location.origin);
     // Tell the server your username
-    socket.emit('add user', "test user");
-
+    //socket.emit('add user', "test user");
+    socket.emit('add master', "master user");
 
 
     socket.on('comment', newComment);

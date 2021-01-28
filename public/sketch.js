@@ -213,8 +213,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
         }
 
         newComment(data);
-
-
         clearTextBox();
     } else {
         var data = {

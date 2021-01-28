@@ -60,11 +60,12 @@ textarea{
 
 
 :root{
-  --font-size: 3em;
-  --line-height:2em;
-  --width: 2.0em;
-  --height: 2.0em;
+  --font-size: 2em;
+  --line-height:1.7em;
+  --width: 1.7em;
+  --height: 1.7em;
   --margin:0.5em;
+  --margin-frame: -0.3em;
 }
 
 .nav {
@@ -133,10 +134,10 @@ textarea{
   content: '';
   display: block;
   position: absolute;
-  left: -18px;
-  right: -18px;
-  top: -18px;
-  bottom: -18px;
+  left: var(--margin-frame);
+  right: var(--margin-frame);
+  top: var(--margin-frame);
+  bottom: var(--margin-frame);
   z-index: -1;
 }
 .nav a:visited {
