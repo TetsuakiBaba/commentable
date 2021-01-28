@@ -219,34 +219,44 @@ var flash;
 
 var speech;
 
+function printLoadedSound(count_loaded) {
+    console.log(count_loaded);
+    document.getElementById('p5_loading').innerHTML = str(count_loaded) + ' files loaded.';
+}
 function preload() {
+    let count_loaded = 0;
+
     json = loadJSON('../api_key.json', preloadJSON);
     for (var i = 0; i < max_number_of_comment; i++) {
         comments[i] = new Comment();
         comments[i].setLife(0);
     }
     telop = new Telop();
-    sound_chime = loadSound('../assets/chime.mp3');
+
+    // Load sound files
+    sound_chime = loadSound('../assets/chime.mp3', printLoadedSound(++count_loaded));
+
+
     sound = [
-        [loadSound('../assets/camera1.mp3'), loadSound('../assets/camera2.mp3'), loadSound('../assets/camera3.mp3')],
-        [loadSound('../assets/clap1.mp3'), loadSound('../assets/clap2.mp3'), loadSound('../assets/clap3.mp3'), loadSound('../assets/clap4.mp3'), loadSound('../assets/clap5.mp3'), loadSound('../assets/clap6.mp3'), loadSound('../assets/clap7.mp3'), loadSound('../assets/clap8.mp3')],
-        loadSound('../assets/cracker.mp3'),
-        loadSound('../assets/kansei.mp3'),
-        loadSound('../assets/he.wav'),
-        loadSound('../assets/chottomatte.wav'),
-        loadSound('../assets/OK.wav'),
-        loadSound('../assets/punch.mp3'),
-        loadSound('../assets/laugh3.mp3'),
-        [loadSound('../assets/kusa00.mp3'), loadSound('../assets/kusa01.mp3'), loadSound('../assets/kusa02.mp3'), loadSound('../assets/kusa03.mp3'), loadSound('../assets/kusa04.mp3'), loadSound('../assets/kusa05.mp3')]
+        [loadSound('../assets/camera1.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/camera2.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/camera3.mp3', printLoadedSound(++count_loaded))],
+        [loadSound('../assets/clap1.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap2.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap3.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap4.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap5.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap6.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap7.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/clap8.mp3', printLoadedSound(++count_loaded))],
+        loadSound('../assets/cracker.mp3', printLoadedSound(++count_loaded)),
+        loadSound('../assets/kansei.mp3', printLoadedSound(++count_loaded)),
+        loadSound('../assets/he.wav', printLoadedSound(++count_loaded)),
+        loadSound('../assets/chottomatte.wav', printLoadedSound(++count_loaded)),
+        loadSound('../assets/OK.wav', printLoadedSound(++count_loaded)),
+        loadSound('../assets/punch.mp3', printLoadedSound(++count_loaded)),
+        loadSound('../assets/laugh3.mp3', printLoadedSound(++count_loaded)),
+        [loadSound('../assets/kusa00.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/kusa01.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/kusa02.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/kusa03.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/kusa04.mp3', printLoadedSound(++count_loaded)), loadSound('../assets/kusa05.mp3', printLoadedSound(++count_loaded))]
     ]
-    sound_dodon = loadSound('../assets/dodon.mp3');
-    sound_drumroll = loadSound('../assets/drumroll.mp3');
-    sound_dora = loadSound('../assets/dora.mp3');
-    sound_deden = loadSound('../assets/quiz.mp3');
-    sound_pingpong = loadSound('../assets/seikai.mp3');
-    sound_chin = loadSound('../assets/chin.mp3');
-    sound_kansei = loadSound('../assets/kansei.mp3');
-    sound_applause = loadSound('../assets/applause.mp3');
+    sound_dodon = loadSound('../assets/dodon.mp3', printLoadedSound(++count_loaded));
+    sound_drumroll = loadSound('../assets/drumroll.mp3', printLoadedSound(++count_loaded));
+    sound_dora = loadSound('../assets/dora.mp3', printLoadedSound(++count_loaded));
+    sound_deden = loadSound('../assets/quiz.mp3', printLoadedSound(++count_loaded));
+    sound_pingpong = loadSound('../assets/seikai.mp3', printLoadedSound(++count_loaded));
+    sound_chin = loadSound('../assets/chin.mp3', printLoadedSound(++count_loaded));
+    sound_kansei = loadSound('../assets/kansei.mp3', printLoadedSound(++count_loaded));
+    sound_applause = loadSound('../assets/applause.mp3', printLoadedSound(++count_loaded));
     protofessional_effect = new ProtofessionalEffect();
 
 }
