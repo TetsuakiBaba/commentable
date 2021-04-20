@@ -6,7 +6,6 @@ var app = express();
 var server = app.listen(port);
 app.use(express.static('./public'));
 let broadcaster;
-//console.log("My socket server is runnning");
 var socket = require('socket.io');
 const options = {
     serveClient: true
@@ -16,19 +15,6 @@ const options = {
     //transports: ['websockets']
 }
 var io = socket(server, options);
-//io.sockets.on('connection', newConnection);
-
-/*
-function newConnection(socket) {
-    //console.log('new connection: ' + socket.id + '('+ socket.handshake.address + ')');
-    socket.on('comment', commentMsg);
-    function commentMsg(data) {
-        if (data.key == key) {
-            socket.broadcast.emit('comment', data);
-        }
-    }
-}
-*/
 
 // Chatroom
 var numUsers = 0;
@@ -36,6 +22,8 @@ var numUsers = 0;
 io.on('connection', (socket) => {
     console.log(socket.id);
     var addedUser = false;
+    var addedMaster = false;
+
     // when the client emits 'new message', this listens and executes
     socket.on('new message', (data) => {
         // we tell the client to execute 'new message'
@@ -56,11 +44,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('telop', (data) => {
-        socket.broadcast.emit('telop', data);
+        socket.broadcast.to('master').emit('telop', data);
     });
 
     socket.on('display_clock', (data) => {
-        socket.broadcast.emit('display_clock', data);
+        socket.broadcast.to('master').emit('display_clock', data);
     });
 
     // when the client emits 'add user', this listens and executes
@@ -69,6 +57,7 @@ io.on('connection', (socket) => {
 
         // we store the username in the socket session for this client
         socket.username = socket.id; //username;
+
         ++numUsers;
         addedUser = true;
         socket.emit('login', {
@@ -79,6 +68,11 @@ io.on('connection', (socket) => {
             username: socket.username,
             numUsers: numUsers
         });
+    });
+
+    // when a master emits 'add master'
+    socket.on('add master', (username) => {
+        socket.join('master');
     });
 
     // when the client emits 'typing', we broadcast it to others

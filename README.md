@@ -52,9 +52,16 @@ The following links are provided as a demo, so please deploy to a node.js-enable
 
 
 
-## 他の配信ツールとの併用
+## 他の配信ツール（OBS以外）との併用
 下記の受信、コメントページを開き、画面共有ボタンを押し、ブラウザ窓または、表示箇所を個別に配信に利用してください。配信者は受信、自身の画面キャプチャやカメラ画像の上にコメントが表示されるので、その内容をZoomやhangoutなどを利用して共有してください。
   * 受信、コメントページ：https://commentable-demo.herokuapp.com/
+
+Go to the receive and comment page below, click on the share screen button, and use the browser window or the display area individually for distribution. The sender will see the comments on top of their screen capture or camera image, and they can share the comments using Zoom or hangout.
+* viewe and comment page：https://commentable-demo.herokuapp.com/
+
+## OBSとの併用
+OBSのソースからブラウザを選択し，下記アドレスを読み込んでください．あとは自動で透過処理されたコメントページができたがるので，好きなようにご利用ください．
+  * 受信、コメントページ：https://commentable-demo.herokuapp.com/master
 
 Go to the receive and comment page below, click on the share screen button, and use the browser window or the display area individually for distribution. The sender will see the comments on top of their screen capture or camera image, and they can share the comments using Zoom or hangout.
 * viewe and comment page：https://commentable-demo.herokuapp.com/
