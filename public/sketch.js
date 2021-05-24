@@ -15,6 +15,8 @@ var time_end_hour;
 var time_end_minute;
 var is_streaming = false;
 
+var timestamp_last_send
+
 var p5_captures;
 var flg_speech;
 let peerConnection;
@@ -149,6 +151,8 @@ function setup() {
         document.getElementById("text_my_name").value = decodeURIComponent(params.room);
     }
 
+    timestamp_last_send = millis();
+    console.log(timestamp_last_send);
     noCanvas();
 }
 
@@ -156,6 +160,7 @@ function setup() {
 var count_comment = 0;
 
 function newComment(data) {
+
     count_comment++;
 
     let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
@@ -171,8 +176,8 @@ function newComment(data) {
     psconsole.scrollTop(
         psconsole[0].scrollHeight - psconsole.height()
     );
-}
 
+}
 
 function pushedSendButton() {
     sendComment(
@@ -186,50 +191,55 @@ function pushedSendButton() {
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
-    if (_flg_img == false) {
-        if (_str_comment.length <= 0) {
-            return;
-        }
-        if (_str_comment.length > 80) {
-            alert("一度に遅れる文字数は80文字までです．");
-            return;
-        }
-        var data = {
-            key: api_key,
-            my_name: _str_my_name,
-            comment: _str_comment,
-            flg_speech: flg_speech,
-            color_text: color_text,
-            color_text_stroke: color_text_stroke,
-            flg_emoji: _flg_emoji,
-            flg_image: false,
-            id_image: 0,
-            flg_sound: _flg_sound,
-            id_sound: _id_sound,
-            hidden: _hidden
-        }
-        if (_str_comment.length > 0) {
+    if ((millis() - timestamp_last_send) > 5000) {
+        if (_flg_img == false) {
+            if (_str_comment.length <= 0) {
+                return;
+            }
+            if (_str_comment.length > 80) {
+                alert("一度に遅れる文字数は80文字までです．");
+                return;
+            }
+            var data = {
+                key: api_key,
+                my_name: _str_my_name,
+                comment: _str_comment,
+                flg_speech: flg_speech,
+                color_text: color_text,
+                color_text_stroke: color_text_stroke,
+                flg_emoji: _flg_emoji,
+                flg_image: false,
+                id_image: 0,
+                flg_sound: _flg_sound,
+                id_sound: _id_sound,
+                hidden: _hidden
+            }
+            if (_str_comment.length > 0) {
+                socket.emit("comment", data);
+            }
+
+            newComment(data);
+            clearTextBox();
+        } else {
+            var data = {
+                room_name: _str_room_name,
+                comment: "",
+                flg_speech: flg_speech,
+                color_text: color_text,
+                color_text_stroke: color_text_stroke,
+                flg_image: true,
+                id_image: 0,
+                flg_sound: _flg_sound,
+                id_sound: _id_sound
+            }
             socket.emit("comment", data);
+            newComment(data);
         }
-
-        newComment(data);
-        clearTextBox();
-    } else {
-        var data = {
-            room_name: _str_room_name,
-            comment: "",
-            flg_speech: flg_speech,
-            color_text: color_text,
-            color_text_stroke: color_text_stroke,
-            flg_image: true,
-            id_image: 0,
-            flg_sound: _flg_sound,
-            id_sound: _id_sound
-        }
-        socket.emit("comment", data);
-        newComment(data);
+        timestamp_last_send = millis();
     }
-
+    else {
+        alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。");
+    }
 }
 
 
