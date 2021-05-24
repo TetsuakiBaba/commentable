@@ -121,6 +121,7 @@ function setup() {
 
 
     select("#button_send").mouseClicked(pushedSendButton);
+    select("#button_send_letter").mouseClicked(pushedSendLetterButton);
     select("#checkbox_speech").mouseClicked(toggleSpeech);
     select("#color_text").changed(changeTextColor);
     select("#color_text_stroke").changed(changeTextOutlineColor);
@@ -130,6 +131,7 @@ function setup() {
     select("#button_emoji_reaction_02").mouseClicked(sendEmojiReaction);
     select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
     select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
+    select("#button_emoji_reaction_05").mouseClicked(sendEmojiReaction);
 
 
     select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
@@ -185,6 +187,13 @@ function pushedSendButton() {
         document.getElementById("text_my_name").value,
         false, 0,
         false, 0, -1);
+}
+
+function pushedSendLetterButton() {
+    sendLetter(
+        document.getElementById("text_letter").value,
+        document.getElementById("text_my_name").value
+    );
 }
 
 
@@ -243,6 +252,32 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
 }
 
 
+// お手紙送信機能
+function sendLetter(_str_letter, _str_my_name) {
+
+    if (_str_letter.length <= 0) {
+        return;
+    }
+    if (_str_letter.length > 400) {
+        alert("はがきの場合、一度に遅れる文字数は400文字までです。");
+        return;
+    }
+    var data = {
+        key: api_key,
+        my_name: _str_my_name,
+        letter: _str_letter
+    }
+    if (_str_letter.length > 0) {
+        let result = confirm('はがきを送る際はName設定（ペンネーム等）を推奨します。以下の内容でよければOKを押して送信します。\n\nペンネーム：' + _str_my_name + '\n内容：' + _str_letter);
+        if (result) {
+            socket.emit("letter", data);
+            clearLetterTextBox();
+        }
+    }
+
+
+}
+
 var is_control_pressed = false;
 
 function keyReleased() {
@@ -277,6 +312,10 @@ function keyPressed() {
 
 function clearTextBox() {
     document.getElementById("text_comment").value = "";
+}
+
+function clearLetterTextBox() {
+    document.getElementById("text_letter").value = "";
 }
 
 

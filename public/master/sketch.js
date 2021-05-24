@@ -336,6 +336,7 @@ function setup() {
 
 
     socket.on('comment', newComment);
+    socket.on('letter', newLetter);
     socket.on('telop', newTelop);
 
     socket.on('disconnect', () => {
@@ -470,8 +471,11 @@ function setup() {
     select("#button_sound_chime").mouseClicked(makeSound);
     select("#button_sound_chin").mouseClicked(makeSound);
     select("#button_sound_applause").mouseClicked(makeSound);
+    select("#button_sound_deden").mouseClicked(makeSound);
+    select("#button_sound_pingpong").mouseClicked(makeSound);
 
     select("#download_all_comments").mouseClicked(downloadAllComments);
+    select("#download_all_letters").mouseClicked(downloadAllLetters);
     flg_chime = document.getElementById("checkbox_chime").checked;
     flg_clock = document.getElementById("checkbox_clock").checked;
     flg_speech = document.getElementById("checkbox_speech").checked;
@@ -525,6 +529,14 @@ function makeSound() {
     else if (this.value() == "sound_applause") {
         sound_applause.setVolume(parseFloat(document.getElementById('slider_volume').value));
         sound_applause.play();
+    }
+    else if (this.value() == "sound_deden") {
+        sound_deden.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_deden.play();
+    }
+    else if (this.value() == "sound_pingpong") {
+        sound_pingpong.setVolume(parseFloat(document.getElementById('slider_volume').value));
+        sound_pingpong.play();
     }
 
 }
@@ -754,6 +766,23 @@ function newComment(data) {
 
 
 }
+function newLetter(data) {
+
+    if (data.letter.length <= 0) {
+        return;
+    }
+
+    let letter_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    letter_format += data.letter;
+    letter_format += " [" + data.my_name + "]" + "\n";
+    //here
+    select("#textarea_letter_history").html(letter_format, true);
+    var psconsole = $('#textarea_letter_history');
+    psconsole.scrollTop(
+        psconsole[0].scrollHeight - psconsole.height()
+    );
+}
+
 
 function draw() {
     if (is_streaming) {

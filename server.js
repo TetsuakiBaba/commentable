@@ -47,6 +47,10 @@ io.on('connection', (socket) => {
         socket.broadcast.to('master').emit('telop', data);
     });
 
+    socket.on('letter', (data) => {
+        socket.broadcast.to('master').emit('letter', data);
+    });
+
     socket.on('display_clock', (data) => {
         socket.broadcast.to('master').emit('display_clock', data);
     });
