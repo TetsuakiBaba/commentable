@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="../style.css">
@@ -20,213 +20,157 @@
 
         <!-- <h1 class="display-4">Commentable Camera</h1> -->
         <p class="lead"><img src="../assets/logo.png"></p>
-        <div class="input-group">
-            <div class="input-group-prepend"><span class="input-group-text" id="basic-addon1">お名前</span></div>
-            <input type="text" id="text_my_name" class="form-control" value="--"></input>
 
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="icon_number_of_joined">👤（接続数） </span>
-            </div>
+        <div class="input-group">
+            <span class="input-group-text" id="inputGroup-sizing-sm">お名前</span>
+            <input type="text" id="text_my_name" class="form-control" value="--"></input>
+            <span class="input-group-text" id="icon_number_of_joined">👤（接続数） </span>
             <input class="form-control" size="5" type="text" id="text_number_of_joined" placeholder="接続者数"
                 readonly></input>
-
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">画面サイズ</span>
-            </div>
+            <span class="input-group-text" id="basic-addon1">画面サイズ</span>
             <input class="form-control" size="5" type="text" id="screen_size" placeholder="ScreenSize:"
                 readonly></input>
 
-            <div class="input-group-prepend">
-                <button id="button_toggle_screen_capture" class="btn btn-outline-secondary btn-sm">🖥️</button>
-            </div>
-
-            <div class="input-group-prepend">
-                <button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
-            </div>
+            <button id="button_toggle_screen_capture" class="btn btn-outline-secondary btn-sm">🖥️</button>
+            <button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
             <select class="form-control" id="videoSource"></select>
 
 
         </div>
 
-        <div class="input-group input-group-sm mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">開始時刻</span>
+        <div class="input-group">
+            <span class="input-group-text" id="basic-addon1">開始時刻</span>
+            <input type="time" id="time_start" class="form-control" value="13:00"></input>
+            <span class="input-group-text" id="basic-addon1">終了時刻</span>
+            <input type="time" id="time_end" class="form-control" value="14:30"></input>
+            <input type="checkbox" class="btn-check" id="checkbox_chime" autocomplete="off">
+            <label class="btn btn-outline-danger" for="checkbox_chime">自動チャイム</label><br>
+            <select class="form-select" id="voice-names"></select>
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    Speed
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                    <li><input id="slider_speed" class="custom-range" type="range" value="1.５" step="0.01" min="0.00"
+                            max="2.0">fast</input></li>
+                </ul>
             </div>
-            <input type="time" id="time_start" class="form-control form-control-sm" value="13:00"></input>
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">終了時刻</span>
-            </div>
-            <input type="time" id="time_end" class="form-control form-control-sm" value="14:30"></input>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_chime" value="option1">
-                <label class="form-check-label form-control-sm" for="inlineCheckbox1">チャイム</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_noDraw" value="option1">
-                <label class="form-check-label form-control-sm" for="inlineCheckbox1">描かない</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_clock" value="option2">
-                <label class="form-check-label form-control-sm" for="inlineCheckbox2">時刻表示</label>
-            </div>
-            <select class="custom-select custom-select-sm" id="voice-names"></select>
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split btn-sm"
-                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <span class="sr-only">Toggle Dropdown</span>Speed
-            </button>
-            <div class="dropdown-menu">
-                <li class="dropdown-item">
-                    <div class="input-group-prepend">slow<input id="slider_speed" class="custom-range" type="range"
-                            value="1.５" step="0.01" min="0.00" max="2.0">fast</input>
-                    </div>
-                </li>
-            </div>
+        </div>
+        <div class="input-group mb-3">
+            <input type="checkbox" class="btn-check" id="checkbox_noDraw" autocomplete="off">
+            <label class="btn btn-outline-success" for="checkbox_noDraw">no Canvas</label><br>
+            <input type="checkbox" class="btn-check" id="checkbox_clock" autocomplete="off">
+            <label class="btn btn-outline-success" for="checkbox_clock">時刻表示</label><br>
+            <input type="checkbox" class="btn-check" id="checkbox_glitch" autocomplete="off">
+            <label class="btn btn-outline-success" for="checkbox_glitch">Glitch</label><br>
+            <input type="checkbox" class="btn-check" id="checkbox_deactivate_comment_control" autocomplete="off">
+            <label class="btn btn-outline-warning" for="checkbox_deactivate_comment_control">コメント制限解除</label><br>
         </div>
 
 
         <!-- Video controls -->
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <button type="button" id="button_stream_status" class="btn btn-secondary" disabled>Streaming
-                    Off</button>
-                <span class="input-group-text" id="basic-addon1">Current Time</span>
-            </div>
+        <div class="input-group">
+            <button type="button" id="button_stream_status" class="btn btn-secondary" disabled>Streaming
+                Off</button>
+            <span class="input-group-text" id="basic-addon1">Current Time</span>
             <input type="text" id="stream_time" class="form-control " value="--:--" readonly></input>
 
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">Resolution</span>
-            </div>
+            <span class="input-group-text" id="basic-addon1">Resolution</span>
             <input type="text" id="stream_resolution" class="form-control " value="-- x --" readonly></input>
 
 
-            <div class="input-group-prepend">
-                <button id="button_stream_sound_mute" class="btn btn-outline-secondary btn-sm"
-                    value="true">&#x1f507;</button>
-            </div>
-            <div class="input-group-prepend">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="sr-only">Toggle Dropdown</span>Volume
-                </button>
-                <div class="dropdown-menu">
-                    <li class="dropdown-item">
-                        <div class="input-group-prepend">小<input id="slider_stream_volume" class="custom-range"
-                                type="range" value="0.70" step="0.01" min="0.01" max="0.99">大</input>
-                        </div>
-                    </li>
-                </div>
-            </div>
+            <button id="button_stream_sound_mute" class="btn btn-outline-secondary btn-sm"
+                value="true">&#x1f507;</button>
+
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">Streaming Volume</button>
+            <ul class="dropdown-menu">
+                <li>小<input id="slider_stream_volume" class="custom-range" type="range" value="0.70" step="0.01"
+                        min="0.01" max="0.99">大</input></li>
+            </ul>
+
         </div>
+
+
 
         <hr>
 
-        <div class="input-group input-group-sm">
-            <div class="input-group-prepend">
-                <button id="button_send" class="btn btn-outline-primary btn-sm">送信</button>
-            </div>
+        <div class="input-group">
+            <button id="button_send" class="btn btn-outline-primary btn-sm">送信</button>
 
-            <div class="input-group-prepend">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="sr-only">Toggle Dropdown</span>
-                </button>
-
-                <div class="dropdown-menu">
-                    <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> テキスト色</input>
-                    </li>
-                    <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> 輪郭色</input>
-                    </li>
-                    <li class="dropdown-item"><input type="color" id="color_background" value="#FFFBF2"> 背景色</input>
-                    </li>
-                    <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> 音声読み上げ</li>
-                </div>
-            </div>
-
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false"></button>
+            <ul class="dropdown-menu">
+                <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> テキスト色</input>
+                </li>
+                <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> 輪郭色</input>
+                </li>
+                <li class="dropdown-item"><input type="color" id="color_background" value="#FFFBF2"> 背景色</input>
+                </li>
+                <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> 音声読み上げ</li>
+            </ul>
 
             <input type="text" class="form-control" placeholder="ここにコメントを記入して，エンターキー又は「送信」ボタンで送信" id="text_comment"
                 size="40"></input>
             <!--<div class="input-group-prepend"><button id="button_image_reaction_01" class="btn btn-outline-primary btn-sm"><img src="assets/logo_shisakunoyaiba.png" width=20></img></button></div>-->
 
-            <div class="input-group-prepend">
-                </span><button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button></div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_02"
-                    class="btn btn-outline-primary btn-sm">🙏</button></div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_03"
-                    class="btn btn-outline-primary btn-sm">🙋</button></div>
-            <div class="input-group-prepend"><button id="button_emoji_reaction_04"
-                    class="btn btn-outline-primary btn-sm">🥺</button></div>
+            <button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button>
+            <button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🙏</button>
+            <button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙋</button>
+            <button id="button_emoji_reaction_04" class="btn btn-outline-primary btn-sm">🥺</button>
+            <button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">&#x1f4f8;</button>
+            <button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">👏</button>
+            <button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">🎉</button>
+            <button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">🥳 </button>
+            <button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">🤔</button>
+            <button id="button_sound_reaction_05" value="5" class="btn btn-outline-danger btn-sm">🖐</button>
+            <button id="button_sound_reaction_06" value="6" class="btn btn-outline-danger btn-sm">👌</button>
+            <button id="button_sound_reaction_07" value="7" class="btn btn-outline-danger btn-sm">👊</button>
+            <button id="button_sound_reaction_08" value="8" class="btn btn-outline-danger btn-sm">🤣</button>
+            <button id="button_sound_reaction_09" value="9" class="btn btn-outline-danger btn-sm">😏</button>
+            <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button>
 
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">Volume</button>
+            <ul class="dropdown-menu">
+                <li class="dropdown-item">
+                    <div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range"
+                            value="0.1" step="0.01" min="0.01" max="0.30">大</input>
+                    </div>
+                </li>
+            </ul>
 
-            <div class="input-group-prepend"><button id="button_sound_reaction_00" value="0"
-                    class="btn btn-outline-danger btn-sm">&#x1f4f8;</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_01" value="1"
-                    class="btn btn-outline-danger btn-sm">👏</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_02" value="2"
-                    class="btn btn-outline-danger btn-sm">🎉</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_03" value="3"
-                    class="btn btn-outline-danger btn-sm">🥳 </button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_04" value="4"
-                    class="btn btn-outline-danger btn-sm">🤔</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_05" value="5"
-                    class="btn btn-outline-danger btn-sm">🖐</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_06" value="6"
-                    class="btn btn-outline-danger btn-sm">👌</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_07" value="7"
-                    class="btn btn-outline-danger btn-sm">👊</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_08" value="8"
-                    class="btn btn-outline-danger btn-sm">🤣</button></div>
-            <div class="input-group-prepend"><button id="button_sound_reaction_09" value="9"
-                    class="btn btn-outline-danger btn-sm">😏</button></div>
-
-            <div class="input-group-prepend">
-                <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button>
-            </div>
-            <div class="input-group-prepend">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="sr-only">Toggle Dropdown</span>Volume
-                </button>
-                <div class="dropdown-menu">
-                    <li class="dropdown-item">
-                        <div class="input-group-prepend">小<input id="slider_volume" class="custom-range" type="range"
-                                value="0.1" step="0.01" min="0.01" max="0.30">大</input>
-                        </div>
-                    </li>
-                </div>
-            </div>
         </div>
 
 
-        <div class="input-group input-group-sm">
-            <div class="input-group-prepend">
-                <button id="toggle_speech_recognition" class="btn btn-outline-primary btn-sm">音声認識を起動</button>
-            </div>
+        <div class="input-group">
+            <button id="toggle_speech_recognition" class="btn btn-outline-primary btn-sm">音声認識を起動</button>
             <input type="text" class="form-control" placeholder="左の音声認識を起動すると自動で入力されます" id="text_speech" size="40"
                 disabled></input>
-            <div class="form-check form-check-inline">
+
+            <input type="checkbox" class="btn-check" id="checkbox_telop" autocomplete="off">
+            <label class="btn btn-outline-danger" for="checkbox_telop">テロップ表示</label><br>
+
+            <!-- 
+            <div class="form-check">
                 <input class="form-check-input form-control-sm" type="checkbox" id="checkbox_telop" value="option1">
                 <label class="form-check-label form-control-sm" for="inlineCheckbox1">テロップ表示</label>
-            </div>
+            </div> -->
 
 
         </div>
 
 
-        <div class="input-group input-group-sm">
-            <div class="input-group-prepend"><button id="button_sound_dora" value="sound_dora"
-                    class="btn btn-outline-danger btn-sm">ドラ</button></div>
-            <div class="input-group-prepend"><button id="button_sound_chime" value="sound_chime"
-                    class="btn btn-outline-danger btn-sm">チャイム</button></div>
-            <div class="input-group-prepend"><button id="button_sound_chin" value="sound_chin"
-                    class="btn btn-outline-danger btn-sm">チーン</button></div>
-            <div class="input-group-prepend"><button id="button_sound_applause" value="sound_applause"
-                    class="btn btn-outline-danger btn-sm">拍手</button></div>
-            <div class="input-group-prepend"><button id="button_sound_deden" value="sound_deden"
-                    class="btn btn-outline-danger btn-sm">デデン</button></div>
-            <div class="input-group-prepend"><button id="button_sound_pingpong" value="sound_pingpong"
-                    class="btn btn-outline-danger btn-sm">ピンポン</button></div>
-
-
+        <div class="input-group">
+            <span class="input-group-text" id="basic-addon1">効果音セット</span>
+            <button id="button_sound_dora" value="sound_dora" class="btn btn-outline-danger btn-sm">ドラ</button>
+            <button id="button_sound_chime" value="sound_chime" class="btn btn-outline-danger btn-sm">チャイム</button>
+            <button id="button_sound_chin" value="sound_chin" class="btn btn-outline-danger btn-sm">チーン</button>
+            <button id="button_sound_applause" value="sound_applause" class="btn btn-outline-danger btn-sm">拍手</button>
+            <button id="button_sound_deden" value="sound_deden" class="btn btn-outline-danger btn-sm">デデン</button>
+            <button id="button_sound_pingpong" value="sound_pingpong"
+                class="btn btn-outline-danger btn-sm">ピンポン</button>
         </div>
 
         <hr>
@@ -280,7 +224,8 @@
     <script src="speech.js "></script>
     <script src="p5.speech.js "></script>
     <script src="P5Captures.js "></script>
-    <script src="VideoAudioDeviceSelect.js "></script>
+    <script src="VideoAudioDeviceSelect.js"></script>
+    <script src="GlitchEffect.js"></script>
     <script src="sketch.js "></script>
 
 
@@ -288,12 +233,9 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js "
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN "
         crossorigin="anonymous "></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js "
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q "
-        crossorigin="anonymous "></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js "
-        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl "
-        crossorigin="anonymous "></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
+        crossorigin="anonymous"></script>
 
 </body>
 

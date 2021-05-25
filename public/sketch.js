@@ -19,6 +19,7 @@ var timestamp_last_send
 
 var p5_captures;
 var flg_speech;
+var flg_deactivate_comment_control;
 let peerConnection;
 const config = {
     iceServers: [{
@@ -39,7 +40,7 @@ var speech;
 function setup() {
 
     textFont("Noto Sans JP");
-
+    flg_deactivate_comment_control = false;
     color_text = document.getElementById("color_text").value;
     color_text_stroke = document.getElementById("color_text_stroke").value;
 
@@ -70,6 +71,10 @@ function setup() {
     });
     socket.on('login', (data) => {
         document.getElementById('text_number_of_joined').value = str(data.numUsers);
+    });
+    socket.on('deactivate_comment_control', (data) => {
+        document.getElementById('checkbox_deactivate_comment_control').checked = data.control;
+        flg_deactivate_comment_control = data.control;
     });
 
     socket.on("offer", (id, description) => {
@@ -200,7 +205,7 @@ function pushedSendLetterButton() {
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
-    if ((millis() - timestamp_last_send) > 5000) {
+    if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
         if (_flg_img == false) {
             if (_str_comment.length <= 0) {
                 return;
@@ -438,10 +443,10 @@ function toggleSpeech() {
     if (flg_speech == true) {
         // set red button class
         //<div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm"></button>
-        document.getElementById('button_send').setAttribute('class', 'btn btn-outline-danger btn-sm');
+        //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-danger btn-sm');
     } else {
         // set normal(primary) button class
-        document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
+        //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
     }
 }
 

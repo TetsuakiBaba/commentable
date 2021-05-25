@@ -43,6 +43,10 @@
             <span class="input-group-text" id="icon_number_of_joined">👤 </span>
             <input class="form-control form-control-sm" size="5" type="text" id="text_number_of_joined"
                 placeholder="Number of connected user" readonly></input>
+            <input type="checkbox" class="btn-check" id="checkbox_deactivate_comment_control" autocomplete="off"
+                disabled>
+            <label class="btn btn-outline-warning" for="checkbox_deactivate_comment_control"
+                id="label_comment_control">コメント制限解除</label><br>
             <!-- Button trigger modal -->
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
                 使い方
@@ -58,6 +62,16 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <h5>コメント制限解除</h5>
+                            <p>
+                                <input type="checkbox" class="btn-check" id="dummy_checkbox_deactivate_comment_control"
+                                    autocomplete="off" value=true disabled checked>
+                                <label class="btn btn-outline-warning" for="dummy_checkbox_deactivate_comment_control"
+                                    id="dummy_label_comment_control">コメント制限解除</label>
+
+                                このように黄色で点灯しているときはコメントの連投が可能です。消灯しているときはコメント連投には5秒の間隔をあける必要があります。
+                            </p>
+
                             <h5>絵文字リアクションボタン</h5>
                             <p>絵文字リアクションには緑と赤の2種類のボタンがあります。
                                 緑色はサイレントリアクションで、絵文字が配信画面に表示されるだけです。赤色はサウンドリアクションで、押すと音がなります。実際にどのような音がなるかは以下の一覧を参考にしてください。
@@ -122,7 +136,7 @@
 
 
         <div class="input-group mb-3">
-            <button id="button_send" class="btn btn-outline-primary btn-sm">コメント <i class="far fa-comment"></i></button>
+            <button id="button_send" class="btn btn-outline-primary">コメント <i class="far fa-comment"></i></button>
             <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
                 data-bs-toggle="dropdown" aria-expanded="false">
                 <span class="visually-hidden">Toggle Dropdown</span>
@@ -131,14 +145,18 @@
                 <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text Color</input></li>
                 <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> Outline
                     Color</input></li>
-                <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li>
+                <!-- <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li> -->
             </ul>
+
             <input type="text" class="form-control" placeholder="コメントはこちらから（最大80字、ボタンまたはEnterキーで送信）" id="text_comment"
                 size="40"></input>
+
+            <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
+            <label class="btn btn-outline-danger" for="checkbox_speech">音声読み上げ</label>
         </div>
 
         <div class="input-group mb-3">
-            <button id="button_send_letter" class="btn btn-outline-primary btn-sm">はがき <i
+            <button id="button_send_letter" class="btn btn-outline-primary">はがき <i
                     class="far fa-paper-plane"></i></button>
             <input type="text" class="form-control" placeholder="はがきはこちらから（最大400字、ボタンを押して送信）" id="text_letter"
                 size="40"></input>

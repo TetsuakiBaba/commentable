@@ -55,6 +55,14 @@ io.on('connection', (socket) => {
         socket.broadcast.to('master').emit('display_clock', data);
     });
 
+    socket.on('glitch_effect', (data) => {
+        socket.broadcast.to('master').emit('glitch_effect', data);
+    });
+
+    socket.on('deactivate_comment_control', (data) => {
+        socket.broadcast.emit('deactivate_comment_control', data);
+    });
+
     // when the client emits 'add user', this listens and executes
     socket.on('add user', (username) => {
         if (addedUser) return;

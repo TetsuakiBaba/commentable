@@ -18,6 +18,7 @@ var sound_applause;
 var flg_chime;
 var flg_clock;
 var flg_noDraw;
+var flg_glitch;
 
 var time_start;
 var time_start_hour;
@@ -28,6 +29,7 @@ var time_end_minute;
 var is_streaming = false;
 
 var p5_captures;
+var glitch_lines;
 
 var myRec = new p5.SpeechRec('', parseResult); // new P5.SpeechRec object
 var is_recognition_activated = false;
@@ -290,6 +292,9 @@ function changedVideoDevice() {
 const video = document.querySelector("video");
 
 function setup() {
+
+    glitch_lines = new GlitchLines();
+
     let str_name = "管理人"; //prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
     //setupOsc(12000, 3334);
 
@@ -356,9 +361,13 @@ function setup() {
     socket.on('display_clock', (data) => {
         flg_clock = data.show;
         document.getElementById('checkbox_clock').checked = flg_clock;
-
-        //here
     });
+
+    socket.on('glitch_effect', (data) => {
+        flg_glitch = data.show;
+        document.getElementById('checkbox_glitch').checked = flg_glitch;
+    });
+
 
 
     socket.on('reconnect', () => {
@@ -459,6 +468,8 @@ function setup() {
     select("#checkbox_clock").mouseClicked(toggleClock);
     select("#checkbox_speech").mouseClicked(toggleSpeech);
     select("#checkbox_noDraw").mouseClicked(toggleDraw);
+    select("#checkbox_glitch").mouseClicked(toggleGlitch);
+    select("#checkbox_deactivate_comment_control").mouseClicked(toggleDeactivateCommentControl);
 
     select("#time_start").changed(updateStartTime);
     select("#time_end").changed(updateEndTime);
@@ -804,14 +815,6 @@ function draw() {
         p5_captures.drawScreen(0, 0, width, height);
     }
 
-
-    for (var i = 0; i < max_number_of_comment; i++) {
-        if (comments[i].getLife() > 0) {
-            comments[i].update();
-            if (flg_noDraw == false) comments[i].draw();
-        }
-    }
-
     telop.draw();
 
     protofessional_effect.draw();
@@ -831,6 +834,17 @@ function draw() {
             sound_chime.play();
         } else if ((time_end + ":00" == time_now)) {
             sound_chime.play();
+        }
+    }
+
+    if (flg_glitch) {
+        glitch_lines.draw();
+    }
+
+    for (var i = 0; i < max_number_of_comment; i++) {
+        if (comments[i].getLife() > 0) {
+            comments[i].update();
+            if (flg_noDraw == false) comments[i].draw();
         }
     }
 }
@@ -1100,6 +1114,24 @@ function toggleDraw() {
         //loop();
         canvas_element.style.display = "block";
     }
+}
+
+function toggleGlitch() {
+    flg_glitch = this.checked();
+    // グリッジ表示メッセージ送信
+    var data = {
+        key: api_key,
+        show: this.checked()
+    }
+    socket.emit("glitch_effect", data);
+}
+
+function toggleDeactivateCommentControl() {
+    var data = {
+        key: api_key,
+        control: this.checked()
+    }
+    socket.emit("deactivate_comment_control", data);
 }
 
 
