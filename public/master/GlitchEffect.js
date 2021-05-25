@@ -16,11 +16,12 @@ class GlitchLine {
         strokeCap(SQUARE);
         strokeWeight(this.h);
         stroke(this.r, this.g, this.b);
+        stroke(0);
         line(this.x, this.y + noise(this.noise_y) * 5,
             this.x + this.w, this.y + noise(this.noise_y) * 5);
         //    this.noise_y += 10.1;
 
-        if (parseInt(random(15)) == 0) {
+        if (parseInt(random(5)) == 0) {
             this.randomSet();
         }
     }
