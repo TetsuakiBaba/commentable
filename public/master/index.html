@@ -31,8 +31,8 @@
             <input class="form-control" size="5" type="text" id="screen_size" placeholder="ScreenSize:"
                 readonly></input>
 
-            <button id="button_toggle_screen_capture" class="btn btn-outline-secondary btn-sm">🖥️</button>
-            <button id="button_camera" class="btn btn-outline-secondary btn-sm">📹</button>
+            <button id="button_toggle_screen_capture" class="btn btn-outline-secondary">🖥️</button>
+            <button id="button_camera" class="btn btn-outline-secondary">📹</button>
             <select class="form-control" id="videoSource"></select>
 
 
@@ -46,16 +46,13 @@
             <input type="checkbox" class="btn-check" id="checkbox_chime" autocomplete="off">
             <label class="btn btn-outline-danger" for="checkbox_chime">自動チャイム</label><br>
             <select class="form-select" id="voice-names"></select>
-            <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                    Speed
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                    <li><input id="slider_speed" class="custom-range" type="range" value="1.５" step="0.01" min="0.00"
-                            max="2.0">fast</input></li>
-                </ul>
-            </div>
+
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">Speed</button>
+            <ul class="dropdown-menu">
+                <li>slow<input id="slider_speed" class="custom-range" type="range" value="1.５" step="0.01" min="0.00"
+                        max="2.0">fast</input></li>
+            </ul>
         </div>
         <div class="input-group mb-3">
             <input type="checkbox" class="btn-check" id="checkbox_noDraw" autocomplete="off">
@@ -80,8 +77,7 @@
             <input type="text" id="stream_resolution" class="form-control " value="-- x --" readonly></input>
 
 
-            <button id="button_stream_sound_mute" class="btn btn-outline-secondary btn-sm"
-                value="true">&#x1f507;</button>
+            <button id="button_stream_sound_mute" class="btn btn-outline-secondary" value="true">&#x1f507;</button>
 
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">Streaming Volume</button>
@@ -97,7 +93,7 @@
         <hr>
 
         <div class="input-group">
-            <button id="button_send" class="btn btn-outline-primary btn-sm">送信</button>
+            <button id="button_send" class="btn btn-outline-primary">送信</button>
 
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false"></button>
@@ -115,21 +111,21 @@
                 size="40"></input>
             <!--<div class="input-group-prepend"><button id="button_image_reaction_01" class="btn btn-outline-primary btn-sm"><img src="assets/logo_shisakunoyaiba.png" width=20></img></button></div>-->
 
-            <button id="button_emoji_reaction_01" class="btn btn-outline-primary btn-sm">👍</button>
-            <button id="button_emoji_reaction_02" class="btn btn-outline-primary btn-sm">🙏</button>
-            <button id="button_emoji_reaction_03" class="btn btn-outline-primary btn-sm">🙋</button>
-            <button id="button_emoji_reaction_04" class="btn btn-outline-primary btn-sm">🥺</button>
-            <button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger btn-sm">&#x1f4f8;</button>
-            <button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger btn-sm">👏</button>
-            <button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger btn-sm">🎉</button>
-            <button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger btn-sm">🥳 </button>
-            <button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger btn-sm">🤔</button>
-            <button id="button_sound_reaction_05" value="5" class="btn btn-outline-danger btn-sm">🖐</button>
-            <button id="button_sound_reaction_06" value="6" class="btn btn-outline-danger btn-sm">👌</button>
-            <button id="button_sound_reaction_07" value="7" class="btn btn-outline-danger btn-sm">👊</button>
-            <button id="button_sound_reaction_08" value="8" class="btn btn-outline-danger btn-sm">🤣</button>
-            <button id="button_sound_reaction_09" value="9" class="btn btn-outline-danger btn-sm">😏</button>
-            <button id="button_sound_mute" class="btn btn-outline-secondary btn-sm">&#x1f507;</button>
+            <button id="button_emoji_reaction_01" class="btn btn-outline-primary">👍</button>
+            <button id="button_emoji_reaction_02" class="btn btn-outline-primary">🙏</button>
+            <button id="button_emoji_reaction_03" class="btn btn-outline-primary">🙋</button>
+            <button id="button_emoji_reaction_04" class="btn btn-outline-primary">🥺</button>
+            <button id="button_sound_reaction_00" value="0" class="btn btn-outline-danger">&#x1f4f8;</button>
+            <button id="button_sound_reaction_01" value="1" class="btn btn-outline-danger">👏</button>
+            <button id="button_sound_reaction_02" value="2" class="btn btn-outline-danger">🎉</button>
+            <button id="button_sound_reaction_03" value="3" class="btn btn-outline-danger">🥳 </button>
+            <button id="button_sound_reaction_04" value="4" class="btn btn-outline-danger">🤔</button>
+            <button id="button_sound_reaction_05" value="5" class="btn btn-outline-danger">🖐</button>
+            <button id="button_sound_reaction_06" value="6" class="btn btn-outline-danger">👌</button>
+            <button id="button_sound_reaction_07" value="7" class="btn btn-outline-danger">👊</button>
+            <button id="button_sound_reaction_08" value="8" class="btn btn-outline-danger">🤣</button>
+            <button id="button_sound_reaction_09" value="9" class="btn btn-outline-danger">😏</button>
+            <button id="button_sound_mute" class="btn btn-outline-secondary">&#x1f507;</button>
 
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">Volume</button>
@@ -145,7 +141,7 @@
 
 
         <div class="input-group">
-            <button id="toggle_speech_recognition" class="btn btn-outline-primary btn-sm">音声認識を起動</button>
+            <button id="toggle_speech_recognition" class="btn btn-outline-primary">音声認識を起動</button>
             <input type="text" class="form-control" placeholder="左の音声認識を起動すると自動で入力されます" id="text_speech" size="40"
                 disabled></input>
 
@@ -164,30 +160,29 @@
 
         <div class="input-group">
             <span class="input-group-text" id="basic-addon1">効果音セット</span>
-            <button id="button_sound_dora" value="sound_dora" class="btn btn-outline-danger btn-sm">ドラ</button>
-            <button id="button_sound_chime" value="sound_chime" class="btn btn-outline-danger btn-sm">チャイム</button>
-            <button id="button_sound_chin" value="sound_chin" class="btn btn-outline-danger btn-sm">チーン</button>
-            <button id="button_sound_applause" value="sound_applause" class="btn btn-outline-danger btn-sm">拍手</button>
-            <button id="button_sound_deden" value="sound_deden" class="btn btn-outline-danger btn-sm">デデン</button>
-            <button id="button_sound_pingpong" value="sound_pingpong"
-                class="btn btn-outline-danger btn-sm">ピンポン</button>
+            <button id="button_sound_dora" value="sound_dora" class="btn btn-outline-danger">ドラ</button>
+            <button id="button_sound_chime" value="sound_chime" class="btn btn-outline-danger">チャイム</button>
+            <button id="button_sound_chin" value="sound_chin" class="btn btn-outline-danger">チーン</button>
+            <button id="button_sound_applause" value="sound_applause" class="btn btn-outline-danger">拍手</button>
+            <button id="button_sound_deden" value="sound_deden" class="btn btn-outline-danger">デデン</button>
+            <button id="button_sound_pingpong" value="sound_pingpong" class="btn btn-outline-danger">ピンポン</button>
         </div>
 
         <hr>
-        <div class="input-group input-group-sm">
+        <div class="input-group">
             <textarea id="textarea_letter_history" readonly class="form-control" rows="10"
                 placeholder="送られたはがきはここに表示されます"></textarea>
         </div>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="download_all_letters">Download
+        <button type="button" class="btn btn-outline-secondary" id="download_all_letters">Download
             Letter History</button>
         <hr>
 
-        <div class="input-group input-group-sm">
+        <div class="input-group">
             <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
                 placeholder="Comment History"></textarea>
 
         </div>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="download_all_comments">Download
+        <button type="button" class="btn btn-outline-secondary" id="download_all_comments">Download
             Comments</button>
         <hr>
 
