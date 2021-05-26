@@ -252,7 +252,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
         timestamp_last_send = millis();
     }
     else {
-        alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。");
+        alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。\n\n注）画面上部の「コメント制限解除」ランプが点灯しているときは連投ができます。");
     }
 }
 

@@ -62,15 +62,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <h5>コメント制限解除</h5>
-                            <p>
-                                <input type="checkbox" class="btn-check" id="dummy_checkbox_deactivate_comment_control"
-                                    autocomplete="off" value=true disabled checked>
-                                <label class="btn btn-outline-warning" for="dummy_checkbox_deactivate_comment_control"
-                                    id="dummy_label_comment_control">コメント制限解除</label>
 
-                                このように黄色で点灯しているときはコメントの連投が可能です。消灯しているときはコメント連投には5秒の間隔をあける必要があります。
-                            </p>
 
                             <h5>絵文字リアクションボタン</h5>
                             <p>絵文字リアクションには緑と赤の2種類のボタンがあります。
@@ -92,6 +84,16 @@
                             <h5>コメント送信</h5>
                             <p>
                                 配信者の画面に任意のテキストを表示することができます。ボタン横のドロップダウンメニューを開くとテキストの色や輪郭色、音声読み上げ機能のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。
+                            </p>
+                            <h5>コメントの連投</h5>
+                            <p>
+                                大規模人数におけるコメント荒れを防ぐため、通常はコメントの連続投稿には制約（5秒開けないといけない）があります。しかし
+                                <input type="checkbox" class="btn-check" id="dummy_checkbox_deactivate_comment_control"
+                                    autocomplete="off" value=true disabled checked>
+                                <label class="btn btn-outline-warning" for="dummy_checkbox_deactivate_comment_control"
+                                    id="dummy_label_comment_control">コメント制限解除</label>
+
+                                このように黄色で点灯しているときはコメントの連投が可能です。
                             </p>
                             <h5>はがき送信</h5>
                             <p>
