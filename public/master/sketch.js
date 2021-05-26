@@ -719,7 +719,15 @@ function newComment(data) {
         if (id >= 0) {
             comments[id].setLife(255);
             comments[id].setText(data.comment);
-            comments[id].setX(random(100, width - 100));
+            textSize(abs((height / 20) * sin(0.5 * PI)));
+            let text_width = textWidth(data.comment);
+            console.log(textWidth(data.comment));
+            if (text_width < width) {
+                comments[id].setX(random(text_width / 2, width - text_width / 2));
+            }
+            else {
+                comments[id].setX(text_width / 2);
+            }
             comments[id].setY(random(100, height - 100));
             comments[id].setColor(data.color_text, data.color_text_stroke);
             comments[id].flg_image = data.flg_img;
