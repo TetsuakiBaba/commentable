@@ -59,13 +59,59 @@ textarea{
 
 
 
+
 :root{
-  --font-size: 2em;
-  --line-height:1.7em;
-  --width: 1.7em;
-  --height: 1.7em;
-  --margin:0.5em;
-  --margin-frame: -0.3em;
+  --font-size: 1.7em;
+  --font-size-small:1.69em;
+  --line-height:100%;
+  --width: 2.8em;
+  --height: 2.8em;
+  --margin:0.1em;
+  --margin-frame: -10px;
+  --padding:0px;
+}
+
+button.comment{
+  -ms-user-select: none; /* IE 10+ */
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+
+  
+  text-decoration: none;
+  
+  box-shadow: 0px 5px 5px rgba(0,0,0,0.4);
+  
+  border-radius: 50%;
+  color: #878787;
+  
+  padding:var(--padding);
+  width:var(--width);
+  height:var(--height);
+  margin: var(--margin);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+
+  border: solid 2px #EFEFEF;
+  box-shadow: 4px 4px 9px 0px rgba(255,255,255,0.45) inset, -4px -4px 9px 0px rgba(0, 0, 0, 0.06) inset;
+  transition:.3s;
+}
+
+button.green{
+  background-image: linear-gradient(#f7f7f7, #b7ffcf);
+}
+button.red{
+  background-image: linear-gradient(#f7f7f7, #ffc5c5);
+}
+button:active.red{
+  font-size: var(--font-size-small);
+  background-image: linear-gradient( #f7f7f7, #ffc5c5);
+}
+
+button:active.comment{
+  box-shadow: 3px 3px 6px 0px rgba(157, 157, 157, 0.07) inset, -2px -2px 3px 0px rgba(255, 255, 255, 0.52) inset;
+  transition: all 100ms 0s ease;
 }
 
 .nav {

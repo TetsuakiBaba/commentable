@@ -19,6 +19,8 @@ var io = socket(server, options);
 // Chatroom
 var numUsers = 0;
 
+var flg_deactivate_comment_control = false;
+
 io.on('connection', (socket) => {
     console.log(socket.id);
     var addedUser = false;
@@ -60,6 +62,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('deactivate_comment_control', (data) => {
+        flg_deactivate_comment_control = data.control;
         socket.broadcast.emit('deactivate_comment_control', data);
     });
 
@@ -73,7 +76,8 @@ io.on('connection', (socket) => {
         ++numUsers;
         addedUser = true;
         socket.emit('login', {
-            numUsers: numUsers
+            numUsers: numUsers,
+            deactivate_comment_control: flg_deactivate_comment_control
         });
         // echo globally (all clients) that a person has connected
         socket.broadcast.emit('user joined', {

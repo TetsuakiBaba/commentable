@@ -27,25 +27,24 @@
 </head>
 
 <body>
-    <div class="container-fluid">
-
-
+    <div class="container-sm">
         <!-- <h1 class="display-4">Commentable Camera</h1> -->
-        <p class="lead"><img src="assets/logo.png"></p>
-
-
-
+        <p><img src="assets/logo_text.png" height="50px"></p>
 
         <div class="input-group">
-            <span class="input-group-text" id="name">Name </span>
-            <input class="form-control" size="5" type="text" id="text_my_name" value="anonymous"></input>
-            <span class="input-group-text" id="icon_number_of_joined">👤 </span>
-            <input class="form-control" size="5" type="text" id="text_number_of_joined"
+
+
+            <span class="input-group-text" id="name">名前</span>
+            <input class="form-control" size="5" type="text" id="text_my_name" value="匿名"></input>
+
+
+            <span class="input-group-text" id="icon_number_of_joined"><i class="fas fa-user-friends"></i></span>
+            <input class="form-control" size="1" type="text" id="text_number_of_joined"
                 placeholder="Number of connected user" readonly></input>
             <input type="checkbox" class="btn-check" id="checkbox_deactivate_comment_control" autocomplete="off"
                 disabled>
             <label class="btn btn-outline-warning" for="checkbox_deactivate_comment_control"
-                id="label_comment_control">コメント制限解除</label><br>
+                id="label_comment_control"><i class="fas fa-redo-alt"></i></label><br>
             <!-- Button trigger modal -->
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
                 使い方
@@ -61,8 +60,9 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-
-
+                            <div class="alert alert-danger" role="alert">
+                                スマートフォン上にて，音声読み上げボタンを一旦ONにした後，もう一度ボタンを押しても表示が切り替わらないバグがあります．この場合，画面のいずれかをタップすることで表示が更新されます．
+                            </div>
                             <h5>絵文字リアクションボタン</h5>
                             <p>絵文字リアクションには緑と赤の2種類のボタンがあります。
                                 緑色はサイレントリアクションで、絵文字が配信画面に表示されるだけです。赤色はサウンドリアクションで、押すと音がなります。実際にどのような音がなるかは以下の一覧を参考にしてください。
@@ -82,7 +82,8 @@
 
                             <h5>コメント送信</h5>
                             <p>
-                                配信者の画面に任意のテキストを表示することができます。ボタン横のドロップダウンメニューを開くとテキストの色や輪郭色、音声読み上げ機能のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。
+                                配信者の画面に任意のテキストを表示することができます。ボタン横のドロップダウンメニューを開くとテキストの色や輪郭色、音声読み上げ機能（<i
+                                    class="fas fa-volume-up"></i>ボタン）のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。
                             </p>
                             <h5>コメントの連投</h5>
                             <p>
@@ -90,7 +91,7 @@
                                 <input type="checkbox" class="btn-check" id="dummy_checkbox_deactivate_comment_control"
                                     autocomplete="off" value=true disabled checked>
                                 <label class="btn btn-outline-warning" for="dummy_checkbox_deactivate_comment_control"
-                                    id="dummy_label_comment_control">コメント制限解除</label>
+                                    id="dummy_label_comment_control"><i class="fas fa-redo-alt"></i></label>
 
                                 このように黄色で点灯しているときはコメントの連投が可能です。
                             </p>
@@ -112,80 +113,80 @@
         <hr>
 
         <nav>
-            <ul class="nav">
-                <li><a href="#" id="button_emoji_reaction_01">👍</a></li>
-                <li><a href="#" id="button_emoji_reaction_02">🙏</a></li>
-                <li><a href="#" id="button_emoji_reaction_03">🙋</a></li>
-                <li><a href="#" id="button_emoji_reaction_04">🥺</a></li>
-                <li><a href="#" id="button_emoji_reaction_05">🤫</a></li>
+            <button class="comment green" id="button_emoji_reaction_01">👍</button>
+            <button class="comment green" id="button_emoji_reaction_02">🙏</button>
+            <button class="comment green" id="button_emoji_reaction_03">🙋</button>
+            <button class="comment green" id="button_emoji_reaction_04">🥺</button>
+            <button class="comment green" id="button_emoji_reaction_05">🤫</button>
+            <button class="comment red" id="button_sound_reaction_00" value="0">&#x1f4f8;</button>
+            <button class="comment red" id="button_sound_reaction_01" value="1" title="パチン（手を叩く音）">👏</button>
+            <button class="comment red" id="button_sound_reaction_02" value="2" title="パーン（クラッカーの音）">🎉</button>
+            <button class="comment red" id="button_sound_reaction_03" value="3" title="大歓声">🥳</button>
+            <button class="comment red" id="button_sound_reaction_04" value="4" title="へぇ〜">😮</button>
+            <button class="comment red" id="button_sound_reaction_05" value="5" title="ちょっとまって">🤔</button>
+            <button class="comment red" id="button_sound_reaction_06" value="6" title="OK">👌</button>
+            <button class="comment red" id="button_sound_reaction_07" value="7" title="パンチ音">👊</button>
+            <button class="comment red" id="button_sound_reaction_08" value="8" title="大笑い">🤣</button>
+            <button class="comment red" id="button_sound_reaction_09" value="9" title="w">😏</button>
 
-                <li><a href="#" class="sound" id="button_sound_reaction_00" value="0">&#x1f4f8;</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_01" value="1" title="パチン（手を叩く音）">👏</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_02" value="2" title="パーン（クラッカーの音）">🎉</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_03" value="3" title="大歓声">🥳</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_04" value="4" title="へぇ〜">😮</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_05" value="5" title="ちょっとまって">🤔</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_06" value="6" title="OK">👌</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_07" value="7" title="パンチ音">👊</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_08" value="8" title="大笑い">🤣</a></li>
-                <li><a href="#" class="sound" id="button_sound_reaction_09" value="9" title="w">😏</a></li>
-            </ul>
-        </nav>
-        <hr>
+            <hr>
 
 
 
 
-        <div class="input-group mb-3">
-            <button id="button_send" class="btn btn-outline-primary">コメント <i class="far fa-comment"></i></button>
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                <span class="visually-hidden">Toggle Dropdown</span>
-            </button>
-            <ul class="dropdown-menu">
-                <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text Color</input></li>
-                <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> Outline
-                    Color</input></li>
-                <!-- <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li> -->
-            </ul>
+            <div class="input-group mb-3">
+                <button id="button_send" class="btn btn-outline-primary">送信 <i class="far fa-comment"></i></button>
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text
+                        Color</input>
+                    </li>
+                    <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111"> Outline
+                        Color</input></li>
+                    <!-- <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li> -->
+                </ul>
 
-            <input type="text" class="form-control" placeholder="コメントはこちらから（最大80字、ボタンまたはEnterキーで送信）" id="text_comment"
-                size="40"></input>
+                <input type="text" class="form-control" placeholder="コメントはこちらから（最大80字、ボタンまたはEnterキーで送信）"
+                    id="text_comment" size="40"></input>
 
-            <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
-            <label class="btn btn-outline-danger" for="checkbox_speech">音声読み上げ</label>
-        </div>
-
-        <div class="input-group mb-3">
-            <button id="button_send_letter" class="btn btn-outline-primary">はがき <i
-                    class="far fa-paper-plane"></i></button>
-            <input type="text" class="form-control" placeholder="はがきはこちらから（最大400字、ボタンを押して送信）" id="text_letter"
-                size="40"></input>
-        </div>
-
-
-
-        <hr>
-
-        <div class="input-group">
-            <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
-                placeholder="Comment History"></textarea>
-
-        </div>
-        <button type="button" class="btn btn-outline-secondary" id="download_all_comments">Download
-            Comments</button>
-        <hr>
-
-
-
-
-
-        <footer class="page-footer font-small">
-            <div class="footer-copyright text-center py-3">
-                <a href="https://github.com/TetsuakiBaba/commentable">Commentable project on github</a> by
-                <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
+                <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
+                <label class="btn btn-outline-danger" for="checkbox_speech"><i class="fas fa-volume-up"></i></label>
             </div>
-        </footer>
+
+            <div class="input-group mb-3">
+                <button id="button_send_letter" class="btn btn-outline-primary">送信 <i
+                        class="far fa-paper-plane"></i></button>
+                <input type="text" class="form-control" placeholder="はがきはこちらから（最大400字、ボタンを押して送信）" id="text_letter"
+                    size="40"></input>
+            </div>
+
+
+
+            <hr>
+
+
+            <div class="input-group">
+                <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
+                    placeholder="Comment History"></textarea>
+
+            </div>
+            <button type="button" class="btn btn-outline-secondary" id="download_all_comments">Download
+                Comments</button>
+            <hr>
+
+
+
+
+
+            <footer class="page-footer font-small">
+                <div class="footer-copyright text-center py-3">
+                    <a href="https://github.com/TetsuakiBaba/commentable">Commentable project on github</a> by
+                    <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
+                </div>
+            </footer>
 
 
 

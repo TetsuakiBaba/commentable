@@ -71,6 +71,8 @@ function setup() {
     });
     socket.on('login', (data) => {
         document.getElementById('text_number_of_joined').value = str(data.numUsers);
+        flg_deactivate_comment_control = data.deactivate_comment_control;
+        document.getElementById('checkbox_deactivate_comment_control').checked = flg_deactivate_comment_control;
     });
     socket.on('deactivate_comment_control', (data) => {
         document.getElementById('checkbox_deactivate_comment_control').checked = data.control;
@@ -252,7 +254,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
         timestamp_last_send = millis();
     }
     else {
-        alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。\n\n注）画面上部の「コメント制限解除」ランプが点灯しているときは連投ができます。");
+        alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。");
     }
 }
 
