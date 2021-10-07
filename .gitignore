@@ -2,3 +2,4 @@
 /api_key.json
 /public/api_key.json
 /electron/node_modules
+/electron/dist

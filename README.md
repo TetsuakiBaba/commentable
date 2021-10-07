@@ -1,14 +1,12 @@
-![](./public/assets/logo.png)
+![](./icons/commentable_logo_text.png)
 
 | ![](./commentable_sample.gif) | 
 |:--:|
 |mmhmmのVritual カメラにコメントを載せたところ|
 
-
-
-| ![](./teaser.gif) | 
-|:--:|
-| broadcast機能を使って、お手軽配信しているところ。左がviewerページ、右が配信ページ  |
+# Getting Started
+とにかくCommentableを利用するだけ，という方は以下のwikiページにgetting startedをまとめておきましたので，そちらを参照してください．
+  * https://github.com/TetsuakiBaba/commentable/wiki
 
 # Commentableとは
 授業中に気軽に学生にコメントしてほしい。このシンプルな欲求から開発をスタートしました。

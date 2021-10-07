@@ -1,8 +1,6 @@
 var socket;
-var flg_sound_mute = true;
 var sound;
 var sound_chime;
-
 var flg_chime;
 var flg_clock;
 var flg_noDraw;
@@ -28,6 +26,48 @@ var flash;
 var speech;
 var mycanvas;
 var max_number_of_comment = 50;
+
+
+
+
+class ProtofessionalEffect {
+    constructor() {
+        this.is_activating = false;
+        this.effect_duration = 7000;
+        this.sound = loadSound('./sounds/protofessional.mp3');
+        this.volume = 0.5;
+    }
+    activate() {
+        this.is_activating = true;
+        this.timestamp = millis();
+        if (flg_sound_mute == false) {
+            this.sound.setVolume(this.volume);
+            this.sound.play();
+        }
+    }
+    setVolume(_volume) {
+        this.volume = _volume;
+    }
+    setText(_interview_message) {
+        this.interview_message = _interview_message;
+    }
+    draw() {
+
+        if (this.is_activating == true &&
+            (millis() - this.timestamp) < this.effect_duration) {
+            let alpha = 255 * cos(radians(90 * (millis() - this.timestamp) / this.effect_duration));
+            background(0, 0, 0, alpha);
+            noStroke();
+            fill(255, 255, 255, alpha);
+            textSize(height / 20);
+            textAlign(CENTER, CENTER);
+            text(this.interview_message, width / 2, height / 2);
+
+        } else {
+            this.is_activating = false;
+        }
+    }
+}
 
 class Comment {
     constructor() {
@@ -105,16 +145,68 @@ class Comment {
     }
 }
 var comments = []; //new Array(50);
+function whileLoading(total) {
+    console.log('loaded: ', + total);
+}
+
+
+
 function preload() {
+
+
+    let count_loaded = 0;
     for (var i = 0; i < max_number_of_comment; i++) {
         comments[i] = new Comment();
         comments[i].setLife(0);
     }
+    // Load sound files
+    sound_chime = loadSound('./sounds/chime.mp3', readyLoading(++count_loaded), null, whileLoading);
+
+
+    sound = [
+        [loadSound('./sounds/camera1.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/camera2.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/camera3.mp3', readyLoading(++count_loaded))],
+        [loadSound('./sounds/clap1.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap2.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap3.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap4.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap5.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap6.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap7.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/clap8.mp3', readyLoading(++count_loaded))],
+        loadSound('./sounds/cracker.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kansei.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/he.wav', readyLoading(++count_loaded)),
+        loadSound('./sounds/chottomatte.wav', readyLoading(++count_loaded)),
+        loadSound('./sounds/OK.wav', readyLoading(++count_loaded)),
+        loadSound('./sounds/punch.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/laugh3.mp3', readyLoading(++count_loaded)),
+        [loadSound('./sounds/kusa00.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kusa01.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kusa02.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kusa03.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kusa04.mp3', readyLoading(++count_loaded)),
+        loadSound('./sounds/kusa05.mp3', readyLoading(++count_loaded))]
+    ]
+    sound_dodon = loadSound('./sounds/dodon.mp3', readyLoading(++count_loaded));
+    sound_drumroll = loadSound('./sounds/drumroll.mp3', readyLoading(++count_loaded));
+    sound_dora = loadSound('./sounds/dora.mp3', readyLoading(++count_loaded));
+    sound_deden = loadSound('./sounds/quiz.mp3', readyLoading(++count_loaded));
+    sound_pingpong = loadSound('./sounds/seikai.mp3', readyLoading(++count_loaded));
+    sound_chin = loadSound('./sounds/chin.mp3', readyLoading(++count_loaded));
+    sound_kansei = loadSound('./sounds/kansei.mp3', readyLoading(++count_loaded));
+    sound_applause = loadSound('./sounds/applause.mp3', readyLoading(++count_loaded));
+    protofessional_effect = new ProtofessionalEffect();
 }
+
+
+
 function setup() {
 
+
     textFont("Noto Sans JP");
-    mycanvas = createCanvas(windowWidth, windowHeight - 200);
+    mycanvas = createCanvas(windowWidth, windowHeight);
     console.log(windowWidth, windowHeight);
     document.getElementById("canvas_placeholder").append(mycanvas.elt);
 
@@ -166,9 +258,21 @@ function setup() {
     timestamp_last_send = millis();
     console.log(timestamp_last_send);
     textAlign(CENTER, CENTER);
+    flash = new Flash();
+    flg_sound_mute = false;
+
+    // Execute loadVoices.
+    speech = new p5.Speech();
+    speech.setVolume(volume);
 }
 
 function draw() {
+    if (sessionStorage.getItem("flg_sound_mute") === "true") {
+        flg_sound_mute = true;
+    }
+    else {
+        flg_sound_mute = false;
+    }
     clear();
     background(0, 0, 0, 0);
 
@@ -179,6 +283,9 @@ function draw() {
             comments[i].draw();
         }
     }
+
+    protofessional_effect.draw();
+    flash.draw();
 }
 var count_comment = 0;
 
@@ -204,10 +311,6 @@ function newComment(data) {
         comment_format += "[" + data.my_name + "]" + "\n";
         //here
         select("#textarea_comment_history").html(comment_format, true);
-        var psconsole = $('#textarea_comment_history');
-        psconsole.scrollTop(
-            psconsole[0].scrollHeight - psconsole.height()
-        );
         protofessional_effect.setText(data.comment);
         protofessional_effect.setVolume(volume);
         protofessional_effect.activate();
@@ -280,7 +383,7 @@ function newComment(data) {
 }
 
 function windowResized() {
-
+    resizeCanvas(windowWidth, windowHeight);
 }
 
 function changeVolume() {
@@ -344,3 +447,7 @@ function updateEndTime() {
 
 }
 
+function readyLoading(count_loaded) {
+    console.log(count_loaded);
+    document.getElementById('p5_loading').innerHTML = str(count_loaded) + ' files loaded.';
+}
