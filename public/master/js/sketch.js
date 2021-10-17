@@ -388,6 +388,7 @@ function setup() {
     socket.on('letter', newLetter);
     socket.on('telop', newTelop);
 
+
     socket.on('disconnect', () => {
         log('you have been disconnected');
     });
@@ -410,6 +411,9 @@ function setup() {
     socket.on('glitch_effect', (data) => {
         flg_glitch = data.show;
         document.getElementById('checkbox_glitch').checked = flg_glitch;
+    });
+    socket.on('toggleQR', (data) => {
+        document.querySelector('#qr').hidden = data;
     });
 
 
@@ -1186,6 +1190,7 @@ function toggleDeactivateCommentControl() {
 
 function toggleQR() {
     document.querySelector("#qr").hidden = !this.checked();
+    socket.emit("toggleQR", !this.checked());
 }
 
 function updateStartTime() {

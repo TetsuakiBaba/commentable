@@ -75,19 +75,22 @@ io.on('connection', (socket) => {
     });
 
     socket.on('telop', (data) => {
-        socket.to(room_master).to('master').emit('telop', data);
+        socket.to(room_master).emit('telop', data);
     });
 
     socket.on('letter', (data) => {
-        socket.to(room).to('master').emit('letter', data);
+        socket.to(room_master).emit('letter', data);
     });
 
     socket.on('display_clock', (data) => {
-        socket.to(room_master).to('master').emit('display_clock', data);
+        socket.to(room_master).emit('display_clock', data);
     });
 
     socket.on('glitch_effect', (data) => {
-        socket.to(room_master).to('master').emit('glitch_effect', data);
+        socket.to(room_master).emit('glitch_effect', data);
+    });
+    socket.on('toggleQR', (data) => {
+        socket.to(room_master).emit('toggleQR', data);
     });
 
     socket.on('deactivate_comment_control', (data) => {
