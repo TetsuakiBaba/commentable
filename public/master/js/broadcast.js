@@ -44,6 +44,7 @@ socket.on("answer", (id, description) => {
   peerConnections[id].setRemoteDescription(description);
 });
 
+
 // Whenever the server emits 'user joined', log it in the chat body
 socket.on('user joined', (data) => {
   log(data.username + ' joined');

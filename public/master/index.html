@@ -8,6 +8,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="../style.css">
     <meta charset="utf-8">
+    <style>
+        .qr {
+            position: absolute;
+            right: 50px;
+            top: 50px;
+            margin: 0px 0px;
+            padding: 0px 0px;
+        }
+    </style>
 </head>
 
 <body>
@@ -17,6 +26,7 @@
         <div id="sketch-holder"></div>
     </div>
     <div class="container-fluid">
+        <div id="qr" class="qr" hidden></div>
 
         <!-- <h1 class="display-4">Commentable Camera</h1> -->
         <p class="lead"><img class="mt-3" src="../assets/logo_text.png" height="50px"></p>
@@ -63,6 +73,8 @@
             <label class="btn btn-outline-success" for="checkbox_glitch">Glitch</label><br>
             <input type="checkbox" class="btn-check" id="checkbox_deactivate_comment_control" autocomplete="off">
             <label class="btn btn-outline-warning" for="checkbox_deactivate_comment_control">コメント制限解除</label><br>
+            <input type="checkbox" class="btn-check" id="checkbox_qr" autocomplete="off">
+            <label class="btn btn-outline-warning" for="checkbox_qr">QRコード表示</label><br>
         </div>
 
 
@@ -200,6 +212,7 @@
 
 
 
+
     </div>
 
 
@@ -211,19 +224,18 @@
 
     <script src="/socket.io/socket.io.js "></script>
 
-    <script src="p5.js"></script>
+    <script src="./js/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/addons/p5.sound.min.js"
         integrity="sha512-wM+t5MzLiNHl2fwT5rWSXr2JMeymTtixiw2lWyVk1JK/jDM4RBSFoH4J8LjucwlDdY6Mu84Kj0gPXp7rLGaDyA=="
         crossorigin="anonymous"></script>
-    <script src="utils.js "></script>
-    <script src="speech.js "></script>
-    <script src="p5.speech.js "></script>
-    <script src="P5Captures.js "></script>
-    <script src="VideoAudioDeviceSelect.js"></script>
-    <script src="GlitchEffect.js"></script>
-    <script src="sketch.js "></script>
-
-
+    <script src="./js/utils.js "></script>
+    <script src="./js/speech.js "></script>
+    <script src="./js/p5.speech.js "></script>
+    <script src="./js/P5Captures.js "></script>
+    <script src="./js/VideoAudioDeviceSelect.js"></script>
+    <script src="./js/GlitchEffect.js"></script>
+    <script src="./js/sketch.js "></script>
+    <script src="./js/qr-code-styling.js"></script>
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js "
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN "

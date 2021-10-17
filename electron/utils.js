@@ -1,3 +1,6 @@
+function testFunc() {
+  alert("hello");
+}
 function downloadAllComments() {
   // テキストエリアより文字列を取得
   const txt = document.getElementById('textarea_comment_history').value;

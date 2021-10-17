@@ -278,6 +278,47 @@ function preload() {
     sound_applause = loadSound('../assets/applause.mp3', readyLoading(++count_loaded));
     protofessional_effect = new ProtofessionalEffect();
 
+
+    // QRコードの作成 
+    let params = getURLParams();
+
+    //document.getElementById("text_my_name").value = decodeURIComponent(params.room);
+
+    console.log(window.location.origin + "/master/?room=" + params.room);
+    //console.log(room, window.location.origin);
+    const qrCode = new QRCodeStyling({
+        "width": 300,
+        "height": 300,
+        "data": window.location.origin + "/master/?room=" + params.room,
+        "margin": 0,
+        "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
+        "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.5, "margin": 10 },
+        "dotsOptions": { "type": "dots", "color": "#333333" },
+        "backgroundOptions": { "color": "#ffffff" },
+        "image": "./images/commentable_qr.png",
+        "dotsOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#6a1a4c", "color2": "#6a1a4c", "rotation": "0" }
+        },
+        "cornersSquareOptions": { "type": "dot", "color": "#333333" },
+        "cornersSquareOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#333333", "color2": "#333333", "rotation": "0" }
+        },
+        "cornersDotOptions": { "type": "dot", "color": "#333333" },
+        "cornersDotOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#333333", "color2": "#333333", "rotation": "0" }
+        },
+        "backgroundOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#ffffff", "color2": "#ffffff", "rotation": "0" }
+        }
+    });
+
+    document.getElementById("qr").innerHTML = "";
+    qrCode.append(document.getElementById("qr"));
+
 }
 
 function preloadJSON(jsonData) {
@@ -337,8 +378,11 @@ function setup() {
     socket = io.connect(window.location.origin);
     // Tell the server your username
     //socket.emit('add user', "test user");
-    socket.emit('add master', "master user");
-
+    var url = new URL(window.location.href);
+    var urlparams = url.searchParams;
+    var room = urlparams.get('room');
+    socket.emit('join-as-master', room + "-master");
+    socket.emit('join', room);
 
     socket.on('comment', newComment);
     socket.on('letter', newLetter);
@@ -470,6 +514,7 @@ function setup() {
     select("#checkbox_noDraw").mouseClicked(toggleDraw);
     select("#checkbox_glitch").mouseClicked(toggleGlitch);
     select("#checkbox_deactivate_comment_control").mouseClicked(toggleDeactivateCommentControl);
+    select("#checkbox_qr").mouseClicked(toggleQR);
 
     select("#time_start").changed(updateStartTime);
     select("#time_end").changed(updateEndTime);
@@ -496,10 +541,7 @@ function setup() {
     time_end = document.getElementById("time_end").value;
     sound_chime.setVolume(volume);
     document.getElementById("screen_size").value = str(int(width)) + "x" + str(int(height));
-    let params = getURLParams();
-    if (params.name) {
-        document.getElementById("text_my_name").value = decodeURIComponent(params.room);
-    }
+
 
     // Check for browser support
     if (!"speechSynthesis" in window) {
@@ -1142,6 +1184,9 @@ function toggleDeactivateCommentControl() {
     socket.emit("deactivate_comment_control", data);
 }
 
+function toggleQR() {
+    document.querySelector("#qr").hidden = !this.checked();
+}
 
 function updateStartTime() {
     time_start = this.value();

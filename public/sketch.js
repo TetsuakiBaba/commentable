@@ -49,6 +49,11 @@ function setup() {
     socket = io.connect(window.location.origin);
 
     // Tell the server your username
+    var url = new URL(window.location.href);
+    var urlparams = url.searchParams;
+    var room = urlparams.get('room');
+    socket.emit('join', room);
+
     socket.emit('add user', "vuser");
 
     socket.on('comment', newComment);

@@ -161,8 +161,6 @@ function preload() {
     }
     // Load sound files
     sound_chime = loadSound('./sounds/chime.mp3', readyLoading(++count_loaded), null, whileLoading);
-
-
     sound = [
         [loadSound('./sounds/camera1.mp3', readyLoading(++count_loaded)),
         loadSound('./sounds/camera2.mp3', readyLoading(++count_loaded)),

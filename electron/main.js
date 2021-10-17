@@ -1,12 +1,15 @@
-const { app, BrowserWindow, Menu, Tray } = require('electron')
+const { app, BrowserWindow, Menu, Tray, screen } = require('electron')
 const path = require('path')
 
 //var flg_sound_mute = true;
 var win;
 function createWindow() {
+
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize
     win = new BrowserWindow({
-        width: 1280,
-        height: 720,
+        title: "Commentable-Viewer",
+        width: width,
+        height: height,
         x: 0,
         y: 0,
         nodeIntegration: true,
@@ -17,21 +20,27 @@ function createWindow() {
         resizable: true,
         alwaysOnTop: true,
         focusable: false,
-        fullscreen: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
         }
     })
 
-    win.loadFile('index.html')
 
     app.dock.hide();
+
     win.setAlwaysOnTop(true, 'floating');
-    win.setVisibleOnAllWorkspaces(true);
+    win.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true
+    });
+    win.setVisibleOnAllWo
     win.setFullScreenable(false);
+    win.setAlwaysOnTop(true, "screen-saver")
     win.setIgnoreMouseEvents(true);
+    //win.setSimpleFullScreen(true);
+    win.loadFile('index.html')
     //win.webContents.openDevTools();
     app.dock.show();
+
 }
 
 // In main process.
@@ -48,6 +57,13 @@ app.whenReady().then(() => {
         });
     tray = new Tray(`${__dirname}/images/icon.png`);
     const contextMenu = Menu.buildFromTemplate([
+        { label: 'Show QR Code [CENTER]', role: 'quit' },
+        {
+            label: "test", type: 'normal',
+            click(item, focusedWindow) {
+                alert("hello");
+            }
+        },
         {
             label: 'Mute sound', type: 'checkbox',
             click(item, focusedWindow) {
@@ -59,11 +75,9 @@ app.whenReady().then(() => {
                 }
 
                 console.log(sound_mute);
-                win.webContents.executeJavaScript(`sessionStorage.setItem("flg_sound_mute",${sound_mute});`, true)
+                win.webContents.executeJavaScript(`sessionStorage.setItem("flg_sound_mute", ${sound_mute}); `, true)
                     .then(result => {
                     });
-                //flg_sound_mute = !flg_sound_mute;
-                //console.log("hello", flg_sound_mute);
             }
         },
         { label: 'Quit Commentable-Viewer', role: 'quit' },
@@ -79,8 +93,8 @@ app.whenReady().then(() => {
             {
                 label: app.name,
                 submenu: [
-                    { role: 'about', label: `${app.name}について` },
-                    { role: 'quit', label: `${app.name}を終了` }
+                    { role: 'about', label: `${app.name} について` },
+                    { role: 'quit', label: `${app.name} を終了` }
                 ]
             }
         ]);

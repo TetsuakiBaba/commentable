@@ -7,7 +7,7 @@ class Speech {
         // Fetch the available voices in English US.
         let voices = speechSynthesis.getVoices();
         $("#voice-names").empty();
-        voices.forEach(function(voice, i) {
+        voices.forEach(function (voice, i) {
             const $option = $("<option>");
             $option.val(voice.name);
             $option.text(voice.name + " (" + voice.lang + ")");
@@ -43,7 +43,7 @@ class Speech {
         }
 
         speechSynthesis.speak(this.uttr);
-        this.uttr.onend = function() {
+        this.uttr.onend = function () {
             // hoge
         };
     }
