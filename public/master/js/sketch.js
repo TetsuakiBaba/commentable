@@ -289,7 +289,7 @@ function preload() {
     const qrCode = new QRCodeStyling({
         "width": 300,
         "height": 300,
-        "data": window.location.origin + "/master/?room=" + params.room,
+        "data": window.location.origin + "/?room=" + params.room,
         "margin": 0,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.5, "margin": 10 },
