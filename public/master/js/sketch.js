@@ -287,8 +287,8 @@ function preload() {
     console.log(window.location.origin + "/master/?room=" + params.room);
     //console.log(room, window.location.origin);
     const qrCode = new QRCodeStyling({
-        "width": 300,
-        "height": 300,
+        "width": 200,
+        "height": 200,
         "data": window.location.origin + "/?room=" + params.room,
         "margin": 0,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
