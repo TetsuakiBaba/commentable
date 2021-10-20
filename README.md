@@ -5,9 +5,10 @@
 |mmhmmのVritual カメラにコメントを載せたところ|
 
 # Getting Started
-とにかくCommentableを利用するだけ，という方は以下のwikiページにgetting startedをまとめておきましたので，そちらを参照してください．
-  * https://github.com/TetsuakiBaba/commentable/wiki
+とにかくCommentableを利用するだけ，という方は以下のページを参照してください．
+  * https://github.com/TetsuakiBaba/commentable/
 
+CommentableをOBSと連携したい場合，開発参加や自前サーバへのデプロイなどをお考えの場合は，ここから下の文章をご参照ください．
 # Commentableとは
 授業中に気軽に学生にコメントしてほしい。このシンプルな欲求から開発をスタートしました。
 [commentscreen](https://commentscreen.com/ )が素晴らしく、たくさんインスパイアされました。ただ、、
