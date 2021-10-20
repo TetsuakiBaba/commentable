@@ -6,7 +6,7 @@
 
 # Getting Started
 とにかくCommentableを利用するだけ，という方は以下のページを参照してください．
-  * https://github.com/TetsuakiBaba/commentable/
+  * https://tetsuakibaba.github.io/commentable/
 
 CommentableをOBSと連携したい場合，開発参加や自前サーバへのデプロイなどをお考えの場合は，ここから下の文章をご参照ください．
 # Commentableとは
