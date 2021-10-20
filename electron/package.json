@@ -1,11 +1,12 @@
 {
   "name": "commentable-viewer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -23,6 +24,16 @@
         "arch": "universal"
       },
       "icon": "./images/icon.icns"
+    },
+    "win": {
+      "target": {
+        "target": "nsis",
+        "arch": "x64"
+      },
+      "icon": "./images/icon.ico"
     }
+  },
+  "dependencies": {
+    "electron-prompt": "^1.7.0"
   }
 }

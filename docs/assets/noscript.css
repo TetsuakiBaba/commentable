@@ -1,0 +1,10 @@
+body {
+	overflow: auto !important;
+}
+
+#main {
+	opacity: 1.0 !important;
+	transform: none !important;
+	transition: none !important;
+	filter: none !important;
+}

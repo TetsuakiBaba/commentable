@@ -27,7 +27,97 @@ var speech;
 var mycanvas;
 var max_number_of_comment = 50;
 
+function testFunc() {
+    alert("testFunc()")
+}
 
+function toggleQR(checked, position, room) {
+
+    let qr_width;
+    let qr_height;
+    let qr_font_size;
+    console.log(windowWidth, windowHeight);
+
+    if (position == "none") {
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_top_right").innerHTML = "";
+        document.getElementById("QR_center").hidden = true;
+        document.getElementById("QR_top_right").hidden = true;
+        return;
+    }
+    else if (position == "center") {
+        qr_width = qr_height = windowWidth / 3;
+        qr_font_size = windowWidth / 150;
+    }
+    else if (position == "top_right") {
+        qr_width = qr_height = windowWidth / 10;
+        qr_font_size = windowWidth / 150;
+    }
+    const qrCode = new QRCodeStyling({
+        "width": qr_width,
+        "height": qr_height,
+        "data": "https://bbcommentable.herokuapp.com/?room=" + room,
+        "margin": qr_width / 15,
+        "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
+        "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
+        "dotsOptions": { "type": "dots", "color": "#333333" },
+        "backgroundOptions": { "color": "#ffffff" },
+        "image": './images/commentable_logo_text.png',
+        "dotsOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#6a1a4c", "color2": "#6a1a4c", "rotation": "0" }
+        },
+        "cornersSquareOptions": { "type": "dot", "color": "#333333" },
+        "cornersSquareOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#333333", "color2": "#333333", "rotation": "0" }
+        },
+        "cornersDotOptions": { "type": "dot", "color": "#333333" },
+        "cornersDotOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#333333", "color2": "#333333", "rotation": "0" }
+        },
+        "backgroundOptionsHelper": {
+            "colorType": { "single": true, "gradient": false },
+            "gradient": { "linear": true, "radial": false, "color1": "#ffffff", "color2": "#ffffff", "rotation": "0" }
+        }
+    });
+
+
+
+    if (checked && position == "center") {
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_top_right").innerHTML = "";
+        qrCode.append(document.getElementById("QR_center"));
+        document.getElementById("QR_center").hidden = false;
+        document.getElementById("QR_top_right").hidden = true;
+    }
+    else if (checked && position == "top_right") {
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_top_right").innerHTML = "";
+
+        qrCode.append(document.getElementById("QR_top_right"));
+        document.getElementById("QR_top_right").hidden = false;
+        document.getElementById("QR_center").hidden = true;
+    }
+    else if (!checked && position == "center") {
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_top_right").innerHTML = "";
+
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_center").hidden = true;
+        document.getElementById("QR_top_right").hidden = false;
+    }
+    else if (!checked && position == "top_right") {
+        document.getElementById("QR_center").innerHTML = "";
+        document.getElementById("QR_top_right").innerHTML = "";
+
+        document.getElementById("QR_top_right").hidden = true;
+        document.getElementById("QR_center").hidden = false;
+
+    }
+    //    document.querySelector('#QR').hidden = !document.querySelector('#QR').hidden;
+}
 
 
 class ProtofessionalEffect {
@@ -199,24 +289,15 @@ function preload() {
 }
 
 
-
-function setup() {
-
-
-    textFont("Noto Sans JP");
-    mycanvas = createCanvas(windowWidth, windowHeight);
-    console.log(windowWidth, windowHeight);
-    document.getElementById("canvas_placeholder").append(mycanvas.elt);
-
-    frameRate(30);
-    flg_deactivate_comment_control = false;
+function startSocketConnection(room) {
 
     //socket = io.connect('http://localhost');
     //socket = io.connect('https://commentable.lolipop.io')
     //socket = io.connect(window.location.origin);
-    socket = io.connect('https://bbcommentable.herokuapp.com');
+    socket = io.connect('https://bbcommentable.herokuapp.com/');
 
-    // Tell the server your username
+
+    socket.emit('join', room);
     socket.emit('add user', "vuser");
 
     socket.on('comment', newComment);
@@ -249,6 +330,18 @@ function setup() {
     };
 
 
+}
+function setup() {
+
+    textFont("Noto Sans JP");
+    mycanvas = createCanvas(windowWidth, windowHeight);
+    console.log(windowWidth, windowHeight);
+    document.getElementById("canvas_placeholder").append(mycanvas.elt);
+
+    frameRate(30);
+    flg_deactivate_comment_control = false;
+
+
     let params = getURLParams();
     if (params.name) {
     }
@@ -262,6 +355,8 @@ function setup() {
     // Execute loadVoices.
     speech = new p5.Speech();
     speech.setVolume(volume);
+
+    //startSocketConnection();
 }
 
 function draw() {
@@ -284,6 +379,7 @@ function draw() {
 
     protofessional_effect.draw();
     flash.draw();
+
 }
 var count_comment = 0;
 
@@ -448,4 +544,12 @@ function updateEndTime() {
 function readyLoading(count_loaded) {
     console.log(count_loaded);
     document.getElementById('p5_loading').innerHTML = str(count_loaded) + ' files loaded.';
+}
+
+function toggleCommentControl(checked) {
+    var data = {
+        key: 'dummy',
+        control: checked
+    }
+    socket.emit('deactivate_comment_control', data);
 }

@@ -11,6 +11,72 @@
         body {
             margin: 0;
             padding: 0;
+
+        }
+
+
+        .QR_top_right {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            animation: fadeIn 2.0s ease 0.0s 1 normal;
+        }
+
+        .QR_center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-top: -16%;
+            margin-left: -16%;
+            animation: fadeIn 2.0s ease 0.0s 1 normal;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: scale(1.0);
+            }
+
+            10% {
+                transform: scale(1.1)
+            }
+
+            100% {
+                transform: scale(1.0)
+            }
+        }
+
+        @keyframes fadeIn {
+
+            /*animation-nameで設定した値を書く*/
+            0% {
+                opacity: 0
+            }
+
+            /*アニメーション開始時は不透明度0%*/
+
+            100% {
+                opacity: 1
+            }
+
+            /*アニメーション終了時は不透明度100%*/
+
+        }
+
+        @keyframes fadeOut {
+
+            /*animation-nameで設定した値を書く*/
+            0% {
+                opacity: 0
+            }
+
+            /*アニメーション開始時は不透明度0%*/
+
+            100% {
+                opacity: 1
+            }
+
+            /*アニメーション終了時は不透明度100%*/
+
         }
     </style>
 </head>
@@ -20,6 +86,8 @@
     <div id="canvas_placeholder">
 
     </div>
+    <div id="QR_center" class="QR_center"></div>
+    <div id="QR_top_right" class="QR_top_right"></div>
 
     <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History"
         hidden></textarea>
@@ -30,6 +98,7 @@
     <script src="p5.sound.min.js"></script>
     <script src="p5.speech.js"></script>
     <script src="http://bbcommentable.herokuapp.com/socket.io/socket.io.js"></script>
+    <script src="qr-code-styling.js"></script>
 
     <script src="utils.js"></script>
     <script src="sketch.js"></script>
