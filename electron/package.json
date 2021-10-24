@@ -1,6 +1,6 @@
 {
   "name": "commentable-viewer",
-  "version": "1.1.0",
+  "version": "1.1.5",
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^15.1.1",
+    "electron": "^15.3.0",
     "electron-builder": "^22.11.7"
   },
   "build": {

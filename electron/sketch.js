@@ -56,7 +56,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": "https://bbcommentable.herokuapp.com/?room=" + room,
+        "data": "https://bbcommentable.herokuapp.com/?room=" + encodeURI(room),
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -356,16 +356,9 @@ function setup() {
     speech = new p5.Speech();
     speech.setVolume(volume);
 
-    //startSocketConnection();
 }
 
 function draw() {
-    if (sessionStorage.getItem("flg_sound_mute") === "true") {
-        flg_sound_mute = true;
-    }
-    else {
-        flg_sound_mute = false;
-    }
     clear();
     background(0, 0, 0, 0);
 
@@ -490,14 +483,6 @@ function changeVolume() {
 
 function toggleSoundMute() {
     flg_sound_mute = !flg_sound_mute;
-    // no sound
-    if (flg_sound_mute == true) {
-        this.html("&#x1f507;");
-    }
-    // with sound
-    else {
-        this.html("&#x1f508;");
-    }
 }
 
 

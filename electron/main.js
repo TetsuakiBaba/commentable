@@ -1,6 +1,9 @@
-const { app, BrowserWindow, Menu, Tray, screen, MenuItem } = require('electron')
+const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
 const prompt = require('electron-prompt');
-const isMac = process.platform === 'darwin'
+
+const is_windows = process.platform === 'win32'
+const is_mac = process.platform === 'darwin'
+const is_linux = process.platform === 'linux'
 
 const path = require('path');
 const { exit } = require('process');
@@ -68,8 +71,6 @@ function generateName() {
 
 
 let tray = null
-let flg_sound_mute = false;
-let sound_mute = "false";
 var g_room;
 app.whenReady().then(() => {
 
@@ -103,11 +104,9 @@ app.whenReady().then(() => {
         },
         type: 'input',
         //resizable: true,
-        //customStylesheet: './css/prompt.css'
+        customStylesheet: path.join(__dirname, '/css/prompt.css')
     })
         .then((r) => {
-            app.dock.hide();
-
             win.setAlwaysOnTop(true, 'floating');
             win.setVisibleOnAllWorkspaces(true, {
                 visibleOnFullScreen: true
@@ -117,8 +116,6 @@ app.whenReady().then(() => {
             win.setIgnoreMouseEvents(true);
             win.loadFile('index.html')
             //win.webContents.openDevTools();
-
-            app.dock.show();
 
             var room = "";
             if (r === null) {
@@ -130,18 +127,25 @@ app.whenReady().then(() => {
                 room = r;
             }
             g_room = room;
-            tray = new Tray(`${__dirname}/images/icon.png`);
+            if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
+            else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
+
 
             var contextMenu = Menu.buildFromTemplate([
                 {
-                    label: 'Room ID: ' + g_room,
-                },
-                {
-                    label: "コメント投稿ページを開く", click: async () => {
+                    label: "投稿ページを開く", click: async () => {
                         const { shell } = require('electron')
                         await shell.openExternal('https://bbcommentable.herokuapp.com/?room=' + g_room);
                     }
                 },
+                {
+                    label: '投稿ページURLをコピー',
+                    click(item, focusedWindows) {
+                        clipboard.writeText('https://bbcommentable.herokuapp.com/?room=' + g_room);
+                        console.log('https://bbcommentable.herokuapp.com/?room=' + encodeURI(g_room));
+                    }
+                },
+
                 {
                     type: 'separator',
                 },
@@ -191,17 +195,9 @@ app.whenReady().then(() => {
                 {
                     label: 'Mute sound', type: 'checkbox',
                     click(item, focusedWindow) {
-                        if (sound_mute == "false") {
-                            sound_mute = "true";
-                        }
-                        else {
-                            sound_mute = "false";
-                        }
-
-                        console.log(sound_mute);
-                        win.webContents.executeJavaScript(`sessionStorage.setItem("flg_sound_mute", ${sound_mute}); `, true)
+                        win.webContents.executeJavaScript(`toggleSoundMute();`, true)
                             .then(result => {
-                            });
+                            }).catch(console.error);
                     }
                 },
                 {
@@ -240,6 +236,12 @@ app.whenReady().then(() => {
             tray.setToolTip('commentable-viewer')
 
             tray.setContextMenu(contextMenu)
+            //クリック時の操作を設定
+            tray.on('click', () => {
+                // メニューを表示
+                tray.popUpContextMenu(contextMenu)
+            })
+
             win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
                 .then(result => {
                 }).catch(console.error);
