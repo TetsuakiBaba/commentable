@@ -27,12 +27,14 @@ io.on('connection', (socket) => {
     var number_of_users = 0;
 
     socket.on("join", (room_to_join) => {
+        if (room_to_join == "") room_to_join = "undefined-room"
         socket.join(room_to_join);
-        console.log(socket.id, "joined to ", room_to_join);
+        console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
 
-        var room_sockets = io.in(room)
+        //var room_sockets = io.in(room)
         number_of_users = io.sockets.adapter.rooms[room].length;
+        console.log("current Room: ", io.sockets.adapter.rooms);
         //var room_object = io.sockets.adapter.rooms[room];
 
         // we store the username in the socket session for this client
@@ -50,8 +52,9 @@ io.on('connection', (socket) => {
 
     });
     socket.on("join-as-master", (room_to_join) => {
+        if (room_to_join == "") room_to_join = "undefined-room"
         socket.join(room_to_join);
-        console.log(socket.id, "joined to ", room_to_join);
+        console.log(socket.id, "joined master to ", room_to_join);
         room_master = room_to_join;
     });
 
@@ -93,26 +96,13 @@ io.on('connection', (socket) => {
         socket.to(room_master).emit('toggleQR', data);
     });
 
+
     socket.on('deactivate_comment_control', (data) => {
+        console.log(io.sockets.adapter.room);
         flg_deactivate_comment_control = data.control;
         socket.to(room).emit('deactivate_comment_control', data);
         io.sockets.adapter.rooms[room].flg_deactivate_comment_control = flg_deactivate_comment_control;
         console.log(io.sockets.adapter.rooms[room].flg_deactivate_comment_control);
-    });
-
-
-    // when the client emits 'typing', we broadcast it to others
-    socket.on('typing', () => {
-        socket.broadcast.emit('typing', {
-            username: socket.username
-        });
-    });
-
-    // when the client emits 'stop typing', we broadcast it to others
-    socket.on('stop typing', () => {
-        socket.broadcast.emit('stop typing', {
-            username: socket.username
-        });
     });
 
 
