@@ -18,7 +18,7 @@ var io = socket(server, options);
 
 
 io.on('connection', (socket) => {
-    console.log(socket.id);
+    console.log('connection', socket);
     var addedUser = false;
     var addedMaster = false;
     var room = "";
@@ -98,11 +98,16 @@ io.on('connection', (socket) => {
 
 
     socket.on('deactivate_comment_control', (data) => {
-        console.log(io.sockets.adapter.room);
-        flg_deactivate_comment_control = data.control;
-        socket.to(room).emit('deactivate_comment_control', data);
-        io.sockets.adapter.rooms[room].flg_deactivate_comment_control = flg_deactivate_comment_control;
-        console.log(io.sockets.adapter.rooms[room].flg_deactivate_comment_control);
+        if (room == "") {
+            // 部屋名が初期値のままの場合(join接続されていない）は無視
+
+        }
+        else {
+            flg_deactivate_comment_control = data.control;
+            socket.to(room).emit('deactivate_comment_control', data);
+            io.sockets.adapter.rooms[room].flg_deactivate_comment_control = flg_deactivate_comment_control;
+        }
+
     });
 
 
