@@ -1591,6 +1591,18 @@ h1.style8 mark, h2.style8 mark, h3.style8 mark, p.style8 mark {
 	padding-top: 56.25%;
 }
 
+#video01 video {
+	width: 100vw;
+}
+
+#video01 .frame {
+	width: 100vw;
+}
+
+#video01 .frame:before {
+	padding-top: 56.25%;
+}
+
 hr {
 	width: 100%;
 	position: relative;
@@ -3009,6 +3021,14 @@ hr:before {
 	}
 	
 	#video03 .frame {
+		width: 100vw;
+	}
+	
+	#video01 video {
+		width: 100vw;
+	}
+	
+	#video01 .frame {
 		width: 100vw;
 	}
 	
