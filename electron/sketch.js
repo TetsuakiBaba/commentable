@@ -297,13 +297,16 @@ function startSocketConnection(room) {
     socket = io.connect('https://bbcommentable.herokuapp.com/');
 
 
-    socket.emit('join', room);
-    socket.emit('add user', "vuser");
+    socket.on('you_are_connected', function () {
+        // 部屋名を指定してジョインする．
+        socket.emit('join', room);
+    });
 
     socket.on('comment', newComment);
     socket.on('disconnect', () => {
         log('you have been disconnected');
     });
+
     // Whenever the server emits 'user joined', log it in the chat body
     socket.on('user joined', (data) => {
         log(data.username + ' joined');
@@ -314,7 +317,7 @@ function startSocketConnection(room) {
     });
     socket.on('reconnect', () => {
         log('you have been reconnected');
-        socket.emit('add user', "vuser");
+        socket.emit('join', room);
     });
     socket.on('login', (data) => {
     });

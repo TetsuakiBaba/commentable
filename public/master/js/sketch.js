@@ -220,6 +220,7 @@ var volume = 0.1;
 var flash;
 
 var speech;
+var g_room = "";
 
 function readyLoading(count_loaded) {
     console.log(count_loaded);
@@ -279,17 +280,18 @@ function preload() {
     protofessional_effect = new ProtofessionalEffect();
 
 
-    // QRコードの作成 
+    // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
     let params = getURLParams();
+    if (params.room) {
+        g_room = decodeURIComponent(params.room);
+    } else {
+        while ((g_room = prompt("部屋名を入力してください", 'test_room')) == '');
+    }
 
-    //document.getElementById("text_my_name").value = decodeURIComponent(params.room);
-
-    console.log(window.location.origin + "/master/?room=" + params.room);
-    //console.log(room, window.location.origin);
     const qrCode = new QRCodeStyling({
         "width": 200,
         "height": 200,
-        "data": window.location.origin + "/?room=" + params.room,
+        "data": window.location.origin + "/?room=" + g_room,
         "margin": 0,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.5, "margin": 10 },
@@ -334,6 +336,7 @@ const video = document.querySelector("video");
 
 function setup() {
 
+
     glitch_lines = new GlitchLines();
 
     let str_name = "管理人"; //prompt("お名前を入力してください（匿名OK、途中から変更可能）", "匿名");
@@ -375,14 +378,17 @@ function setup() {
 
     //socket = io.connect('http://localhost');
     //socket = io.connect('https://commentable.lolipop.io')
-    socket = io.connect(window.location.origin);
-    // Tell the server your username
-    //socket.emit('add user', "test user");
-    var url = new URL(window.location.href);
-    var urlparams = url.searchParams;
-    var room = urlparams.get('room');
-    socket.emit('join-as-master', room + "-master");
-    socket.emit('join', room);
+    socket = io.connect(window.location.origin, {
+        auth: {
+            token: '123'
+        }
+    });
+
+    // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
+    let params = getURLParams();
+    socket.emit('join', g_room);
+    socket.emit('join-as-master', g_room + '-master');
+
 
     socket.on('comment', newComment);
     socket.on('letter', newLetter);

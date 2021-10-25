@@ -18,13 +18,14 @@ var io = socket(server, options);
 
 
 io.on('connection', (socket) => {
-    console.log('connection', socket);
-    var addedUser = false;
-    var addedMaster = false;
+    console.log('connection', socket.id);
     var room = "";
     var room_master = "-master";
     var flg_deactivate_comment_control = false;
     var number_of_users = 0;
+
+    // 接続者に対してコネクションを作ったことを知らせるメッセージ
+    socket.emit('you_are_connected');
 
     socket.on("join", (room_to_join) => {
         if (room_to_join == "") room_to_join = "undefined-room"
@@ -39,7 +40,6 @@ io.on('connection', (socket) => {
 
         // we store the username in the socket session for this client
         socket.username = socket.id; //username;
-        addedUser = true;
         socket.emit('login', {
             numUsers: number_of_users,
             deactivate_comment_control: io.sockets.adapter.rooms[room].flg_deactivate_comment_control

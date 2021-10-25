@@ -39,8 +39,6 @@ var speech;
 
 function setup() {
 
-
-
     textFont("Noto Sans JP");
     flg_deactivate_comment_control = false;
     color_text = document.getElementById("color_text").value;
@@ -50,19 +48,23 @@ function setup() {
     //socket = io.connect('https://commentable.lolipop.io')
     socket = io.connect(window.location.origin);
 
-    // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
-    let params = getURLParams();
-    if (params.room) {
-        var room = decodeURIComponent(params.room);
-        socket.emit('join', room);
-    } else {
-        var room = prompt("部屋名を入力してください", 'test_room');
-        socket.emit('join', room);
-    }
+
 
     socket.emit('add user', "vuser");
 
     socket.on('comment', newComment);
+    socket.on('you_are_connected', function () {
+        // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
+        let params = getURLParams();
+        if (params.room) {
+            var room = decodeURIComponent(params.room);
+            socket.emit('join', room);
+        } else {
+            var room = prompt("部屋名を入力してください", 'test_room');
+            socket.emit('join', room);
+        }
+    });
+
     socket.on('disconnect', () => {
         log('you have been disconnected');
     });
@@ -78,7 +80,15 @@ function setup() {
     });
     socket.on('reconnect', () => {
         log('you have been reconnected');
-        socket.emit('add user', "vuser");
+        // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
+        let params = getURLParams();
+        if (params.room) {
+            var room = decodeURIComponent(params.room);
+            socket.emit('join', room);
+        } else {
+            var room = prompt("部屋名を入力してください", 'test_room');
+            socket.emit('join', room);
+        }
     });
     socket.on('login', (data) => {
         document.getElementById('text_number_of_joined').value = str(data.numUsers);
