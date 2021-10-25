@@ -48,11 +48,10 @@ function setup() {
     //socket = io.connect('https://commentable.lolipop.io')
     socket = io.connect(window.location.origin);
 
-
-
-    socket.emit('add user', "vuser");
-
+    // 誰かがコメント送信してきた場合
     socket.on('comment', newComment);
+
+    // 接続確認のメッセージがきた場合
     socket.on('you_are_connected', function () {
         // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
         let params = getURLParams();
@@ -60,7 +59,8 @@ function setup() {
             var room = decodeURIComponent(params.room);
             socket.emit('join', room);
         } else {
-            var room = prompt("部屋名を入力してください", 'test_room');
+            while ((room = prompt("部屋名を入力してください", 'test_room')) == '');
+            //var room = prompt("部屋名を入力してください", 'test_room');
             socket.emit('join', room);
         }
     });

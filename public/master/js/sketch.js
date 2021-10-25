@@ -378,11 +378,7 @@ function setup() {
 
     //socket = io.connect('http://localhost');
     //socket = io.connect('https://commentable.lolipop.io')
-    socket = io.connect(window.location.origin, {
-        auth: {
-            token: '123'
-        }
-    });
+    socket = io.connect(window.location.origin)
 
     // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
     let params = getURLParams();
