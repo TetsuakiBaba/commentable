@@ -1,3 +1,6 @@
+const fs = require('fs');
+
+
 var use_require_json = require('./api_key.json');
 var key = use_require_json.key;
 var port = process.env.PORT || 80;
@@ -16,6 +19,14 @@ const options = {
 }
 var io = socket(server, options);
 
+function isExistFile(file) {
+    try {
+        fs.statSync(file);
+        return true
+    } catch (err) {
+        if (err.code === 'ENOENT') return false
+    }
+}
 
 io.on('connection', (socket) => {
     console.log('connection', socket.id);
@@ -67,10 +78,39 @@ io.on('connection', (socket) => {
         });
     });
 
+
+
+
     // when the client emits 'new message', this listens and executes
     socket.on('comment', (data) => {
         // we tell the cli"ent to execute 'new message'
         socket.to(room).emit('comment', data);
+
+        const filepath = "public/chatlogs/" + room + ".csv";
+        let timestamp;
+        let today = new Date();
+        if (isExistFile(filepath)) {
+            const stats = fs.statSync(filepath);
+
+            // ファイルサイズ
+            //console.log(stats.size);
+            // 最終アクセス時刻
+            //console.log(stats.atime);
+            // 最終修正時刻
+            //console.log(stats.mtime);
+            // 最終状態変更時刻
+            //console.log(stats.ctime);
+
+            let d = new Date(stats.mtime);
+            let past_h = ((today - d) / (1000 * 60 * 60));
+            let past_s = ((today - d) / 1000);
+            // 24時間経過してればファイル内容は削除しちゃう
+            if (past_h > 24) {
+                fs.unlinkSync(filepath);
+            }
+        }
+        timestamp = `${today.getFullYear()}:${today.getMonth()}:${today.getDay()}:${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+        fs.appendFileSync(filepath, `${timestamp},${data.my_name}, ${data.name_to}, ${data.comment}\n`);
     });
 
     socket.on('stop streaming', () => {
