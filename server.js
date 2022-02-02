@@ -44,6 +44,22 @@ io.on('connection', (socket) => {
         console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
 
+        const filepath = "public/chatlogs/" + room + ".csv";
+        let timestamp;
+        let today = new Date();
+        if (isExistFile(filepath)) {
+            const stats = fs.statSync(filepath);
+
+            let d = new Date(stats.mtime);
+            let past_h = ((today - d) / (1000 * 60 * 60));
+            let past_s = ((today - d) / 1000);
+            // 最終更新から12時間経過してればファイル内容は削除
+            if (past_h > 12) {
+                fs.unlinkSync(filepath);
+            }
+            //            console.log(past_h, past_s);
+        }
+
         //var room_sockets = io.in(room)
         number_of_users = io.sockets.adapter.rooms[room].length;
         console.log("current Room: ", io.sockets.adapter.rooms);
@@ -89,26 +105,6 @@ io.on('connection', (socket) => {
         const filepath = "public/chatlogs/" + room + ".csv";
         let timestamp;
         let today = new Date();
-        if (isExistFile(filepath)) {
-            const stats = fs.statSync(filepath);
-
-            // ファイルサイズ
-            //console.log(stats.size);
-            // 最終アクセス時刻
-            //console.log(stats.atime);
-            // 最終修正時刻
-            //console.log(stats.mtime);
-            // 最終状態変更時刻
-            //console.log(stats.ctime);
-
-            let d = new Date(stats.mtime);
-            let past_h = ((today - d) / (1000 * 60 * 60));
-            let past_s = ((today - d) / 1000);
-            // 24時間経過してればファイル内容は削除しちゃう
-            if (past_h > 24) {
-                fs.unlinkSync(filepath);
-            }
-        }
         timestamp = `${today.getFullYear()}:${today.getMonth()}:${today.getDay()}:${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
         fs.appendFileSync(filepath, `${timestamp},${data.my_name}, ${data.name_to}, ${data.comment}\n`);
     });
