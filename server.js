@@ -53,8 +53,8 @@ io.on('connection', (socket) => {
             let d = new Date(stats.mtime);
             let past_h = ((today - d) / (1000 * 60 * 60));
             let past_s = ((today - d) / 1000);
-            // 最終更新から12時間経過してればファイル内容は削除
-            if (past_h > 12) {
+            // 最終更新から24時間経過してればファイル内容は削除
+            if (past_h > 24) {
                 fs.unlinkSync(filepath);
             }
             //            console.log(past_h, past_s);
@@ -106,7 +106,31 @@ io.on('connection', (socket) => {
         let timestamp;
         let today = new Date();
         timestamp = `${today.getFullYear()}:${today.getMonth()}:${today.getDay()}:${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-        fs.appendFileSync(filepath, `${timestamp},${data.my_name}, ${data.name_to}, ${data.comment}\n`);
+        fs.appendFileSync(filepath, `${timestamp},${data.my_name}, ${data.name_to}, ${data.comment},${data.id_comment}\n`);
+    });
+
+    socket.on('delete comment', (data) => {
+        socket.to(room).emit('delete comment', data);
+        // data.id の当たるCSVの行を削除する
+        const filepath = "public/chatlogs/" + room + ".csv";
+        let records = [];
+        const csvs = fs.readFileSync(filepath, 'utf-8');
+        let rows = csvs.split('\n');
+        for (row of rows) {
+            let cols = row.split(',');
+            if (cols.length == 5) {
+                if (cols[4] == data.id) {
+
+                }
+                else {
+                    records.push(row);
+                }
+            }
+        }
+        fs.unlinkSync(filepath);
+        for (record of records) {
+            fs.appendFileSync(filepath, `${record}\n`);
+        }
     });
 
     socket.on('stop streaming', () => {
