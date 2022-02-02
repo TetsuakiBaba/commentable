@@ -56,6 +56,7 @@ io.on('connection', (socket) => {
             // 最終更新から24時間経過してればファイル内容は削除
             if (past_h > 24) {
                 fs.unlinkSync(filepath);
+                console.log("24 h over: deleted ", filepath);
             }
             //            console.log(past_h, past_s);
         }
@@ -111,25 +112,31 @@ io.on('connection', (socket) => {
 
     socket.on('delete comment', (data) => {
         socket.to(room).emit('delete comment', data);
+        console.log(data);
         // data.id の当たるCSVの行を削除する
         const filepath = "public/chatlogs/" + room + ".csv";
         let records = [];
-        const csvs = fs.readFileSync(filepath, 'utf-8');
-        let rows = csvs.split('\n');
-        for (row of rows) {
-            let cols = row.split(',');
-            if (cols.length == 5) {
-                if (cols[4] == data.id) {
+        if (isExistFile(filepath)) {
+            const csvs = fs.readFileSync(filepath, 'utf-8');
+            let rows = csvs.split('\n');
+            for (row of rows) {
+                let cols = row.split(',');
+                if (cols.length == 5) {
+                    if (cols[4] == data.id) {
 
-                }
-                else {
-                    records.push(row);
+                    }
+                    else {
+                        records.push(row);
+                    }
                 }
             }
+            fs.unlinkSync(filepath);
+            for (record of records) {
+                fs.appendFileSync(filepath, `${record}\n`);
+            }
         }
-        fs.unlinkSync(filepath);
-        for (record of records) {
-            fs.appendFileSync(filepath, `${record}\n`);
+        else {
+            console.log("Error: no such file, ", filepath);
         }
     });
 
