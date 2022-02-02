@@ -161,11 +161,15 @@ function sendComment(
     _str_name_to) {
 
     //console.log(_str_comment);
+    let name_from = _str_my_name.trim(',');
+    let name_to = _str_name_to.trim(',');
+    let comment = _str_comment.replaceAll('\n', '<br>');
+    comment = comment.replaceAll(',', '、');
     var data = {
         key: '',
-        my_name: _str_my_name,
-        name_to: _str_name_to,
-        comment: _str_comment,
+        my_name: name_from,
+        name_to: name_to,
+        comment: comment,
         flg_speech: false,
         color_text: '0x000000',
         color_text_stroke: '0xFFFFFF',
