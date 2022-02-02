@@ -271,11 +271,13 @@ function deleteDOMCard(_id, _is_my_comment) {
                 let p = card.querySelector('p');
                 if (_is_my_comment) {
                     document.querySelector('#textarea_comment').value = p.innerHTML;
+                    socket.emit('delete comment', {
+                        id: _id
+                    });
                 }
                 card.remove();
-                socket.emit('delete comment', {
-                    id: _id
-                });
+
+
                 //here
             }
         }
