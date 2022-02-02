@@ -12,9 +12,15 @@ window.addEventListener('load', function () {
 
     // 誰かがコメント送信してきた場合
     socket.on('comment', function (data) {
-        createComment(data.my_name, data.name_to, data.comment);
+        createComment(data.my_name, data.name_to, data.comment, data.id_comment, false);
         //        console.log(data);
     });
+
+    socket.on("delete comment", (data) => {
+        console.log(data);
+        deleteDOMCard(data.id, false);
+    });
+
 
     // 接続確認のメッセージがきた場合
     socket.on('you_are_connected', function () {
@@ -90,6 +96,15 @@ window.addEventListener('load', function () {
     };
 
 
+    // localStorageから名前の入力を補完してあげる
+    const name_from = localStorage.getItem('name_from');
+    if (name_from) {
+        document.querySelector('#name_from').value = name_from;
+    }
+    const name_to = localStorage.getItem('name_to');
+    if (name_to) {
+        document.querySelector('#name_to').value = name_to;
+    }
 
 });
 
@@ -118,8 +133,8 @@ function convert_array(csv_data) {
         data_array[i] = data_string[i].split(',');
     }
     for (row of data_array) {
-        if (row.length == 4) {
-            createComment(row[1], row[2], row[3]);
+        if (row.length == 5) {
+            createComment(row[1], row[2], row[3], row[4], false);
         }
     }
 }
@@ -129,36 +144,38 @@ function checkNameFrom(value) {
     if (value == '') {
         document.querySelector('#name_from').value = '匿名';
     }
+    localStorage.setItem('name_from', value);
 }
 function checkNameTo(value) {
     //console.log(value);
     if (value == '') {
         document.querySelector('#name_to').value = '全員';
     }
+    localStorage.setItem('name_to', value);
 }
-
-
-
 
 function clickSendButton(value) {
     let comment = document.querySelector('#textarea_comment').value;
     let name_from = document.querySelector('#name_from').value;
     let name_to = document.querySelector('#name_to').value;
+    let id_comment = Math.random().toString(32).substring(2);
     if (comment != '' && name_from != '' && name_to != '') {
         sendComment(
-            comment, false, name_from, 0, false, 0, false, 0, name_to
+            id_comment, comment, false, name_from, 0, false, 0, false, 0, name_to
         );
     }
     else {
-        alert('空欄があります');
+        alert('空欄があるので送信できません');
     }
 }
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(
+    _id_comment,
     _str_comment, _flg_emoji, _str_my_name,
     _flg_img, _id_img, _flg_sound, _id_sound, _hidden,
     _str_name_to) {
+
 
     //console.log(_str_comment);
     let name_from = _str_my_name.trim(',');
@@ -170,6 +187,7 @@ function sendComment(
         my_name: name_from,
         name_to: name_to,
         comment: comment,
+        id_comment: _id_comment,
         flg_speech: false,
         color_text: '0x000000',
         color_text_stroke: '0xFFFFFF',
@@ -185,11 +203,11 @@ function sendComment(
         socket.emit("comment", data);
     }
 
-    createComment(_str_my_name, _str_name_to, _str_comment);
+    createComment(_str_my_name, _str_name_to, _str_comment, _id_comment, true);
     document.querySelector('#textarea_comment').value = '';
 }
 
-function createComment(_name_from, _name_to, _comment) {
+function createComment(_name_from, _name_to, _comment, _id, _is_my_comment) {
     // <div class="card mb-4">
     //         <div class="card-header">
     //             to 馬場さん <span class="small text-muted">from 竹内</span>
@@ -220,7 +238,49 @@ function createComment(_name_from, _name_to, _comment) {
     card_body.appendChild(p);
     card.appendChild(card_body);
 
+
+    let card_footer = document.createElement('div');
+    card_footer.classList = 'card-footer small text-muted';
+    card_footer.style = 'text-align:right';
+    card_footer.innerHTML = 'ID: ' + _id + ' ';
+    card_footer.value = _id;
+    card.appendChild(card_footer);
+    let button_edit = document.createElement('button');
+    button_edit.classList = 'btn btn-close';
+    button_edit.value = _id;
+    button_edit.addEventListener('click', function () {
+        deleteDOMCard(this.value, true);
+    })
+    if (_is_my_comment) button_edit.hidden = false;
+    else button_edit.hidden = true;
+    card_footer.appendChild(button_edit);
+
+
+
+
+
     document.querySelector('#comments').prepend(card);
+}
+
+function deleteDOMCard(_id, _is_my_comment) {
+    let cards = document.querySelectorAll('.card');
+    for (card of cards) {
+        let footer = card.querySelector('button');
+        if (footer) {
+            if (footer.value === _id) {
+                let p = card.querySelector('p');
+                if (_is_my_comment) {
+                    document.querySelector('#textarea_comment').value = p.innerHTML;
+                }
+                card.remove();
+                socket.emit('delete comment', {
+                    id: _id
+                });
+                //here
+            }
+        }
+    }
+    console.log(cards);
 }
 
 function copyShareLink() {
@@ -231,7 +291,7 @@ function copyShareLink() {
     button.innerHTML = "Copied";
     button.classList = "btn btn-success mb-2";
     setTimeout(function () {
-        button.innerHTML = "Copy Share Link";
-        button.classList = "btn btn-primary mb-2";
+        button.innerHTML = "Share";
+        button.classList = "btn btn-secondary mb-2";
     }, 1000);
 }
