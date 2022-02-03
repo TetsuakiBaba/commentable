@@ -41,6 +41,8 @@ window.addEventListener('load', function () {
 
     socket.on('disconnect', () => {
         //console.log('you have been disconnected');
+        alert('接続が切れたので画面を更新します。Disconnected, reload the page');
+        window.location.reload();
     });
     // Whenever the server emits 'user joined', log it in the chat body
     socket.on('user joined', (data) => {
