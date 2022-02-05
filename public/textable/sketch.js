@@ -12,7 +12,7 @@ window.addEventListener('load', function () {
 
     // 誰かがコメント送信してきた場合
     socket.on('comment', function (data) {
-        createComment(data.my_name, data.name_to, data.comment, data.id_comment, false);
+        createComment(data.timestamp, data.my_name, data.name_to, data.comment, data.id_comment, false);
         //        console.log(data);
     });
 
@@ -33,6 +33,8 @@ window.addEventListener('load', function () {
             while ((room = prompt("部屋名を入力してください", 'test_room')) == '');
             //var room = prompt("部屋名を入力してください", 'test_room');
             socket.emit('join', room);
+            history.replaceState('', '', `?room=${room}`);
+
         }
         // csvチャットデータログの読み込み
         import_csv(`../chatlogs/${room}.csv`);
@@ -41,8 +43,8 @@ window.addEventListener('load', function () {
 
     socket.on('disconnect', () => {
         //console.log('you have been disconnected');
-        alert('接続が切れたので画面を更新します。Disconnected, reload the page');
-        window.location.reload();
+        //window.location.reload();
+        toggleModal();
     });
     // Whenever the server emits 'user joined', log it in the chat body
     socket.on('user joined', (data) => {
@@ -115,7 +117,7 @@ function import_csv(csv_path) {
     fetch(csv_path)
         .then((res) => {
             if (!res.ok) {
-                console.log('正常にリクエストを処理できませんでした。');
+                console.log('Warning: no chatlog, new room?');
             }
             return res.text();
         })
@@ -136,7 +138,7 @@ function convert_array(csv_data) {
     }
     for (row of data_array) {
         if (row.length == 5) {
-            createComment(row[1], row[2], row[3], row[4], false);
+            createComment(row[0], row[1], row[2], row[3], row[4], false);
         }
     }
 }
@@ -144,8 +146,9 @@ function convert_array(csv_data) {
 function checkNameFrom(value) {
     ////console.log(value);
     if (value == '') {
-        document.querySelector('#name_from').value = '匿名';
+        document.querySelector('#name_from').value = '匿名 さん';
     }
+
     localStorage.setItem('name_from', value);
 }
 function checkNameTo(value) {
@@ -165,6 +168,7 @@ function clickSendButton(value) {
         sendComment(
             id_comment, comment, false, name_from, 0, false, 0, false, 0, name_to
         );
+        closeQuote();
     }
     else {
         alert('空欄があるので送信できません');
@@ -183,8 +187,17 @@ function sendComment(
     let name_from = _str_my_name.trim(',');
     let name_to = _str_name_to.trim(',');
     let comment = _str_comment.replaceAll('\n', '<br>');
-    comment = comment.replaceAll(',', '、');
+
+    if (document.querySelector('#quote').hidden == false) {
+        let comment_quote = '<div class="quote"><p>' + document.querySelector('#p_quote').innerHTML + '</p></div>';
+        comment = comment_quote + comment.replaceAll(',', '、');
+    }
+    else {
+        comment = comment.replaceAll(',', '、');
+    }
+    let today = new Date();
     var data = {
+        timestamp: today.toLocaleString(),
         key: '',
         my_name: name_from,
         name_to: name_to,
@@ -205,30 +218,89 @@ function sendComment(
         socket.emit("comment", data);
     }
 
-    createComment(_str_my_name, _str_name_to, _str_comment, _id_comment, true);
+    createComment(today.toLocaleString(), _str_my_name, _str_name_to, comment, _id_comment, true);
     document.querySelector('#textarea_comment').value = '';
 }
 
-function createComment(_name_from, _name_to, _comment, _id, _is_my_comment) {
-    // <div class="card mb-4">
-    //         <div class="card-header">
-    //             to 馬場さん <span class="small text-muted">from 竹内</span>
-    //         </div>
-    //         <div class="card-body">
-    //             <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-    //         </div>
-    //     </div>
+function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_comment) {
     let card = document.createElement('div');
 
     card.classList = 'card mb-4';
+    card.value = _id;
     let card_header = document.createElement('div');
     card_header.classList = 'card-header';
-    card_header.innerHTML = `to ${_name_to} `;
-    let span = document.createElement('span');
-    span.classList = 'small text-muted';
-    span.innerHTML = `from ${_name_from}`;
-    card_header.appendChild(span);
+
+    let row_card_header = document.createElement('div');
+    row_card_header.classList = 'row';
+    let col1_card_header = document.createElement('div');
+    col1_card_header.classList = 'col-6';
+    let span_to = document.createElement('span');
+    span_to.innerHTML = 'to ';
+    let span_name_to = document.createElement('span');
+    span_name_to.id = 'card_name_to';
+    span_name_to.innerHTML = `${_name_to} `;
+    col1_card_header.appendChild(span_to);
+    col1_card_header.appendChild(span_name_to);
+
+    let span_from = document.createElement('span');
+    span_from.classList = 'small text-muted';
+    span_from.innerHTML = 'from';
+    col1_card_header.appendChild(span_from);
+
+    let span_name_from = document.createElement('span');
+    span_name_from.classList = 'small text-muted';
+    span_name_from.id = 'card_name_from';
+    span_name_from.innerHTML = ` ${_name_from}`;
+    col1_card_header.appendChild(span_name_from);
+
+
+
+    let col2_card_header = document.createElement('div');
+    col2_card_header.classList = 'col-6';
+    col2_card_header.style = "text-align:right;";
+
+    let icon_reply = document.createElement('i');
+    icon_reply.classList = "bi bi-reply";
+    icon_reply.style = "cursor:pointer;"
+    icon_reply.value = _id;
+    icon_reply.addEventListener('click', function () {
+        console.log('hello');
+        let cards = document.querySelectorAll('.card');
+        for (card of cards) {
+            if (card.value == this.value) {
+                document.querySelector('#quote').hidden = false;
+                document.querySelector('#p_quote').innerHTML = card.querySelector('.card-body').innerHTML;
+                document.querySelector('#name_to').value = document.querySelector('#card_name_from').innerHTML;
+                window.scroll({ top: 0, behavior: 'smooth' });
+            }
+        }
+    });
+    col2_card_header.appendChild(icon_reply);
+    //col2_card_header.innerHTML += ' ';
+
+    //<i class="bi bi-x-circle"></i>
+
+    let icon_edit = document.createElement('i');
+    icon_edit.classList = 'bi bi-x';
+    icon_edit.style = "cursor:pointer;"
+    icon_edit.value = _id;
+    icon_edit.id = 'icon_edit';
+    icon_edit.addEventListener('click', function () {
+        deleteDOMCard(this.value, true);
+        console.log(this.value);
+    })
+    if (_is_my_comment) icon_edit.hidden = false;
+    else icon_edit.hidden = true;
+    col2_card_header.appendChild(icon_edit);
+
+
+    row_card_header.appendChild(col1_card_header);
+    row_card_header.appendChild(col2_card_header);
+
+    card_header.appendChild(row_card_header);
     card.appendChild(card_header);
+    //console.log(card);
+
 
     let card_body = document.createElement('div');
     card_body.classList = 'card-body';
@@ -244,32 +316,18 @@ function createComment(_name_from, _name_to, _comment, _id, _is_my_comment) {
     let card_footer = document.createElement('div');
     card_footer.classList = 'card-footer small text-muted';
     card_footer.style = 'text-align:right';
-    card_footer.innerHTML = 'ID: ' + _id + ' ';
+    card_footer.innerHTML = `${_timestamp} [${_id}]`;
     card_footer.value = _id;
     card.appendChild(card_footer);
-    let button_edit = document.createElement('button');
-    button_edit.classList = 'btn btn-close';
-    button_edit.value = _id;
-    button_edit.addEventListener('click', function () {
-        deleteDOMCard(this.value, true);
-    })
-    if (_is_my_comment) button_edit.hidden = false;
-    else button_edit.hidden = true;
-    card_footer.appendChild(button_edit);
-
-
-
-
-
     document.querySelector('#comments').prepend(card);
 }
 
 function deleteDOMCard(_id, _is_my_comment) {
     let cards = document.querySelectorAll('.card');
     for (card of cards) {
-        let footer = card.querySelector('button');
-        if (footer) {
-            if (footer.value === _id) {
+        let icon_edit = card.querySelector('#icon_edit');
+        if (icon_edit) {
+            if (icon_edit.value === _id) {
                 let p = card.querySelector('p');
                 if (_is_my_comment) {
                     document.querySelector('#textarea_comment').value = p.innerHTML;
@@ -278,9 +336,6 @@ function deleteDOMCard(_id, _is_my_comment) {
                     });
                 }
                 card.remove();
-
-
-                //here
             }
         }
     }
@@ -295,7 +350,69 @@ function copyShareLink() {
     button.innerHTML = "Copied";
     button.classList = "btn btn-success mb-2";
     setTimeout(function () {
-        button.innerHTML = "Share";
+        button.innerHTML = '<i class="bi bi-link-45deg"></i> Link';
         button.classList = "btn btn-secondary mb-2";
     }, 1000);
+}
+
+function commentSearch(value) {
+    console.log(value);
+
+    let cards = document.querySelectorAll('.card');
+
+    for (card of cards) {
+        console.log(card);
+        let count_found = 0;
+        let str = card.querySelector('.card-text').innerHTML;
+        if (str.indexOf(value) >= 0) {
+            count_found++;
+        }
+        str = card.querySelector('#card_name_from').innerHTML;
+        if (str.indexOf(value) >= 0) {
+            count_found++
+        }
+
+        str = card.querySelector('#card_name_to').innerHTML;
+        if (str.indexOf(value) >= 0) {
+            count_found++
+        }
+
+        str = card.querySelector('.card-footer').innerHTML;
+        if (str.indexOf(value) >= 0) {
+            count_found++
+        }
+
+
+        if (count_found > 0) {
+            card.hidden = false;
+        }
+        else {
+            card.hidden = true;
+        }
+    }
+}
+
+function closeQuote() {
+    document.querySelector('#quote').hidden = true;
+    document.querySelector('#p_quote').innerHTML = '';
+}
+
+function exitRoom() {
+    //window.location.reload();
+    //    console.log(window.location);
+    let ret = confirm('退出しますか？/Are you sure to exit chat room?');
+    if (ret) {
+        let href = window.location.href.replace(`?room=${room}`, '');
+        document.location.href = href;
+    }
+
+
+}
+
+function toggleModal() {
+    var myModal = new bootstrap.Modal(document.getElementById('disconnectedModal'), {
+        backdrop: false,
+        keyboard: false,
+    })
+    myModal.toggle();
 }
