@@ -9,8 +9,13 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
     <meta charset="utf-8">
     <style>
+        body {
+            background-color: white;
+        }
+
         .card {
             animation: fadeIn 1.0s ease 0.0s 1 normal;
         }
@@ -29,13 +34,53 @@
 
             /*アニメーション終了時は不透明度100%*/
         }
+
+        .quote {
+            padding: 1em;
+            margin: 0.5em;
+            color: gray;
+            font-size: 0.8em;
+            line-height: 1.2em;
+            background: white;
+            border-left: solid 0.5em gray;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        }
+
+        .quote p {
+            margin: 0;
+            padding: 0;
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- Modal -->
+    <div class="modal fade" id="disconnectedModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"> <i class="bi bi-exclamation-diamond"></i>
+                        Disconnected</h5>
+                </div>
+                <div class="modal-body">
+                    <p>接続が切れたためupdateボタンを押して再接続して下さい。
+                        <br>
+                        Please click the update button to reload.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        onclick="window.location.reload();">update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="container-sm">
         <div class="row align-items-center">
-            <div class="col-10">
+            <div class="col-8">
                 <h1 class="mt-4 mb-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
                         class="bi bi-chat-right-text" viewBox="0 0 16 16">
@@ -44,24 +89,24 @@
                         <path
                             d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
                     </svg>
-                    textable <span class="badge bg-secondary" style="font-size:0.2em">v.0.1-alpha</span>
+                    textable <span class="badge bg-secondary" style="font-size:0.2em">v.0.2-alpha</span>
                     </span>
 
                 </h1>
-                <h6 class="mt-0 mb-4 small text-muted">makes texting easy in a small group chat
+                <h6 class="mt-0 mb-4 small text-muted">
+                    makes texting easy in a small group chat
                 </h6>
             </div>
-            <div class="col-2">
+            <div class="col-4">
                 <!-- Button trigger modal -->
                 <p style="text-align:right;">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick='exitRoom();'>
+                        <i class="bi bi-door-open"></i>
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
                         data-bs-target="#exampleModal">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                            class="bi bi-info-circle" viewBox="0 0 16 16">
-                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                            <path
-                                d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
-                        </svg>
+                        <i class="bi bi-info-circle"></i>
                     </button>
                 </p>
 
@@ -77,18 +122,40 @@
                             </div>
                             <div class="modal-body">
                                 <h5>概要</h5>
-                                <p>textableは手軽にグループチャットができるウェブシステムです。チャットは部屋ごとに別れており、部屋は好きな名前をつけることができます。最初に部屋を作成したらあとは部屋のリンク（shareボタンで取得）を友人に送るだけですぐにグループチャットを開始できます。
+                                <p>textableは手軽にグループチャットができるウェブシステムです。チャットは部屋ごとに別れており、部屋は好きな名前をつけることができます。最初に部屋を作成したらあとは部屋のリンク（Linkボタンで取得）を友人に送るだけですぐにグループチャットを開始できます。
                                 </p>
 
                                 <p>
                                     チャットの内容はその部屋ごとに自動で保存されるので、部屋名を知っている人であればいつでも閲覧できます。ただし24時間以上誰からもチャットの入力がない場合は自動的にチャットのログは消去されます。
                                 </p>
+
+                                <h5>投稿内容の削除
+                                </h5>
+                                <p>
+                                    自身が投稿した内容は削除（投稿のやり直し）ができます。削除したい投稿の右上にバツボタン（<i
+                                        class="bi bi-x"></i>）がついているのでこちらをクリックしてください。サーバとの接続が解除されると削除はできなくなります。例えばリロードを行うと自身が投稿した内容は削除できなくなります。
+                                </p>
+
                                 <h5>
-                                    <h5>投稿内容の削除
-                                    </h5>
-                                    <p>
-                                        自身が投稿した内容は削除（投稿のやり直し）ができます。削除したい投稿の右下にバツボタンがついているのでこちらをクリックしてください。
-                                    </p>
+                                    返信
+                                </h5>
+                                <p>
+                                    任意の投稿に対して引用返信ができます。投稿右上の返信マーク（<i
+                                        class="bi bi-reply"></i>）をクリックすると、コメント入力欄の前に返信コメント内容が表示されます。この状態でコメント送信を行うと、引用返信ができます。なお宛先欄には自動的に返信対象者の名前が入ります。
+                                </p>
+                                <hr>
+                                <h5>Release note</h5>
+                                <h6>version 0.2-alpha</h6>
+                                <ul>
+                                    <li>Added: comment search UI</li>
+                                    <li>Added: reference styled comment(reply func)</li>
+                                    <li>Added: comment date on the comment footer</li>
+                                    <li>Added: room logout button ( <i class="bi bi-door-open"></i>)</li>
+                                    <li>Fixed: changed disconnection notifier, 'alert()' to 'bootstrap modal' in order
+                                        to avoid the notification during the presentation. </li>
+                                </ul>
+                                <h6>version 0.1-alpha</h6>
+
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -128,6 +195,15 @@
 
         </div>
 
+        <div id="quote" class="row mt-0 mb-0" hidden>
+            <div class="col-12" id="div_quote">
+                <div class="quote">
+                    <p style="text-align:right"><button type="button" class="btn-close" aria-label="Close"
+                            onclick="closeQuote();"></button></p>
+                    <p id="p_quote"></p>
+                </div>
+            </div>
+        </div>
         <div class="row mb-2">
             <div class="col-12">
                 <div class="form-floating">
@@ -143,37 +219,43 @@
                 <input type="text" id="link_url" hidden>
                 <button onclick="copyShareLink()" id="button_sharelink" style="width:100%" type="button"
                     class="btn btn-secondary mb-2">
-                    Share</button>
+                    <i class="bi bi-link-45deg"></i>
+                    <span id="span_button_share">Link</span>
+                </button>
             </div>
             <div class="col-4">
                 <a href="" id="link_download">
                     <button style="width:100%" type="button" class="btn btn-secondary mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-                            class="bi bi-download" viewBox="0 0 16 16">
-                            <path
-                                d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-                            <path
-                                d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
-                        </svg> chatlog</button>
+                        <i class="bi bi-download"></i> Log</button>
                 </a>
             </div>
             <div class="col-4">
-                <button onclick="clickSendButton()" style="width:100%" type="button" class="btn btn-dark"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send"
-                        viewBox="0 0 16 16">
-                        <path
-                            d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z" />
-                    </svg> 送信</button>
+                <button onclick="clickSendButton()" style="width:100%" type="button" class="btn btn-dark">
+                    <i class="bi bi-send"></i> Send
+                </button>
             </div>
         </div>
 
         <hr>
+        <div class="input-group flex-nowrap mb-4">
+            <span class="input-group-text" id="addon-wrapping">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                </svg>
+            </span>
+            <input type="text" class="form-control" placeholder="Type to Search..." aria-label="search"
+                aria-describedby="addon-wrapping" oninput="commentSearch(this.value);">
+        </div>
+
 
         <div id="comments">
 
         </div>
 
         <hr>
+
         <footer class="text-center text-muted small">
             &copy; 2022 Tetsuaki BABA
         </footer>
