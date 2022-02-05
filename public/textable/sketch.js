@@ -17,7 +17,7 @@ window.addEventListener('load', function () {
     });
 
     socket.on("delete comment", (data) => {
-        console.log(data);
+        //console.log(data);
         deleteDOMCard(data.id, false);
     });
 
@@ -265,7 +265,6 @@ function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_c
     icon_reply.style = "cursor:pointer;"
     icon_reply.value = _id;
     icon_reply.addEventListener('click', function () {
-        console.log('hello');
         let cards = document.querySelectorAll('.card');
         for (card of cards) {
             if (card.value == this.value) {
@@ -288,7 +287,7 @@ function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_c
     icon_edit.id = 'icon_edit';
     icon_edit.addEventListener('click', function () {
         deleteDOMCard(this.value, true);
-        console.log(this.value);
+        //console.log(this.value);
     })
     if (_is_my_comment) icon_edit.hidden = false;
     else icon_edit.hidden = true;
@@ -340,7 +339,7 @@ function deleteDOMCard(_id, _is_my_comment) {
             }
         }
     }
-    console.log(cards);
+    //console.log(cards);
 }
 
 function copyShareLink() {
@@ -357,12 +356,12 @@ function copyShareLink() {
 }
 
 function commentSearch(value) {
-    console.log(value);
+    //console.log(value);
 
     let cards = document.querySelectorAll('.card');
 
     for (card of cards) {
-        console.log(card);
+        //console.log(card);
         let count_found = 0;
         let str = card.querySelector('.card-text').innerHTML;
         if (str.indexOf(value) >= 0) {
