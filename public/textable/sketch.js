@@ -213,8 +213,9 @@ function sendComment(
         id_sound: _id_sound,
         hidden: _hidden
     }
+
     if (_str_comment.length > 0) {
-        //console.log(data);
+        console.log(data);
         socket.emit("comment", data);
     }
 
