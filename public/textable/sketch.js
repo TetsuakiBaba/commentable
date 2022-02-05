@@ -219,7 +219,7 @@ function sendComment(
         socket.emit("comment", data);
     }
 
-    createComment(today.toLocaleString(), _str_my_name, _str_name_to, comment, _id_comment, true);
+    createComment(data.timestamp, _str_my_name, _str_name_to, comment, _id_comment, true);
     document.querySelector('#textarea_comment').value = '';
 }
 
