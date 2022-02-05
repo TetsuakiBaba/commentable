@@ -197,7 +197,7 @@ function sendComment(
     }
     let today = new Date();
     var data = {
-        timestamp: today.toLocaleString(),
+        timestamp: today.toLocaleString('ja-JP'),
         key: '',
         my_name: name_from,
         name_to: name_to,
