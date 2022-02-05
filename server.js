@@ -106,7 +106,7 @@ io.on('connection', (socket) => {
         const filepath = "public/chatlogs/" + room + ".csv";
         let timestamp;
         let today = new Date();
-        timestamp = `${today.getFullYear()}:${today.getMonth()}:${today.getDay()}:${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+        timestamp = today.toLocaleString();
         fs.appendFileSync(filepath, `${timestamp},${data.my_name}, ${data.name_to}, ${data.comment},${data.id_comment}\n`);
     });
 
