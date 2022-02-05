@@ -215,7 +215,7 @@ function sendComment(
     }
 
     if (_str_comment.length > 0) {
-        console.log(data);
+        //console.log(data);
         socket.emit("comment", data);
     }
 
@@ -268,10 +268,16 @@ function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_c
         let cards = document.querySelectorAll('.card');
         for (card of cards) {
             if (card.value == this.value) {
-                document.querySelector('#quote').hidden = false;
+
                 document.querySelector('#p_quote').innerHTML = card.querySelector('.card-body').innerHTML;
                 document.querySelector('#name_to').value = document.querySelector('#card_name_from').innerHTML;
                 window.scroll({ top: 0, behavior: 'smooth' });
+
+                document.querySelector('#quote').style.opacity = '0.0';
+                document.querySelector('#quote').hidden = false;
+                setTimeout(function () {
+                    document.querySelector('#quote').style.opacity = '1.0';
+                }, 10);
             }
         }
     });
@@ -320,11 +326,18 @@ function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_c
     card_footer.value = _id;
     card.appendChild(card_footer);
     document.querySelector('#comments').prepend(card);
+
+    card.style.filter = 'blur(50px)';
+    card.style.opacity = '0.0'
+    setTimeout(function () {
+        card.style.filter = 'blur(0px)';
+        card.style.opacity = '1.0'
+    }, 10);
 }
 
 function deleteDOMCard(_id, _is_my_comment) {
-    let cards = document.querySelectorAll('.card');
-    for (card of cards) {
+    cards = document.querySelectorAll('.card');
+    for (let card of cards) {
         let icon_edit = card.querySelector('#icon_edit');
         if (icon_edit) {
             if (icon_edit.value === _id) {
@@ -335,7 +348,14 @@ function deleteDOMCard(_id, _is_my_comment) {
                         id: _id
                     });
                 }
-                card.remove();
+
+                card.style.opacity = '0.0';
+                card.style.filter = 'blur(50px)';
+                setTimeout(function () {
+                    card.remove();
+                }, 500);
+
+
             }
         }
     }
@@ -360,7 +380,7 @@ function commentSearch(value) {
 
     let cards = document.querySelectorAll('.card');
 
-    for (card of cards) {
+    for (let card of cards) {
         //console.log(card);
         let count_found = 0;
         let str = card.querySelector('.card-text').innerHTML;
@@ -384,17 +404,31 @@ function commentSearch(value) {
 
 
         if (count_found > 0) {
+            card.style.opacity = '0.0';
             card.hidden = false;
+            setTimeout(function () {
+                card.style.opacity = '1.0';
+            }, 10);
         }
         else {
-            card.hidden = true;
+            card.style.opacity = '0.0';
+            setTimeout(function () {
+                card.hidden = true;
+            }, 500);
+
         }
     }
 }
 
 function closeQuote() {
-    document.querySelector('#quote').hidden = true;
-    document.querySelector('#p_quote').innerHTML = '';
+    let quote = document.querySelector('#quote');
+    quote.style.opacity = '0.0';
+    setTimeout(function () {
+        document.querySelector('#p_quote').innerHTML = '';
+        quote.hidden = true;
+    }, 500);
+
+
 }
 
 function exitRoom() {
