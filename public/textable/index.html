@@ -94,7 +94,7 @@
                         <path
                             d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
                     </svg>
-                    textable <span class="badge bg-secondary" style="font-size:0.2em">v.0.2.1-alpha</span>
+                    textable <span class="badge bg-secondary" style="font-size:0.2em">v.0.2.2-alpha</span>
                     </span>
 
                 </h1>
@@ -150,6 +150,12 @@
                                 </p>
                                 <hr>
                                 <h5>Release note</h5>
+                                <h6>version 0.2.2-alpha</h6>
+                                <ul>
+                                    <li>Fixed: incorrect auto reply name filling</li>
+                                    <li>Fixed: incorrect search result because of the effect</li>
+                                    <li>Added: Auto text filling when delete button pushed.</li>
+                                </ul>
                                 <h6>version 0.2.1-alpha</h6>
                                 <ul>
                                     <li>Added: visual fadein/out and blur feedbacks.</li>
@@ -257,7 +263,7 @@
                 </svg>
             </span>
             <input type="text" class="form-control" placeholder="Type to Search..." aria-label="search"
-                aria-describedby="addon-wrapping" oninput="commentSearch(this.value);">
+                aria-describedby="addon-wrapping" id="text_search" oninput="commentSearch(this.value);">
         </div>
 
 
