@@ -184,8 +184,8 @@ function sendComment(
 
 
     //console.log(_str_comment);
-    let name_from = _str_my_name.trim(',');
-    let name_to = _str_name_to.trim(',');
+    let name_from = _str_my_name.replaceAll(',', '、');
+    let name_to = _str_name_to.replaceAll(',', '、');
     let comment = _str_comment.replaceAll('\n', '<br>');
 
     if (document.querySelector('#quote').hidden == false) {
@@ -219,11 +219,12 @@ function sendComment(
         socket.emit("comment", data);
     }
 
-    createComment(data.timestamp, _str_my_name, _str_name_to, comment, _id_comment, true);
+    createComment(data.timestamp, name_from, name_to, comment, _id_comment, true);
     document.querySelector('#textarea_comment').value = '';
 }
 
 function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_comment) {
+    //console.log('createComment', _name_from);
     let card = document.createElement('div');
 
     card.classList = 'card mb-4';
@@ -270,7 +271,7 @@ function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_c
             if (card.value == this.value) {
 
                 document.querySelector('#p_quote').innerHTML = card.querySelector('.card-body').innerHTML;
-                document.querySelector('#name_to').value = document.querySelector('#card_name_from').innerHTML;
+                document.querySelector('#name_to').value = card.querySelector('#card_name_from').innerHTML;
                 window.scroll({ top: 0, behavior: 'smooth' });
 
                 document.querySelector('#quote').style.opacity = '0.0';
@@ -344,6 +345,7 @@ function deleteDOMCard(_id, _is_my_comment) {
                 let p = card.querySelector('p');
                 if (_is_my_comment) {
                     document.querySelector('#textarea_comment').value = p.innerHTML;
+                    document.querySelector('#name_to').value = card.querySelector('#card_name_from').innerHTML;
                     socket.emit('delete comment', {
                         id: _id
                     });
@@ -376,47 +378,63 @@ function copyShareLink() {
 }
 
 function commentSearch(value) {
-    //console.log(value);
+    //console.log('search', value.length);
 
     let cards = document.querySelectorAll('.card');
 
     for (let card of cards) {
         //console.log(card);
         let count_found = 0;
+        if (value.length == 0) count_found = 1;
         let str = card.querySelector('.card-text').innerHTML;
         if (str.indexOf(value) >= 0) {
             count_found++;
         }
         str = card.querySelector('#card_name_from').innerHTML;
         if (str.indexOf(value) >= 0) {
-            count_found++
+            count_found++;
         }
 
         str = card.querySelector('#card_name_to').innerHTML;
         if (str.indexOf(value) >= 0) {
-            count_found++
+            count_found++;
+
         }
+
 
         str = card.querySelector('.card-footer').innerHTML;
         if (str.indexOf(value) >= 0) {
-            count_found++
+            count_found++;
         }
+
+
+        // card.style.opacity = '0.0';
+        //         card.style.filter = 'blur(50px)';
+        //         setTimeout(function () {
+        //             card.remove();
+        //         }, 500);
 
 
         if (count_found > 0) {
             card.style.opacity = '0.0';
+            card.style.filter = 'blur(50px)';
             card.hidden = false;
             setTimeout(function () {
                 card.style.opacity = '1.0';
+                card.style.filter = 'blur(0px)';
             }, 10);
         }
         else {
             card.style.opacity = '0.0';
-            setTimeout(function () {
-                card.hidden = true;
-            }, 500);
+            card.style.filter = 'blur(50px)';
+            card.hidden = true;
+            // setTimeout(function () {
+
+            // }, 500);
 
         }
+        // if (count_found > 0) card.hidden = false;
+        // else card.hidden = true;
     }
 }
 
