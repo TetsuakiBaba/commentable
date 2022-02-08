@@ -146,7 +146,7 @@ function convert_array(csv_data) {
 function checkNameFrom(value) {
     ////console.log(value);
     if (value == '') {
-        document.querySelector('#name_from').value = '匿名 さん';
+        document.querySelector('#name_from').value = '匿名';
     }
 
     localStorage.setItem('name_from', value);
@@ -345,7 +345,7 @@ function deleteDOMCard(_id, _is_my_comment) {
                 let p = card.querySelector('p');
                 if (_is_my_comment) {
                     document.querySelector('#textarea_comment').value = p.innerHTML;
-                    document.querySelector('#name_to').value = card.querySelector('#card_name_from').innerHTML;
+                    document.querySelector('#name_to').value = card.querySelector('#card_name_to').innerHTML;
                     socket.emit('delete comment', {
                         id: _id
                     });
