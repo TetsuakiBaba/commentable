@@ -18,7 +18,7 @@ var is_streaming = false;
 var timestamp_last_send
 
 var p5_captures;
-var flg_speech;
+var flg_speech = false;
 var flg_deactivate_comment_control;
 let peerConnection;
 const config = {
@@ -223,6 +223,9 @@ function pushedSendLetterButton() {
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
+    _str_comment = _str_comment.replace(/,/g, '、');
+    _str_my_name = _str_my_name.replace(/,/g, '、');
+
     if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
         if (_flg_img == false) {
             if (_str_comment.length <= 0) {
@@ -323,8 +326,10 @@ function keyPressed() {
             document.getElementById("text_comment").value,
             false,
             document.getElementById("text_my_name").value,
-            false, 0,
-            false, 0,
+            false,
+            0,
+            false,
+            0,
             hidden
         );
 
@@ -361,20 +366,27 @@ function windowResized() {
 
 function sendEmojiReaction() {
     sendComment(
-        this.html(), true,
+        this.html(),
+        true,
         document.getElementById("text_my_name").value,
-        false, 0,
-        false, 0, -1
+        false,
+        0,
+        false,
+        0, -1
     );
 }
 
 function sendSoundReaction() {
     var id_sound = this.attribute("value");
     sendComment(
-        this.html(), false,
-        document.getElementById("text_my_name").value,
-        false, 0,
-        true, id_sound, -1
+        this.html(),  // comment 
+        true,         // emoji
+        document.getElementById("text_my_name").value, // name
+        false,        // image flg
+        0,            // image id
+        true,         // sound flg
+        id_sound,     // sound id
+        -1            // hidden command
     );
 }
 
