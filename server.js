@@ -106,7 +106,7 @@ io.on('connection', (socket) => {
         console.log(data);
         const filepath = "public/chatlogs/" + room + ".csv";
         let timestamp;
-        let today = new Date();
+        let today = new Date().toLocaleString({ timeZone: 'Asia/Tokyo' });
         timestamp = today;
         fs.appendFileSync(filepath, `${timestamp},${data.my_name},${data.name_to},${data.comment},${data.id_comment},${data.flg_emoji},${data.flg_sound},${data.flg_speech},${socket.id}\n`);
     });
