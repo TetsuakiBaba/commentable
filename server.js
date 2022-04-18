@@ -103,10 +103,9 @@ io.on('connection', (socket) => {
         // we tell the client to execute 'new message'
         data.socketid = socket.id;
         socket.to(room).emit('comment', data);
-        console.log(data);
         const filepath = "public/chatlogs/" + room + ".csv";
         let timestamp;
-        let today = new Date().toLocaleString('ja-JP');
+        let today = new Date();
         timestamp = today;
         fs.appendFileSync(filepath, `${timestamp},${data.my_name},${data.name_to},${data.comment},${data.id_comment},${data.flg_emoji},${data.flg_sound},${data.flg_speech},${socket.id}\n`);
     });
