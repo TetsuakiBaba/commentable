@@ -798,10 +798,14 @@ function newComment(data) {
         let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
         comment_format += data.comment;
         if (data.flg_sound == true) {
-            comment_format += " [sound]";
+            comment_format += ",sound";
         }
+        else {
+            comment_format += ",nosound";
+        }
+        comment_format += `,${socket.id}`;
+        comment_format += `,${data.my_name}\n`;
 
-        comment_format += "[" + data.my_name + "]" + "\n";
         //here
         select("#textarea_comment_history").html(comment_format, true);
         var psconsole = $('#textarea_comment_history');
