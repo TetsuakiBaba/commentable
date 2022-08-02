@@ -39,6 +39,7 @@ window.addEventListener('load', function () {
         // csvチャットデータログの読み込み
         import_csv(`../chatlogs/${room}.csv`);
         document.querySelector('#name_room').innerHTML = room;
+
     });
 
     socket.on('disconnect', () => {
@@ -131,13 +132,15 @@ function import_csv(csv_path) {
 
 // テキストデータを配列に変換
 function convert_array(csv_data) {
+
     let data_array = [];
     const data_string = csv_data.split('\n');
     for (let i = 0; i < data_string.length; i++) {
         data_array[i] = data_string[i].split(',');
     }
     for (row of data_array) {
-        if (row.length == 5) {
+        console.log(row.length);
+        if (row.length == 9) {
             createComment(row[0], row[1], row[2], row[3], row[4], false);
         }
     }
@@ -224,7 +227,7 @@ function sendComment(
 }
 
 function createComment(_timestamp, _name_from, _name_to, _comment, _id, _is_my_comment) {
-    //console.log('createComment', _name_from);
+    console.log('createComment', _name_from);
     let card = document.createElement('div');
 
     card.classList = 'card mb-4';

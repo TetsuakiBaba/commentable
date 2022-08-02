@@ -60,10 +60,16 @@ io.on('connection', (socket) => {
             }
             //            console.log(past_h, past_s);
         }
+        // no exit, let's create
+        else {
+            // const fs = require('fs');
+            // fs.writeFileSync(filepath, '');
+            // console.log('create: ', filepath);
+        }
 
         //var room_sockets = io.in(room)
         number_of_users = io.sockets.adapter.rooms[room].length;
-        console.log("current Room: ", io.sockets.adapter.rooms);
+        //console.log("current Room: ", io.sockets.adapter.rooms);
         //var room_object = io.sockets.adapter.rooms[room];
 
         // we store the username in the socket session for this client
@@ -82,7 +88,7 @@ io.on('connection', (socket) => {
     socket.on("join-as-master", (room_to_join) => {
         if (room_to_join == "") room_to_join = "undefined-room"
         socket.join(room_to_join);
-        console.log(socket.id, "joined master to ", room_to_join);
+        //console.log(socket.id, "joined master to ", room_to_join);
         room_master = room_to_join;
     });
 
@@ -112,7 +118,7 @@ io.on('connection', (socket) => {
 
     socket.on('delete comment', (data) => {
         socket.to(room).emit('delete comment', data);
-        console.log(data);
+        //console.log(data);
         // data.id の当たるCSVの行を削除する
         const filepath = "public/chatlogs/" + room + ".csv";
         let records = [];
@@ -208,6 +214,6 @@ io.on('connection', (socket) => {
         });
         socket.to(broadcaster).emit("disconnectPeer", socket.id, number_of_users);
         socket.leave(room);
-        console.log(socket.id, " has been leaved from ", room);
+        //console.log(socket.id, " has been leaved from ", room);
     });
 });
