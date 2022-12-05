@@ -10,7 +10,6 @@ const { exit } = require('process');
 
 var win;
 function createWindow() {
-
     console.log(screen.getAllDisplays());
     //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     let active_screen = screen.getPrimaryDisplay();
@@ -39,8 +38,6 @@ function createWindow() {
     })
 }
 
-
-
 function capFirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -56,25 +53,18 @@ function generateName() {
     return name;
 }
 
-// In main process.
-
 let tray = null
 var g_room;
 app.whenReady().then(() => {
-
     createWindow()
-
     let menu = Menu.buildFromTemplate(
-        [
-            {
-                label: app.name,
-                submenu: [
-                    { role: 'quit', label: `${app.name} を終了` }
-                ]
-            }
-        ]);
+        [{
+            label: app.name,
+            submenu: [
+                { role: 'quit', label: `${app.name} を終了` }
+            ]
+        }]);
     Menu.setApplicationMenu(menu);
-
 
     prompt({
         title: 'Commentable',
@@ -93,147 +83,146 @@ app.whenReady().then(() => {
         type: 'input',
         //resizable: true,
         customStylesheet: path.join(__dirname, '/css/prompt.css')
-    })
-        .then((r) => {
-            win.setAlwaysOnTop(true, 'floating');
-            win.setVisibleOnAllWorkspaces(true, {
-                visibleOnFullScreen: true
-            });
-            win.setFullScreenable(false);
-            win.setAlwaysOnTop(true, "screen-saver")
-            win.setIgnoreMouseEvents(true);
-            win.loadFile('index.html')
-            //win.webContents.openDevTools();
+    }).then((r) => {
+        win.setAlwaysOnTop(true, 'floating');
+        win.setVisibleOnAllWorkspaces(true, {
+            visibleOnFullScreen: true
+        });
+        win.setFullScreenable(false);
+        win.setAlwaysOnTop(true, "screen-saver")
+        win.setIgnoreMouseEvents(true);
+        win.loadFile('index.html')
+        //win.webContents.openDevTools();
 
-            var room = "";
-            if (r === null) {
-                console.log('user cancelled');
-                room = "";
-                app.quit();
-            } else {
-                console.log('result', r);
-                room = r;
-            }
-            g_room = room;
-            if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
-            else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
-
-
-            var contextMenu = Menu.buildFromTemplate([
-                {
-                    label: "投稿ページを開く", click: async () => {
-                        const { shell } = require('electron')
-                        await shell.openExternal('https://commentable.fly.dev/?room=' + g_room);
-                    }
-                },
-                {
-                    label: '投稿ページURLをコピー',
-                    click(item, focusedWindows) {
-                        clipboard.writeText('https://commentable.fly.dev/?room=' + g_room);
-                        console.log('https://commentable.fly.dev/?room=' + encodeURI(g_room));
-                    }
-                },
-
-                {
-                    type: 'separator',
-                },
-                {
-                    label: "QR Code表示",
-                    submenu: [
-                        {
-                            label: '非表示', type: 'radio',
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            }
-                        },
-                        {
-                            label: 'QR Code [CENTER]', type: 'radio',
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            }
-                        },
-                        {
-                            label: 'QR Code [TOP RIGHT]', type: 'radio', checked: true,
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            }
-                        },
-                    ]
-                },
-
-                {
-                    label: '投稿制限解除', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
-                            .then(result => {
-                            }).catch(console.error);
-                    }
-                },
+        var room = "";
+        if (r === null) {
+            console.log('user cancelled');
+            room = "";
+            app.quit();
+        } else {
+            console.log('result', r);
+            room = r;
+        }
+        g_room = room;
+        if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
+        else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
 
 
-                {
-                    label: 'Mute sound', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        win.webContents.executeJavaScript(`toggleSoundMute();`, true)
-                            .then(result => {
-                            }).catch(console.error);
-                    }
-                },
-                {
-                    type: 'separator',
-                },
-                { label: 'Quit Commentable-Viewer', role: 'quit' },
-            ])
+        var contextMenu = Menu.buildFromTemplate([
+            {
+                label: "投稿ページを開く", click: async () => {
+                    const { shell } = require('electron')
+                    await shell.openExternal('https://commentable.fly.dev/?room=' + g_room);
+                }
+            },
+            {
+                label: '投稿ページURLをコピー',
+                click(item, focusedWindows) {
+                    clipboard.writeText('https://commentable.fly.dev/?room=' + g_room);
+                    console.log('https://commentable.fly.dev/?room=' + encodeURI(g_room));
+                }
+            },
 
-            let screens = screen.getAllDisplays();
+            {
+                type: 'separator',
+            },
+            {
+                label: "QR Code表示",
+                submenu: [
+                    {
+                        label: '非表示', type: 'radio',
+                        click(item, focusedWindow) {
+                            console.log(item, focusedWindow);
+                            win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        }
+                    },
+                    {
+                        label: 'QR Code [CENTER]', type: 'radio',
+                        click(item, focusedWindow) {
+                            console.log(item, focusedWindow);
+                            win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        }
+                    },
+                    {
+                        label: 'QR Code [TOP RIGHT]', type: 'radio', checked: true,
+                        click(item, focusedWindow) {
+                            console.log(item, focusedWindow);
+                            win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        }
+                    },
+                ]
+            },
 
-            var data_append;
-            data_append = {
-                label: '表示ディスプレイ選択',
-                submenu: []
-            }
-            sc_count = 0;
-            for (sc of screens) {
-                data_append.submenu[sc_count] = {
-                    label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height,
-                    type: 'radio',
-                    x: sc.workArea.x,
-                    y: sc.workArea.y,
-                    w: sc.workArea.width,
-                    h: sc.workArea.height,
-                    click: function (item) {
-                        console.log(item);
-                        win.setPosition(item.x, item.y, true);
-                        win.setSize(item.w, item.h, true);
-                        console.log(item.x, item.y, item.w, item.h);
-                    }
-                };
-                sc_count++;
-            }
-            contextMenu.insert(3, new MenuItem(data_append));
+            {
+                label: '投稿制限解除', type: 'checkbox',
+                click(item, focusedWindow) {
+                    win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
+                        .then(result => {
+                        }).catch(console.error);
+                }
+            },
 
-            tray.setToolTip('commentable-viewer')
 
-            tray.setContextMenu(contextMenu)
-            //クリック時の操作を設定
-            tray.on('click', () => {
-                // メニューを表示
-                tray.popUpContextMenu(contextMenu)
-            })
+            {
+                label: 'Mute sound', type: 'checkbox',
+                click(item, focusedWindow) {
+                    win.webContents.executeJavaScript(`toggleSoundMute();`, true)
+                        .then(result => {
+                        }).catch(console.error);
+                }
+            },
+            {
+                type: 'separator',
+            },
+            { label: 'Quit Commentable-Viewer', role: 'quit' },
+        ])
 
-            win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
-                .then(result => {
-                }).catch(console.error);
+        let screens = screen.getAllDisplays();
+
+        var data_append;
+        data_append = {
+            label: '表示ディスプレイ選択',
+            submenu: []
+        }
+        sc_count = 0;
+        for (sc of screens) {
+            data_append.submenu[sc_count] = {
+                label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height,
+                type: 'radio',
+                x: sc.workArea.x,
+                y: sc.workArea.y,
+                w: sc.workArea.width,
+                h: sc.workArea.height,
+                click: function (item) {
+                    console.log(item);
+                    win.setPosition(item.x, item.y, true);
+                    win.setSize(item.w, item.h, true);
+                    console.log(item.x, item.y, item.w, item.h);
+                }
+            };
+            sc_count++;
+        }
+        contextMenu.insert(3, new MenuItem(data_append));
+
+        tray.setToolTip('commentable-viewer')
+
+        tray.setContextMenu(contextMenu)
+        //クリック時の操作を設定
+        tray.on('click', () => {
+            // メニューを表示
+            tray.popUpContextMenu(contextMenu)
         })
+
+        win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
+            .then(result => {
+            }).catch(console.error);
+    })
         .catch(console.error);
 
 
