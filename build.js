@@ -3,7 +3,7 @@ const { build } = require('electron-builder');
 build({
   config: {
     // package.json の 'name' と異なる名前をつける場合に必要
-    productName: 'Sample',
+    productName: 'Commentable',
     // 出力ファイル名, 例: Sample-0.0.1-win32-x64.exe
     artifactName: '${productName}-${version}-${platform}-${arch}.${ext}',
     copyright: 'Copyright (c) 2020 sprout2000',
