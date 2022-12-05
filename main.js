@@ -123,14 +123,14 @@ app.whenReady().then(() => {
                 {
                     label: "投稿ページを開く", click: async () => {
                         const { shell } = require('electron')
-                        await shell.openExternal('https://bbcommentable.herokuapp.com/?room=' + g_room);
+                        await shell.openExternal('https://commentable.fly.dev/?room=' + g_room);
                     }
                 },
                 {
                     label: '投稿ページURLをコピー',
                     click(item, focusedWindows) {
-                        clipboard.writeText('https://bbcommentable.herokuapp.com/?room=' + g_room);
-                        console.log('https://bbcommentable.herokuapp.com/?room=' + encodeURI(g_room));
+                        clipboard.writeText('https://commentable.fly.dev/?room=' + g_room);
+                        console.log('https://commentable.fly.dev/?room=' + encodeURI(g_room));
                     }
                 },
 
