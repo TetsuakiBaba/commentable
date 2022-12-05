@@ -37,17 +37,6 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     })
-
-    // const child = new BrowserWindow({ parent: win, modal: true, show: false })
-    // child.loadURL('https://github.com')
-    // child.once('ready-to-show', () => {
-    //     child.show()
-    // })
-
-    // setInterval(function () {
-    //     // get the mouse position
-    //     let mousePos = screen.getCursorScreenPoint();
-    // }, 1000);
 }
 
 
@@ -68,7 +57,6 @@ function generateName() {
 }
 
 // In main process.
-
 
 let tray = null
 var g_room;
@@ -273,5 +261,3 @@ app.on('window-all-closed', () => {
         app.quit()
     }
 })
-
-
