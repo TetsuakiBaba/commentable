@@ -14,4 +14,8 @@ jobs:
       steps:
         - uses: actions/checkout@v2
         - uses: superfly/flyctl-actions/setup-flyctl@master
-        - run: flyctl deploy --remote-only
+        - run: |
+            echo $FLY_API_TOKEN
+            flyctl auth login --token $FLY_API_TOKEN
+            flyctl deploy --remote-only
+          # flyctl deploy --remote-only
