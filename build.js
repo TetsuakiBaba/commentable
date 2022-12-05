@@ -3,7 +3,7 @@ const { build } = require('electron-builder');
 build({
   config: {
     // package.json の 'name' と異なる名前をつける場合に必要
-    productName: 'Commentable',
+    // productName: 'Commentable',
     // 出力ファイル名, 例: Sample-0.0.1-win32-x64.exe
     artifactName: '${productName}-${version}-${platform}-${arch}.${ext}',
     copyright: 'Copyright (c) 2020 sprout2000',
@@ -18,7 +18,7 @@ build({
       // GitHub へデプロイする
       provider: 'github',
       // とりあえず draft としてデプロイ
-      releaseType: 'draft', // or 'release', 'prerelease'
+      releaseType: 'release', // or 'release', 'prerelease'
     },
     // Windows 向け設定
     win: {
@@ -50,17 +50,6 @@ build({
       },
       // コード署名しない場合は null の設定が必須
       identity: null,
-    },
-    linux: {
-      // ICO でもいけるが ICNS が一番美しい仕上がりとなる
-      icon: 'assets/linux.icns',
-      // どのディストロでも使える AppImage を選択
-      target: ['AppImage'], // or 'deb', 'snap' など
-      /**
-       * Linux では 'category' が必要
-       * https://specifications.freedesktop.org/menu-spec/latest/apa.html
-       */
-      category: 'Development',
     },
   },
 });
