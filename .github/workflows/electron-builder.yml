@@ -1,49 +1,38 @@
-name: Electron CD
+name: GitHub CI
 
 on:
   push:
-    branches:
-      - main
+    # バージョン指定つきタグがプッシュされた時のみ実行
+    tags:
+      - 'v*'
 
 jobs:
   build:
-
-    runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
-        os: [macOS-lastest, windows-latest]
+        # クロスプラットフォーム・ビルド
+        platform: [macos-latest, windows-latest]
 
+    runs-on: ${{ matrix.platform }}
     steps:
-      - name: Context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
-      - name: Use Node.js 18.x
-        uses: actions/setup-node@v1
+      # Actions の基本設定
+      - name: Check out Git repositry
+        uses: actions/checkout@master
+
+      # Node.js のセットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@master
         with:
           node-version: 18.x
-      - name: yarn install
-        run: |
-          yarn install
-      - name: Publish
-        run: |
-          yarn run dist
-      - name: Cleanup artifacts
-        run: |
-          npx rimraf "dist/!(*.exe|*.deb|*.AppImage|*.dmg)"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.os }}
-          path: dist
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: "dist/**"
+
+      # 依存パッケージのインストール
+      - name: Install dependencies
+        run: npm install
+
+      # GitHub releases へデプロイ
+      - name: Deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN は自動生成されるのでとくに設定は不要
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # NPM スクリプト名は 'release' にすることが必須
+        run: npm run release
