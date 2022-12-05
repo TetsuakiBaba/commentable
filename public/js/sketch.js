@@ -223,7 +223,7 @@ function pushedSendLetterButton() {
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
-  if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
+  if ((millis() - timestamp_last_send) > 10 || flg_deactivate_comment_control == true) {
     if (_flg_img == false) {
       if (_str_comment.length <= 0) {
         return;
