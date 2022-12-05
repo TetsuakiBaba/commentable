@@ -99,6 +99,8 @@ io.on('connection', (socket) => {
     // we tell the cli"ent to execute 'new message'
     socket.to(room).emit('comment', data);
 
+    console.log("comment: ", data);
+
     const filepath = "public/chatlogs/" + room + ".csv";
     let timestamp;
     let today = new Date();
