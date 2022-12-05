@@ -2,7 +2,7 @@ name: Deploy to Fly.io
 on:
   push:
     branches:
-      - main
+      - staging
 
 env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -11,11 +11,8 @@ jobs:
   deploy:
       name: Deploy app
       runs-on: ubuntu-latest
+      environment: PROD
       steps:
         - uses: actions/checkout@v2
         - uses: superfly/flyctl-actions/setup-flyctl@master
-        - run: |
-            echo $FLY_API_TOKEN
-            flyctl auth login --token $FLY_API_TOKEN
-            flyctl deploy --remote-only
-          # flyctl deploy --remote-only
+        - run: flyctl deploy --remote-only
