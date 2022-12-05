@@ -1,34 +1,49 @@
-name: Build/release
+name: Electron CD
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
-  release:
+  build:
+
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macOS-lastest, windows-latest]
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v1
-
-      - name: Install Node.js, NPM and Yarn
+      - name: Context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v1
         with:
-          node-version: 18
-
-      - name: Build/release Electron app
-        uses: samuelmeuli/action-electron-builder@v1
+          node-version: 18.x
+      - name: yarn install
+        run: |
+          yarn install
+      - name: Publish
+        run: |
+          yarn run dist
+      - name: Cleanup artifacts
+        run: |
+          npx rimraf "dist/!(*.exe|*.deb|*.AppImage|*.dmg)"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
         with:
-          # GitHub token, automatically provided to the action
-          # (No need to define this secret in the repo settings)
-          github_token: ${{ secrets.github_token }}
-
-          # If the commit is tagged with a version (e.g. "v1.0.0"),
-          # release the app after building
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          name: ${{ matrix.os }}
+          path: dist
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: "dist/**"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
