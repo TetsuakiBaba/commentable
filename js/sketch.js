@@ -56,7 +56,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": "https://bbcommentable.herokuapp.com/?room=" + encodeURI(room),
+        "data": "/?room=" + encodeURI(room),
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -294,7 +294,7 @@ function startSocketConnection(room) {
     //socket = io.connect('http://localhost');
     //socket = io.connect('https://commentable.lolipop.io')
     //socket = io.connect(window.location.origin);
-    socket = io.connect('https://bbcommentable.herokuapp.com/');
+    socket = io.connect('https://commentable.fly.dev/');
 
 
     socket.on('you_are_connected', function () {
