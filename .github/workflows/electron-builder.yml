@@ -2,11 +2,9 @@ name: GitHub CI
 
 on:
   push:
-    branches:
-      - main
     # # バージョン指定つきタグがプッシュされた時のみ実行
-    # tags:
-    #   - 'v*'
+    tags:
+      - 'v*'
 
 jobs:
   build:
