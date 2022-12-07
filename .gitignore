@@ -1,4 +1,7 @@
 /node_modules
 /api_key.json
 /public/api_key.json
+/public/chatlogs/*
 .DS_Store
+output.txt
+sample.txt
