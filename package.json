@@ -7,14 +7,13 @@
     "start": "electron .",
     "build-mac": "electron-builder --mac",
     "build-win": "electron-builder --win",
-    "release": "node build.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "electron": "^22.0.0",
-    "electron-builder": "^23.6.0",
+    "electron-builder": "^22.10.3",
     "node-cmd": "^5.0.0",
     "npm": "^8.8.0"
   },
