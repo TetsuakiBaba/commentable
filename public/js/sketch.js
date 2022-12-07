@@ -44,8 +44,6 @@ function setup() {
   color_text = document.getElementById("color_text").value;
   color_text_stroke = document.getElementById("color_text_stroke").value;
 
-  //socket = io.connect('http://localhost');
-  //socket = io.connect('https://commentable.lolipop.io')
   socket = io.connect(window.location.origin);
 
   // 誰かがコメント送信してきた場合
