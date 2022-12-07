@@ -94,7 +94,6 @@ function gotStream(stream) {
   //socket.emit("broadcaster");
 }
 
-
 function handleError(error) {
   console.error("Error: ", error);
 }

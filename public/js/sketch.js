@@ -181,7 +181,6 @@ function setup() {
   noCanvas();
 }
 
-
 var count_comment = 0;
 
 function newComment(data) {
@@ -223,7 +222,7 @@ function pushedSendLetterButton() {
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
 
-  if ((millis() - timestamp_last_send) > 1000 || flg_deactivate_comment_control == true) {
+  if ((millis() - timestamp_last_send) > 1 || flg_deactivate_comment_control == true) {
     if (_flg_img == false) {
       if (_str_comment.length <= 0) {
         return;
@@ -341,8 +340,6 @@ function clearLetterTextBox() {
   document.getElementById("text_letter").value = "";
 }
 
-
-
 function changeRoomName() {
 
 }
@@ -377,7 +374,6 @@ function sendSoundReaction() {
     true, id_sound, -1
   );
 }
-
 
 function changeVolume() {
   this.html("test", false);
