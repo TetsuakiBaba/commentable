@@ -141,7 +141,6 @@ class ProtofessionalEffect {
     this.interview_message = _interview_message;
   }
   draw() {
-
     if (this.is_activating == true &&
       (millis() - this.timestamp) < this.effect_duration) {
       let alpha = 255 * cos(radians(90 * (millis() - this.timestamp) / this.effect_duration));
@@ -287,14 +286,8 @@ function preload() {
   protofessional_effect = new ProtofessionalEffect();
 }
 
-
 function startSocketConnection(room) {
-
-  //socket = io.connect('http://localhost');
-  //socket = io.connect('https://commentable.lolipop.io')
-  //socket = io.connect(window.location.origin);
   socket = io.connect('https://commentable.fly.dev/');
-
 
   socket.on('you_are_connected', function () {
     // 部屋名を指定してジョインする．
@@ -330,11 +323,8 @@ function startSocketConnection(room) {
   window.onunload = window.onbeforeunload = () => {
     socket.close();
   };
-
-
 }
 function setup() {
-
   textFont("Noto Sans JP");
   mycanvas = createCanvas(windowWidth, windowHeight);
   console.log(windowWidth, windowHeight);
@@ -342,11 +332,8 @@ function setup() {
 
   frameRate(30);
   flg_deactivate_comment_control = false;
-
-
   let params = getURLParams();
-  if (params.name) {
-  }
+  if (params.name) {}
 
   timestamp_last_send = millis();
   console.log(timestamp_last_send);
@@ -357,13 +344,11 @@ function setup() {
   // Execute loadVoices.
   speech = new p5.Speech();
   speech.setVolume(volume);
-
 }
 
 function draw() {
   clear();
   background(0, 0, 0, 0);
-
 
   for (var i = 0; i < max_number_of_comment; i++) {
     if (comments[i].getLife() > 0) {
@@ -374,14 +359,11 @@ function draw() {
 
   protofessional_effect.draw();
   flash.draw();
-
 }
+
 var count_comment = 0;
-
 function newComment(data) {
-
   count_comment++;
-
   let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
   comment_format += data.comment;
   if (data.flg_sound == true) {
@@ -465,10 +447,7 @@ function newComment(data) {
       comments[id].setY(random(100, height - 100));
       comments[id].useImage(0);
     }
-
   }
-
-
 }
 
 function windowResized() {
@@ -486,7 +465,6 @@ function changeVolume() {
 function toggleSoundMute() {
   flg_sound_mute = !flg_sound_mute;
 }
-
 
 function toggleSpeech() {
   flg_speech = this.checked();
@@ -512,7 +490,6 @@ function toggleDraw() {
   }
 }
 
-
 function updateStartTime() {
   time_start = this.value();
   var tmp_time = time_start.split(":");
@@ -525,7 +502,6 @@ function updateEndTime() {
   var tmp = time_end.split(":");
   time_end_hour = int(tmp[0]);
   time_end_minute = int(tmp[1]);
-
 }
 
 function readyLoading(count_loaded) {
