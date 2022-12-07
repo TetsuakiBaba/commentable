@@ -19,21 +19,6 @@ const options = {
 }
 var io = socket(server, options);
 
-function ls (dir) {
-  return fs.readdirSync(dir).map(function (file) {
-    return dir + '/' + file;
-  });
-}
-
-function tree (dir) {
-  var stats = fs.statSync(dir);
-  if (stats.isFile()) {
-    return dir;
-  } else if (stats.isDirectory()) {
-    return ls(dir).map(tree);
-  }
-}
-
 function isExistFile(file) {
   try {
     fs.statSync(file);
@@ -60,16 +45,7 @@ io.on('connection', (socket) => {
     room = room_to_join;
 
     // TODO:ファイル作成はエラーが出る可能性が高いため、処理を変えたい
-    // const filepath = "public/chatlogs/" + room + ".csv";
-    const filepath = "chatlogs/" + room + ".csv";
-
-    ls("/").forEach(function (file) {
-      console.log(file);
-    });
-
-    ls("/public").forEach(function (file) {
-      console.log(file);
-    });
+    const filepath = "public/chatlogs/" + room + ".csv";
 
     let timestamp;
     let today = new Date();
