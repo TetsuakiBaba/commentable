@@ -5,3 +5,5 @@
 .DS_Store
 output.txt
 sample.txt
+
+!.gitkeep
