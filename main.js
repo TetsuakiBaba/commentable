@@ -113,6 +113,7 @@ app.whenReady().then(() => {
         label: "投稿ページを開く", click: async () => {
           const { shell } = require('electron')
           await shell.openExternal('https://commentable.fly.dev/?room=' + g_room);
+          // await shell.openExternal('http://localhost:8080/?room=' + g_room);
         }
       },
       {
@@ -120,6 +121,8 @@ app.whenReady().then(() => {
         click(item, focusedWindows) {
           clipboard.writeText('https://commentable.fly.dev/?room=' + g_room);
           console.log('https://commentable.fly.dev/?room=' + encodeURI(g_room));
+          // clipboard.writeText('http://localhost:8080/?room=' + g_room);
+          // console.log('http://localhost:8080/?room=' + encodeURI(g_room));
         }
       },
 

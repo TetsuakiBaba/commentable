@@ -55,7 +55,8 @@ function toggleQR(checked, position, room) {
   const qrCode = new QRCodeStyling({
     "width": qr_width,
     "height": qr_height,
-    "data": "/?room=" + encodeURI(room),
+    "data": "https://commentable.fly.dev/?room=" + encodeURI(room),
+    // "data": "http://localhost:8080/?room=" + encodeURI(room),
     "margin": qr_width / 15,
     "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
     "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -287,7 +288,8 @@ function preload() {
 }
 
 function startSocketConnection(room) {
-  socket = io.connect('https://commentable.fly.dev/');
+  // socket = io.connect('https://commentable.fly.dev/');
+  socket = io.connect('http://localhost:8080/');
 
   socket.on('you_are_connected', function () {
     // 部屋名を指定してジョインする．
