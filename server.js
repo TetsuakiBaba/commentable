@@ -91,9 +91,6 @@ io.on('connection', (socket) => {
     });
   });
 
-
-
-
   // when the client emits 'new message', this listens and executes
   socket.on('comment', (data) => {
     // we tell the cli"ent to execute 'new message'
@@ -172,9 +169,7 @@ io.on('connection', (socket) => {
       socket.to(room).emit('deactivate_comment_control', data);
       io.sockets.adapter.rooms[room].flg_deactivate_comment_control = flg_deactivate_comment_control;
     }
-
   });
-
 
   socket.on("broadcaster", () => {
     broadcaster = socket.id;
