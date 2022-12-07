@@ -27,6 +27,9 @@ var speech;
 var mycanvas;
 var max_number_of_comment = 50;
 
+const hostname = "https://commentable.fly.dev";
+// const hostname = "http://localhost:8080";
+
 function testFunc() {
   alert("testFunc()")
 }
@@ -55,8 +58,7 @@ function toggleQR(checked, position, room) {
   const qrCode = new QRCodeStyling({
     "width": qr_width,
     "height": qr_height,
-    "data": "https://commentable.fly.dev/?room=" + encodeURI(room),
-    // "data": "http://localhost:8080/?room=" + encodeURI(room),
+    "data": hostname+"/?room="+encodeURI(room),
     "margin": qr_width / 15,
     "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
     "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -288,8 +290,7 @@ function preload() {
 }
 
 function startSocketConnection(room) {
-  // socket = io.connect('https://commentable.fly.dev/');
-  socket = io.connect('http://localhost:8080/');
+  socket = io.connect(hostname);
 
   socket.on('you_are_connected', function () {
     // 部屋名を指定してジョインする．

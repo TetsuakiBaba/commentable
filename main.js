@@ -107,22 +107,21 @@ app.whenReady().then(() => {
     if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
     else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
 
+    const hostname = "https://commentable.fly.dev";
+    // const hostname = "http://localhost:8080";
 
     var contextMenu = Menu.buildFromTemplate([
       {
         label: "投稿ページを開く", click: async () => {
           const { shell } = require('electron')
-          await shell.openExternal('https://commentable.fly.dev/?room=' + g_room);
-          // await shell.openExternal('http://localhost:8080/?room=' + g_room);
+          await shell.openExternal(hostname+'/?room=' + g_room);
         }
       },
       {
         label: '投稿ページURLをコピー',
         click(item, focusedWindows) {
-          clipboard.writeText('https://commentable.fly.dev/?room=' + g_room);
-          console.log('https://commentable.fly.dev/?room=' + encodeURI(g_room));
-          // clipboard.writeText('http://localhost:8080/?room=' + g_room);
-          // console.log('http://localhost:8080/?room=' + encodeURI(g_room));
+          clipboard.writeText(hostname+'/?room=' + g_room);
+          console.log(hostname+'/?room=' + encodeURI(g_room));
         }
       },
 
