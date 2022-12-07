@@ -11,7 +11,11 @@ app.use(express.static('./public'));
 let broadcaster;
 var socket = require('socket.io');
 const options = {
-  serveClient: true
+  serveClient: true, // ←　これ使われてないな
+  // pingInterval: 5000,
+  //pingTimeout: 25000,
+  //transports: ['polling']
+  //transports: ['websockets']
 }
 var io = socket(server, options);
 
@@ -40,6 +44,7 @@ io.on('connection', (socket) => {
     console.log(socket.id, " joined to ", room_to_join);
     room = room_to_join;
 
+    // TODO:ファイル作成はエラーが出る可能性が高いため、処理を変えたい
     const filepath = "public/chatlogs/" + room + ".csv";
     let timestamp;
     let today = new Date();
