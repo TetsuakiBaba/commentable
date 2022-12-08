@@ -1,10 +1,10 @@
 name: 'Build and release electron installer'
 on:
   push:
-    # branches:
-    #   - main
-    tags:
-      - 'v*'
+    branches:
+      - main
+    # tags:
+    #   - 'v*'
 
 jobs:
   release:
