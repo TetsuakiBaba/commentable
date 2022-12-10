@@ -291,13 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function updateStartTime() {
-  time_start = this.value();
-  let tmp_time = time_start.split(":");
-  time_start_hour = int(tmp_time[0]);
-  time_start_minute = int(tmp_time[1]);
-}
-
 function updateEndTime() {
   time_end = this.value();
   let tmp = time_end.split(":");
