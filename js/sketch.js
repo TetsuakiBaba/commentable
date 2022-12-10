@@ -30,10 +30,6 @@ var max_number_of_comment = 50;
 const hostname = "https://commentable.fly.dev";
 // const hostname = "http://localhost:8080";
 
-function testFunc() {
-  alert("testFunc()")
-}
-
 function toggleQR(checked, position, room) {
   let qr_width;
   let qr_height;
