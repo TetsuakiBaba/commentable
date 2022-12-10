@@ -291,22 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-let flg_camera_is_opened = false;
-function toggleCamera() {
-  if (flg_camera_is_opened == false) {
-    flg_camera_is_opened = true;
-    let videoSelect = document.querySelector("select#videoSource");
-    console.log(videoSelect.value);
-    p5_captures.openCamera(videoSelect.value);
-    this.attribute('class', "btn btn-danger btn-sm");
-  } else {
-    flg_camera_is_opened = false;
-    p5_captures.closeCamera();
-    this.attribute('class', "btn btn-outline-secondary btn-sm");
-  }
-  resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9.0 / 16.0);
-}
-
 function toggleChime() {
   print(this.checked());
   flg_chime = this.checked();
