@@ -224,7 +224,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
       return;
     }
     if (_str_comment.length > 80) {
-      alert("一度に遅れる文字数は80文字までです．");
+      alert("一度に送れる文字数は80文字までです．");
       return;
     }
     var data = {
@@ -272,7 +272,7 @@ function sendLetter(_str_letter, _str_my_name) {
     return;
   }
   if (_str_letter.length > 400) {
-    alert("はがきの場合、一度に遅れる文字数は400文字までです。");
+    alert("はがきの場合、一度に送れる文字数は400文字までです。");
     return;
   }
   var data = {
