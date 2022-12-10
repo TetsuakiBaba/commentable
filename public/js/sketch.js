@@ -291,10 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function toggleClock() {
-  flg_clock = this.checked();
-}
-
 function toggleDraw() {
   flg_noDraw = this.checked();
   let canvas_element = document.getElementById("sketch-holder");
