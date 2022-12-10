@@ -309,18 +309,6 @@ function changeStreamVolume() {
   element.volume = this.value();
 }
 
-function toggleSoundMute() {
-  flg_sound_mute = !flg_sound_mute;
-  // no sound
-  if (flg_sound_mute == true) {
-    this.html("&#x1f507;");
-  }
-  // with sound
-  else {
-    this.html("&#x1f508;");
-  }
-}
-
 function toggleStreamMute() {
   print(this.value());
   // no sound
