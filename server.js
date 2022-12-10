@@ -1,6 +1,4 @@
 const fs = require('fs');
-
-
 let use_require_json = require('./api_key.json');
 let key = use_require_json.key;
 let port = process.env.PORT || 8080;
