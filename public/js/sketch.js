@@ -267,7 +267,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
 
 // お手紙送信機能
 function sendLetter(_str_letter, _str_my_name) {
-
   if (_str_letter.length <= 0) {
     return;
   }
@@ -287,12 +286,9 @@ function sendLetter(_str_letter, _str_my_name) {
       clearLetterTextBox();
     }
   }
-
-
 }
 
 var is_control_pressed = false;
-
 function keyReleased() {
   if (keyCode == CONTROL) {
     is_control_pressed = false;
@@ -317,9 +313,6 @@ function keyPressed() {
       false, 0,
       hidden
     );
-
-  } else {
-
   }
 }
 
@@ -331,9 +324,7 @@ function clearLetterTextBox() {
   document.getElementById("text_letter").value = "";
 }
 
-function changeRoomName() {
-
-}
+function changeRoomName() {}
 
 function changeTextColor() {
   color_text = this.value();
@@ -343,9 +334,7 @@ function changeTextOutlineColor() {
   color_text_stroke = this.value();
 }
 
-function windowResized() {
-
-}
+function windowResized() {}
 
 function sendEmojiReaction() {
   sendComment(
@@ -416,9 +405,7 @@ function toggleStreamMute() {
   }
 }
 
-
 var flg_camera_is_opened = false;
-
 function toggleCamera() {
   if (flg_camera_is_opened == false) {
     flg_camera_is_opened = true;
@@ -443,18 +430,6 @@ function toggleClock() {
   flg_clock = this.checked();
 }
 
-function toggleSpeech() {
-  flg_speech = this.checked();
-  if (flg_speech == true) {
-    // set red button class
-    //<div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm"></button>
-    //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-danger btn-sm');
-  } else {
-    // set normal(primary) button class
-    //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
-  }
-}
-
 function toggleDraw() {
   flg_noDraw = this.checked();
   let canvas_element = document.getElementById("sketch-holder");
@@ -466,7 +441,6 @@ function toggleDraw() {
     canvas_element.style.display = "block";
   }
 }
-
 
 function updateStartTime() {
   time_start = this.value();
