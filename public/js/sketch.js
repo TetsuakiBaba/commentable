@@ -196,45 +196,33 @@ function sendComment(param) {
   const _flg_sound = param.flg_sound;
   const _id_sound = param.id_sound;
 
-  if (_flg_img == false) {
-    if (_str_comment.length <= 0) {
-      return;
-    }
-    if (_str_comment.length > 80) {
-      alert("一度に送れる文字数は80文字までです．");
-      return;
-    }
-    let data = {
-      key: api_key,
-      my_name: _str_my_name,
-      comment: _str_comment,
-      color_text: color_text,
-      color_text_stroke: color_text_stroke,
-      flg_emoji: _flg_emoji,
-      flg_image: false,
-      id_image: 0,
-      flg_sound: _flg_sound,
-      id_sound: _id_sound,
-    }
-    if (_str_comment.length > 0) {
-      socket.emit("comment", data);
-    }
-    newComment(data);
-    clearTextBox();
-  } else { // このelseでやっていることを確認したい
-    let data = {
-      room_name: _str_room_name,
-      comment: "",
-      color_text: color_text,
-      color_text_stroke: color_text_stroke,
-      flg_image: true,
-      id_image: 0,
-      flg_sound: _flg_sound,
-      id_sound: _id_sound
-    }
-    socket.emit("comment", data);
-    newComment(data);
+  if (_str_comment.length <= 0) {
+    return;
   }
+
+  if (_str_comment.length > 80) {
+    alert("一度に送れる文字数は80文字までです．");
+    return;
+  }
+
+  let data = {
+    key: api_key,
+    my_name: _str_my_name,
+    comment: _str_comment,
+    color_text: color_text,
+    color_text_stroke: color_text_stroke,
+    flg_emoji: _flg_emoji,
+    flg_image: false,
+    id_image: 0,
+    flg_sound: _flg_sound,
+    id_sound: _id_sound,
+  }
+  if (_str_comment.length > 0) {
+    socket.emit("comment", data);
+  }
+  newComment(data);
+  clearTextBox();
+
   timestamp_last_send = millis();
 }
 
