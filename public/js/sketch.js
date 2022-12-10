@@ -178,7 +178,6 @@ function sendComment(param) {
   }
   newComment(data);
   clearTextBox();
-
 }
 
 let is_control_pressed = false;
