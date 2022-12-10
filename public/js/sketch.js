@@ -37,12 +37,10 @@ let flash;
 let speech;
 
 function setup() {
-
   textFont("Noto Sans JP");
   flg_deactivate_comment_control = false;
   color_text = document.getElementById("color_text").value;
   color_text_stroke = document.getElementById("color_text_stroke").value;
-
   socket = io.connect(window.location.origin);
 
   // 誰かがコメント送信してきた場合
