@@ -13,8 +13,6 @@ let time_end_minute;
 let is_streaming = false;
 
 let timestamp_last_send
-
-let flg_speech;
 let flg_deactivate_comment_control;
 let peerConnection;
 
@@ -23,7 +21,6 @@ let color_text_stroke;
 let volume = 0.1;
 let flash;
 
-let speech;
 let mycanvas;
 let max_number_of_comment = 50;
 
@@ -133,10 +130,6 @@ function setup() {
   textAlign(CENTER, CENTER);
   flash = new Flash();
   flg_sound_mute = false;
-
-  // Execute loadVoices.
-  speech = new p5.Speech();
-  speech.setVolume(volume);
 }
 
 function draw() {
@@ -204,9 +197,6 @@ function newComment(data) {
         comments[id].setVolume(volume);
         comments[id].playSound();
       }
-      if (data.flg_speech == true && data.flg_sound == false && data.flg_emoji == false && flg_sound_mute == false) {
-        speech.speak(data.comment, volume);
-      }
     }
 
     let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
@@ -246,18 +236,6 @@ function changeVolume() {
 
 function toggleSoundMute() {
   flg_sound_mute = !flg_sound_mute;
-}
-
-function toggleSpeech() {
-  flg_speech = this.checked();
-  if (flg_speech == true) {
-    // set red button class
-    //<div class="input-group-prepend"><button id="button_send" class="btn btn-outline-primary btn-sm"></button>
-    //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-danger btn-sm');
-  } else {
-    // set normal(primary) button class
-    //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
-  }
 }
 
 function toggleDraw() {
