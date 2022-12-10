@@ -217,7 +217,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     }
     newComment(data);
     clearTextBox();
-  } else {
+  } else { // このelseでやっていることを確認したい
     let data = {
       room_name: _str_room_name,
       comment: "",
