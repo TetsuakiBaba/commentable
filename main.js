@@ -8,9 +8,6 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 const { exit } = require('process');
 
-require('electron-reload')(__dirname, {
-  electron: require('${__dirname}/../../node_modules/electron')
-});
 
 var win;
 function createWindow() {
