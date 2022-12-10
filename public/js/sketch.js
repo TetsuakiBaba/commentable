@@ -291,14 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function updateEndTime() {
-  time_end = this.value();
-  let tmp = time_end.split(":");
-  time_end_hour = int(tmp[0]);
-  time_end_minute = int(tmp[1]);
-
-}
-
 function toggleScreenCapture() {
   if (!p5_captures.screen) {
     p5_captures.openScreen();
