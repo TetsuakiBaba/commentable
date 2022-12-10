@@ -8,7 +8,7 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 const { exit } = require('process');
 
-var win;
+let win;
 function createWindow() {
   console.log(screen.getAllDisplays());
   //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
@@ -47,14 +47,14 @@ function getRandomInt(min, max) {
 }
 
 function generateName() {
-  var name1 = ["computer", "design", "art", "human", "410", "interface", "tmu"];
-  var name2 = ["room", "class", "conference", "event", "area", "place"];
-  var name = capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]);
+  let name1 = ["computer", "design", "art", "human", "410", "interface", "tmu"];
+  let name2 = ["room", "class", "conference", "event", "area", "place"];
+  let name = capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]);
   return name;
 }
 
 let tray = null
-var g_room;
+let g_room;
 app.whenReady().then(() => {
   createWindow()
   let menu = Menu.buildFromTemplate(
@@ -94,7 +94,7 @@ app.whenReady().then(() => {
     win.loadFile('index.html')
     //win.webContents.openDevTools();
 
-    var room = "";
+    let room = "";
     if (r === null) {
       console.log('user cancelled');
       room = "";
@@ -110,7 +110,7 @@ app.whenReady().then(() => {
     const hostname = "https://commentable.fly.dev";
     // const hostname = "http://localhost:8080";
 
-    var contextMenu = Menu.buildFromTemplate([
+    let contextMenu = Menu.buildFromTemplate([
       {
         label: "投稿ページを開く", click: async () => {
           const { shell } = require('electron')
@@ -186,7 +186,7 @@ app.whenReady().then(() => {
 
     let screens = screen.getAllDisplays();
 
-    var data_append;
+    let data_append;
     data_append = {
       label: '表示ディスプレイ選択',
       submenu: []
