@@ -13,6 +13,18 @@ const config = {
   }]
 };
 
+class Param {
+  constructor() {
+    this.str_comment = '';
+    this.flg_emoji = false;
+    this.str_my_name = '';
+    this.flg_img = false;
+    this.id_img = 0;
+    this.flg_sound = false;
+    this.id_sound = 0;
+  }
+}
+
 function setup() {
   textFont("Noto Sans JP");
   flg_deactivate_comment_control = false;
@@ -163,15 +175,27 @@ function newComment(data) {
 }
 
 function pushedSendButton() {
-  sendComment(
-    document.getElementById("text_comment").value, false,
-    document.getElementById("text_my_name").value,
-    false, 0,
-    false, 0, -1
-  );
+  let param = new Param();
+  param.str_comment = document.getElementById("text_comment").value;
+  param.flg_emoji = false;
+  param.str_my_name = document.getElementById("text_my_name").value;
+  param.flg_img = false;
+  param.id_img = 0;
+  param.flg_sound = false;
+  param.id_sound = 0;
+
+  sendComment(param);
 }
 
-function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound) {
+function sendComment(param) {
+  const _str_comment = param.str_comment;
+  const _flg_emoji = param.flg_emoji;
+  const _str_my_name = param.str_my_name;
+  const _flg_img = param.flg_img;
+  const _id_img = param.id_img;
+  const _flg_sound = param.flg_sound;
+  const _id_sound = param.id_sound;
+
   if (_flg_img == false) {
     if (_str_comment.length <= 0) {
       return;
@@ -249,20 +273,28 @@ function changeTextOutlineColor() {
 }
 
 function sendEmojiReaction() {
-  sendComment(
-    this.html(), true,
-    document.getElementById("text_my_name").value,
-    false, 0,
-    false, 0, -1
-  );
+  let param = new Param();
+  param.str_comment = this.html();
+  param.flg_emoji = true;
+  param.str_my_name = document.getElementById("text_my_name").value;
+  param.flg_img = false;
+  param.id_img = 0;
+  param.flg_sound = false;
+  param.id_sound = 0;
+
+  sendComment(param);
 }
 
 function sendSoundReaction() {
   let id_sound = this.attribute("value");
-  sendComment(
-    this.html(), false,
-    document.getElementById("text_my_name").value,
-    false, 0,
-    true, id_sound, -1
-  );
+  let param = new Param();
+  param.str_comment = this.html();
+  param.flg_emoji = false;
+  param.str_my_name = document.getElementById("text_my_name").value;
+  param.flg_img = false;
+  param.id_img = 0;
+  param.flg_sound = true;
+  param.id_sound = id_sound;
+
+  sendComment(param);
 }
