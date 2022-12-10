@@ -101,7 +101,6 @@ io.on('connection', (socket) => {
     socket.to(room).emit('comment', data);
 
     console.log("comment: ", data);
-
     const filepath = "public/chatlogs/" + room + ".csv";
     let timestamp;
     let today = new Date();
@@ -161,7 +160,6 @@ io.on('connection', (socket) => {
   socket.on('toggleQR', (data) => {
     socket.to(room_master).emit('toggleQR', data);
   });
-
 
   socket.on('deactivate_comment_control', (data) => {
     if (room == "") {
