@@ -1,19 +1,17 @@
 let api_key;
 let socket;
 let sound;
-
 let timestamp_last_send
-
 let flg_deactivate_comment_control;
 let peerConnection;
+let color_text;
+let color_text_stroke;
+
 const config = {
   iceServers: [{
     urls: ["stun:stun.l.google.com:19302"]
   }]
 };
-
-let color_text;
-let color_text_stroke;
 
 function setup() {
   textFont("Noto Sans JP");
