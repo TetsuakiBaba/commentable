@@ -234,7 +234,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
   timestamp_last_send = millis();
 }
 
-
 let is_control_pressed = false;
 function keyReleased() {
   if (keyCode == CONTROL) {
