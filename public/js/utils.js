@@ -12,5 +12,3 @@ function downloadAllComments() {
   a.download = ('comments.txt');
   a.click();
 };
-
-const videoSelect = document.querySelector("select#videoSource");
