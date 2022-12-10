@@ -35,8 +35,6 @@ class Flash {
   }
 }
 
-
-
 function getDevices() {
   return navigator.mediaDevices.enumerateDevices();
 }
@@ -58,7 +56,6 @@ const videoSelect = document.querySelector("select#videoSource");
 //videoSelect.onchange = getStream;
 
 function getStream() {
-
   number_of_viewers = 0;
   if (window.stream) {
     window.stream.getTracks().forEach(track => {
@@ -80,11 +77,9 @@ function getStream() {
     .getUserMedia(constraints)
     .then(gotStream)
     .catch(handleError);
-
 }
 
 function gotStream(stream) {
-
   window.stream = stream;
   videoSelect.selectedIndex = [...videoSelect.options].findIndex(
     option => option.text === stream.getVideoTracks()[0].label
