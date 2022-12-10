@@ -98,7 +98,6 @@ function setup() {
   });
 
   socket.on("offer", (id, description) => {
-
     peerConnection = new RTCPeerConnection(config);
     peerConnection
       .setRemoteDescription(description)
