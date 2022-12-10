@@ -195,9 +195,7 @@ function pushedSendButton() {
   );
 }
 
-
-// _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
-function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
+function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound) {
   if (_flg_img == false) {
     if (_str_comment.length <= 0) {
       return;
@@ -218,7 +216,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
       id_image: 0,
       flg_sound: _flg_sound,
       id_sound: _id_sound,
-      hidden: _hidden
     }
     if (_str_comment.length > 0) {
       socket.emit("comment", data);
@@ -256,18 +253,12 @@ function keyPressed() {
     is_control_pressed = true;
   }
   if (key == "Enter") {
-    let hidden = -1;
-    if (is_control_pressed) {
-      hidden = 0;
-    }
-
     sendComment(
       document.getElementById("text_comment").value,
       false,
       document.getElementById("text_my_name").value,
       false, 0,
-      false, 0,
-      hidden
+      false, 0
     );
   }
 }
