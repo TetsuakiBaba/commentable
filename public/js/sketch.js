@@ -324,7 +324,7 @@ function clearLetterTextBox() {
   document.getElementById("text_letter").value = "";
 }
 
-function changeRoomName() {}
+function changeRoomName() { }
 
 function changeTextColor() {
   color_text = this.value();
@@ -334,7 +334,7 @@ function changeTextOutlineColor() {
   color_text_stroke = this.value();
 }
 
-function windowResized() {}
+function windowResized() { }
 
 function sendEmojiReaction() {
   sendComment(
@@ -428,6 +428,13 @@ function toggleChime() {
 
 function toggleClock() {
   flg_clock = this.checked();
+}
+
+function toggleSpeech() {
+  flg_speech = this.checked();
+  if (flg_speech == true) {
+  } else {
+  }
 }
 
 function toggleDraw() {
