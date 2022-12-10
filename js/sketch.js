@@ -77,7 +77,6 @@ function preload() {
   sound_chin = loadSound('./sounds/chin.mp3', readyLoading(++count_loaded));
   sound_kansei = loadSound('./sounds/kansei.mp3', readyLoading(++count_loaded));
   sound_applause = loadSound('./sounds/applause.mp3', readyLoading(++count_loaded));
-  protofessional_effect = new ProtofessionalEffect();
 }
 
 function startSocketConnection(room) {
@@ -151,7 +150,6 @@ function draw() {
     }
   }
 
-  protofessional_effect.draw();
   flash.draw();
 }
 
@@ -168,18 +166,8 @@ function newComment(data) {
   //here
   select("#textarea_comment_history").html(comment_format, true);
 
-  // 隠しコマンド
-  if (data.hidden >= 0) {
-    let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
-    comment_format += data.comment;
-    comment_format += " [hidden]";
-    comment_format += "[" + data.my_name + "]" + "\n";
-    //here
-    select("#textarea_comment_history").html(comment_format, true);
-    protofessional_effect.setText(data.comment);
-    protofessional_effect.setVolume(volume);
-    protofessional_effect.activate();
-  } else if (data.flg_image == false) {
+
+  if (data.flg_image == false) {
     let id = -1;
     if (data.comment.length <= 0) {
       return;
