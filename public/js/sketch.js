@@ -291,11 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function toggleChime() {
-  print(this.checked());
-  flg_chime = this.checked();
-}
-
 function toggleClock() {
   flg_clock = this.checked();
 }
