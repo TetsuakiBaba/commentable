@@ -291,11 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function changeStreamVolume() {
-  let element = document.getElementById("stream_video");
-  element.volume = this.value();
-}
-
 function toggleStreamMute() {
   print(this.value());
   // no sound
