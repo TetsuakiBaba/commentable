@@ -1,23 +1,9 @@
 let api_key;
 let socket;
-let flg_sound_mute = true;
 let sound;
-let sound_chime;
-
-let flg_chime;
-let flg_clock;
-let flg_noDraw;
-let time_start;
-let time_start_hour;
-let time_start_minute;
-let time_end;
-let time_end_hour;
-let time_end_minute;
-let is_streaming = false;
 
 let timestamp_last_send
 
-let p5_captures;
 let flg_deactivate_comment_control;
 let peerConnection;
 const config = {
@@ -28,10 +14,6 @@ const config = {
 
 let color_text;
 let color_text_stroke;
-let capture;
-let capture_screen;
-let volume = 0.1;
-let flash;
 
 function setup() {
   textFont("Noto Sans JP");
