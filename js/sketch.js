@@ -151,6 +151,7 @@ class ProtofessionalEffect {
       this.is_activating = false;
     }
   }
+}
 
 class Comment {
   constructor() {
