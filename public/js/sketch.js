@@ -291,18 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function toggleDraw() {
-  flg_noDraw = this.checked();
-  let canvas_element = document.getElementById("sketch-holder");
-  if (flg_noDraw) {
-    //noLoop();
-    canvas_element.style.display = "none";
-  } else {
-    //loop();
-    canvas_element.style.display = "block";
-  }
-}
-
 function updateStartTime() {
   time_start = this.value();
   let tmp_time = time_start.split(":");
