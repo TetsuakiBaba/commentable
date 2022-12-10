@@ -250,13 +250,16 @@ function keyPressed() {
     is_control_pressed = true;
   }
   if (key == "Enter") {
-    sendComment(
-      document.getElementById("text_comment").value,
-      false,
-      document.getElementById("text_my_name").value,
-      false, 0,
-      false, 0
-    );
+    let param = new Param();
+    param.str_comment = document.getElementById("text_comment").value;
+    param.flg_emoji = false;
+    param.str_my_name = document.getElementById("text_my_name").value;
+    param.flg_img = false;
+    param.id_img = 0;
+    param.flg_sound = false;
+    param.id_sound = 0;
+
+    sendComment(param);
   }
 }
 
