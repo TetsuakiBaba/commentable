@@ -115,14 +115,14 @@ app.whenReady().then(() => {
       {
         label: "投稿ページを開く", click: async () => {
           const { shell } = require('electron')
-          await shell.openExternal(hostname+'/?room=' + g_room);
+          await shell.openExternal(hostname + '/?room=' + g_room);
         }
       },
       {
         label: '投稿ページURLをコピー',
         click(item, focusedWindows) {
-          clipboard.writeText(hostname+'/?room=' + g_room);
-          console.log(hostname+'/?room=' + encodeURI(g_room));
+          clipboard.writeText(hostname + '/?room=' + g_room);
+          console.log(hostname + '/?room=' + encodeURI(g_room));
         }
       },
 
@@ -170,7 +170,6 @@ app.whenReady().then(() => {
             }).catch(console.error);
         }
       },
-
 
       {
         label: 'Mute sound', type: 'checkbox',
