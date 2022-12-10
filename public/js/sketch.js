@@ -18,8 +18,6 @@ class Param {
     this.str_comment = '';
     this.flg_emoji = false;
     this.str_my_name = '';
-    this.flg_img = false;
-    this.id_img = 0;
     this.flg_sound = false;
     this.id_sound = 0;
   }
@@ -179,8 +177,6 @@ function pushedSendButton() {
   param.str_comment = document.getElementById("text_comment").value;
   param.flg_emoji = false;
   param.str_my_name = document.getElementById("text_my_name").value;
-  param.flg_img = false;
-  param.id_img = 0;
   param.flg_sound = false;
   param.id_sound = 0;
 
@@ -191,8 +187,6 @@ function sendComment(param) {
   const _str_comment = param.str_comment;
   const _flg_emoji = param.flg_emoji;
   const _str_my_name = param.str_my_name;
-  const _flg_img = param.flg_img;
-  const _id_img = param.id_img;
   const _flg_sound = param.flg_sound;
   const _id_sound = param.id_sound;
 
@@ -242,8 +236,6 @@ function keyPressed() {
     param.str_comment = document.getElementById("text_comment").value;
     param.flg_emoji = false;
     param.str_my_name = document.getElementById("text_my_name").value;
-    param.flg_img = false;
-    param.id_img = 0;
     param.flg_sound = false;
     param.id_sound = 0;
 
@@ -268,8 +260,6 @@ function sendEmojiReaction() {
   param.str_comment = this.html();
   param.flg_emoji = true;
   param.str_my_name = document.getElementById("text_my_name").value;
-  param.flg_img = false;
-  param.id_img = 0;
   param.flg_sound = false;
   param.id_sound = 0;
 
@@ -282,8 +272,6 @@ function sendSoundReaction() {
   param.str_comment = this.html();
   param.flg_emoji = false;
   param.str_my_name = document.getElementById("text_my_name").value;
-  param.flg_img = false;
-  param.id_img = 0;
   param.flg_sound = true;
   param.id_sound = id_sound;
 
