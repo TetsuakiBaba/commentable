@@ -235,16 +235,13 @@ class Comment {
     return;
   }
 }
+
 var comments = []; //new Array(50);
 function whileLoading(total) {
   console.log('loaded: ', + total);
 }
 
-
-
 function preload() {
-
-
   let count_loaded = 0;
   for (var i = 0; i < max_number_of_comment; i++) {
     comments[i] = new Comment();
@@ -327,6 +324,7 @@ function startSocketConnection(room) {
     socket.close();
   };
 }
+
 function setup() {
   textFont("Noto Sans JP");
   mycanvas = createCanvas(windowWidth, windowHeight);
