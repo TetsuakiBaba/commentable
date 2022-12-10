@@ -176,9 +176,7 @@ function setup() {
 var count_comment = 0;
 
 function newComment(data) {
-
   count_comment++;
-
   let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
   comment_format += data.comment;
   if (data.flg_sound == true) {
@@ -192,7 +190,6 @@ function newComment(data) {
   psconsole.scrollTop(
     psconsole[0].scrollHeight - psconsole.height()
   );
-
 }
 
 function pushedSendButton() {
@@ -200,7 +197,8 @@ function pushedSendButton() {
     document.getElementById("text_comment").value, false,
     document.getElementById("text_my_name").value,
     false, 0,
-    false, 0, -1);
+    false, 0, -1
+  );
 }
 
 function pushedSendLetterButton() {
