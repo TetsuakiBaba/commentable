@@ -1,7 +1,6 @@
 let api_key;
 let socket;
 let sound;
-let timestamp_last_send
 let flg_deactivate_comment_control;
 let color_text;
 let color_text_stroke;
@@ -114,8 +113,6 @@ function setup() {
 
   select("#download_all_comments").mouseClicked(downloadAllComments);
 
-  timestamp_last_send = millis();
-  console.log(timestamp_last_send);
   noCanvas();
 }
 
@@ -182,7 +179,6 @@ function sendComment(param) {
   newComment(data);
   clearTextBox();
 
-  timestamp_last_send = millis();
 }
 
 let is_control_pressed = false;
