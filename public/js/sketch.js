@@ -7,12 +7,6 @@ let peerConnection;
 let color_text;
 let color_text_stroke;
 
-const config = {
-  iceServers: [{
-    urls: ["stun:stun.l.google.com:19302"]
-  }]
-};
-
 class Param {
   constructor() {
     this.str_comment = '';
@@ -80,24 +74,6 @@ function setup() {
   socket.on('deactivate_comment_control', (data) => {
     document.getElementById('checkbox_deactivate_comment_control').checked = data.control;
     flg_deactivate_comment_control = data.control;
-  });
-
-  socket.on("offer", (id, description) => {
-    peerConnection = new RTCPeerConnection(config);
-    peerConnection
-      .setRemoteDescription(description)
-      .then(() => peerConnection.createAnswer())
-      .then(sdp => peerConnection.setLocalDescription(sdp))
-      .then(() => {
-        socket.emit("answer", id, peerConnection.localDescription);
-      });
-
-    peerConnection.ontrack = event => { };
-    peerConnection.onicecandidate = event => {
-      if (event.candidate) {
-        socket.emit("candidate", id, event.candidate);
-      }
-    };
   });
 
   socket.on("candidate", (id, candidate) => {
