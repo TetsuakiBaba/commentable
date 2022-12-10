@@ -260,10 +260,6 @@ function clearTextBox() {
   document.getElementById("text_comment").value = "";
 }
 
-function clearLetterTextBox() {
-  document.getElementById("text_letter").value = "";
-}
-
 function changeRoomName() { }
 
 function changeTextColor() {
