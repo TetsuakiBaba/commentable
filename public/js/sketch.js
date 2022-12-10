@@ -290,16 +290,3 @@ function sendSoundReaction() {
     true, id_sound, -1
   );
 }
-
-function toggleScreenCapture() {
-  if (!p5_captures.screen) {
-    p5_captures.openScreen();
-    this.attribute('class', "btn btn-danger btn-sm");
-  }
-
-  if (p5_captures.screen.c.loadedmetadata) {
-    p5_captures.closeScreen();
-    this.attribute('class', "btn btn-outline-secondary btn-sm");
-  }
-  resizeCanvas(windowWidth - 30, (windowWidth - 30) * 10.0 / 16.0);
-}
