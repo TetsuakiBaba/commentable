@@ -268,8 +268,6 @@ function changeTextOutlineColor() {
   color_text_stroke = this.value();
 }
 
-function windowResized() { }
-
 function sendEmojiReaction() {
   sendComment(
     this.html(), true,
