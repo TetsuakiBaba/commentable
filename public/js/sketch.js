@@ -27,7 +27,6 @@ const config = {
   }]
 };
 
-
 var color_text;
 var color_text_stroke;
 var capture;
