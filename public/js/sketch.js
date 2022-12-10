@@ -171,7 +171,6 @@ function setup() {
 }
 
 let count_comment = 0;
-
 function newComment(data) {
   count_comment++;
   let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
