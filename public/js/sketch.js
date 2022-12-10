@@ -18,7 +18,6 @@ let is_streaming = false;
 let timestamp_last_send
 
 let p5_captures;
-let flg_speech;
 let flg_deactivate_comment_control;
 let peerConnection;
 const config = {
@@ -33,8 +32,6 @@ let capture;
 let capture_screen;
 let volume = 0.1;
 let flash;
-
-let speech;
 
 function setup() {
   textFont("Noto Sans JP");
@@ -140,7 +137,6 @@ function setup() {
   };
 
   select("#button_send").mouseClicked(pushedSendButton);
-  select("#checkbox_speech").mouseClicked(toggleSpeech);
   select("#color_text").changed(changeTextColor);
   select("#color_text_stroke").changed(changeTextOutlineColor);
 
@@ -208,7 +204,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
       key: api_key,
       my_name: _str_my_name,
       comment: _str_comment,
-      flg_speech: flg_speech,
       color_text: color_text,
       color_text_stroke: color_text_stroke,
       flg_emoji: _flg_emoji,
@@ -226,7 +221,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     let data = {
       room_name: _str_room_name,
       comment: "",
-      flg_speech: flg_speech,
       color_text: color_text,
       color_text_stroke: color_text_stroke,
       flg_image: true,
@@ -375,13 +369,6 @@ function toggleChime() {
 
 function toggleClock() {
   flg_clock = this.checked();
-}
-
-function toggleSpeech() {
-  flg_speech = this.checked();
-  if (flg_speech == true) {
-  } else {
-  }
 }
 
 function toggleDraw() {
