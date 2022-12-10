@@ -219,58 +219,51 @@ function pushedSendLetterButton() {
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
-
-  if ((millis() - timestamp_last_send) > 1 || flg_deactivate_comment_control == true) {
-    if (_flg_img == false) {
-      if (_str_comment.length <= 0) {
-        return;
-      }
-      if (_str_comment.length > 80) {
-        alert("一度に遅れる文字数は80文字までです．");
-        return;
-      }
-      var data = {
-        key: api_key,
-        my_name: _str_my_name,
-        comment: _str_comment,
-        flg_speech: flg_speech,
-        color_text: color_text,
-        color_text_stroke: color_text_stroke,
-        flg_emoji: _flg_emoji,
-        flg_image: false,
-        id_image: 0,
-        flg_sound: _flg_sound,
-        id_sound: _id_sound,
-        hidden: _hidden
-      }
-      if (_str_comment.length > 0) {
-        socket.emit("comment", data);
-      }
-
-      newComment(data);
-      clearTextBox();
-    } else {
-      var data = {
-        room_name: _str_room_name,
-        comment: "",
-        flg_speech: flg_speech,
-        color_text: color_text,
-        color_text_stroke: color_text_stroke,
-        flg_image: true,
-        id_image: 0,
-        flg_sound: _flg_sound,
-        id_sound: _id_sound
-      }
-      socket.emit("comment", data);
-      newComment(data);
+  if (_flg_img == false) {
+    if (_str_comment.length <= 0) {
+      return;
     }
-    timestamp_last_send = millis();
-  }
-  else {
-    alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + " 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。");
-  }
-}
+    if (_str_comment.length > 80) {
+      alert("一度に遅れる文字数は80文字までです．");
+      return;
+    }
+    var data = {
+      key: api_key,
+      my_name: _str_my_name,
+      comment: _str_comment,
+      flg_speech: flg_speech,
+      color_text: color_text,
+      color_text_stroke: color_text_stroke,
+      flg_emoji: _flg_emoji,
+      flg_image: false,
+      id_image: 0,
+      flg_sound: _flg_sound,
+      id_sound: _id_sound,
+      hidden: _hidden
+    }
+    if (_str_comment.length > 0) {
+      socket.emit("comment", data);
+    }
 
+    newComment(data);
+    clearTextBox();
+  } else {
+    var data = {
+      room_name: _str_room_name,
+      comment: "",
+      flg_speech: flg_speech,
+      color_text: color_text,
+      color_text_stroke: color_text_stroke,
+      flg_image: true,
+      id_image: 0,
+      flg_sound: _flg_sound,
+      id_sound: _id_sound
+    }
+    socket.emit("comment", data);
+    newComment(data);
+  }
+  timestamp_last_send = millis();
+}
 
 // お手紙送信機能
 function sendLetter(_str_letter, _str_my_name) {
