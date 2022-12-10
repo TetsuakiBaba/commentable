@@ -1,15 +1,15 @@
 const fs = require('fs');
 
 
-var use_require_json = require('./api_key.json');
-var key = use_require_json.key;
-var port = process.env.PORT || 8080;
-var express = require('express');
-var app = express();
-var server = app.listen(port);
+let use_require_json = require('./api_key.json');
+let key = use_require_json.key;
+let port = process.env.PORT || 8080;
+let express = require('express');
+let app = express();
+let server = app.listen(port);
 app.use(express.static('./public'));
 let broadcaster;
-var socket = require('socket.io');
+let socket = require('socket.io');
 const options = {
   serveClient: true, // ←　これ使われてないな
   // pingInterval: 5000,
@@ -17,7 +17,7 @@ const options = {
   //transports: ['polling']
   //transports: ['websockets']
 }
-var io = socket(server, options);
+let io = socket(server, options);
 
 function isExistFile(file) {
   try {
@@ -30,10 +30,10 @@ function isExistFile(file) {
 
 io.on('connection', (socket) => {
   console.log('connection', socket.id);
-  var room = "";
-  var room_master = "-master";
-  var flg_deactivate_comment_control = false;
-  var number_of_users = 0;
+  let room = "";
+  let room_master = "-master";
+  let flg_deactivate_comment_control = false;
+  let number_of_users = 0;
 
   // 接続者に対してコネクションを作ったことを知らせるメッセージ
   socket.emit('you_are_connected');
@@ -63,10 +63,10 @@ io.on('connection', (socket) => {
       //            console.log(past_h, past_s);
     }
 
-    //var room_sockets = io.in(room)
+    //let room_sockets = io.in(room)
     number_of_users = io.sockets.adapter.rooms[room].length;
     console.log("current Room: ", io.sockets.adapter.rooms);
-    //var room_object = io.sockets.adapter.rooms[room];
+    //let room_object = io.sockets.adapter.rooms[room];
 
     // we store the username in the socket session for this client
     socket.username = socket.id; //username;

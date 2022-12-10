@@ -1,25 +1,25 @@
-var api_key;
-var socket;
-var flg_sound_mute = true;
-var sound;
-var sound_chime;
+let api_key;
+let socket;
+let flg_sound_mute = true;
+let sound;
+let sound_chime;
 
-var flg_chime;
-var flg_clock;
-var flg_noDraw;
-var time_start;
-var time_start_hour;
-var time_start_minute;
-var time_end;
-var time_end_hour;
-var time_end_minute;
-var is_streaming = false;
+let flg_chime;
+let flg_clock;
+let flg_noDraw;
+let time_start;
+let time_start_hour;
+let time_start_minute;
+let time_end;
+let time_end_hour;
+let time_end_minute;
+let is_streaming = false;
 
-var timestamp_last_send
+let timestamp_last_send
 
-var p5_captures;
-var flg_speech;
-var flg_deactivate_comment_control;
+let p5_captures;
+let flg_speech;
+let flg_deactivate_comment_control;
 let peerConnection;
 const config = {
   iceServers: [{
@@ -27,14 +27,14 @@ const config = {
   }]
 };
 
-var color_text;
-var color_text_stroke;
-var capture;
-var capture_screen;
-var volume = 0.1;
-var flash;
+let color_text;
+let color_text_stroke;
+let capture;
+let capture_screen;
+let volume = 0.1;
+let flash;
 
-var speech;
+let speech;
 
 function setup() {
 
@@ -53,11 +53,11 @@ function setup() {
     // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
     let params = getURLParams();
     if (params.room) {
-      var room = decodeURIComponent(params.room);
+      let room = decodeURIComponent(params.room);
       socket.emit('join', room);
     } else {
       while ((room = prompt("部屋名を入力してください", 'test_room')) == '');
-      //var room = prompt("部屋名を入力してください", 'test_room');
+      //let room = prompt("部屋名を入力してください", 'test_room');
       socket.emit('join', room);
     }
   });
@@ -80,10 +80,10 @@ function setup() {
     // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
     let params = getURLParams();
     if (params.room) {
-      var room = decodeURIComponent(params.room);
+      let room = decodeURIComponent(params.room);
       socket.emit('join', room);
     } else {
-      var room = prompt("部屋名を入力してください", 'test_room');
+      let room = prompt("部屋名を入力してください", 'test_room');
       socket.emit('join', room);
     }
   });
@@ -172,7 +172,7 @@ function setup() {
   noCanvas();
 }
 
-var count_comment = 0;
+let count_comment = 0;
 
 function newComment(data) {
   count_comment++;
@@ -185,7 +185,7 @@ function newComment(data) {
   comment_format += "[" + data.my_name + "]" + "\n";
   //here
   select("#textarea_comment_history").html(comment_format, true);
-  var psconsole = $('#textarea_comment_history');
+  let psconsole = $('#textarea_comment_history');
   psconsole.scrollTop(
     psconsole[0].scrollHeight - psconsole.height()
   );
@@ -211,7 +211,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
       alert("一度に送れる文字数は80文字までです．");
       return;
     }
-    var data = {
+    let data = {
       key: api_key,
       my_name: _str_my_name,
       comment: _str_comment,
@@ -231,7 +231,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     newComment(data);
     clearTextBox();
   } else {
-    var data = {
+    let data = {
       room_name: _str_room_name,
       comment: "",
       flg_speech: flg_speech,
@@ -249,7 +249,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
 }
 
 
-var is_control_pressed = false;
+let is_control_pressed = false;
 function keyReleased() {
   if (keyCode == CONTROL) {
     is_control_pressed = false;
@@ -307,7 +307,7 @@ function sendEmojiReaction() {
 }
 
 function sendSoundReaction() {
-  var id_sound = this.attribute("value");
+  let id_sound = this.attribute("value");
   sendComment(
     this.html(), false,
     document.getElementById("text_my_name").value,
@@ -325,7 +325,7 @@ function changeVolume() {
 }
 
 function changeStreamVolume() {
-  var element = document.getElementById("stream_video");
+  let element = document.getElementById("stream_video");
   element.volume = this.value();
 }
 
@@ -351,7 +351,7 @@ function toggleStreamMute() {
     this.html("&#x1f507;");
     // turn off broadcasting sound
     if (is_streaming) {
-      var element = document.getElementById("stream_video");
+      let element = document.getElementById("stream_video");
       element.muted = true;
     }
   }
@@ -360,17 +360,17 @@ function toggleStreamMute() {
     this.html("&#x1f508;");
     // turn on broadcasting sound
     if (is_streaming) {
-      var element = document.getElementById("stream_video");
+      let element = document.getElementById("stream_video");
       element.muted = false;
     }
   }
 }
 
-var flg_camera_is_opened = false;
+let flg_camera_is_opened = false;
 function toggleCamera() {
   if (flg_camera_is_opened == false) {
     flg_camera_is_opened = true;
-    var videoSelect = document.querySelector("select#videoSource");
+    let videoSelect = document.querySelector("select#videoSource");
     console.log(videoSelect.value);
     p5_captures.openCamera(videoSelect.value);
     this.attribute('class', "btn btn-danger btn-sm");
@@ -412,14 +412,14 @@ function toggleDraw() {
 
 function updateStartTime() {
   time_start = this.value();
-  var tmp_time = time_start.split(":");
+  let tmp_time = time_start.split(":");
   time_start_hour = int(tmp_time[0]);
   time_start_minute = int(tmp_time[1]);
 }
 
 function updateEndTime() {
   time_end = this.value();
-  var tmp = time_end.split(":");
+  let tmp = time_end.split(":");
   time_end_hour = int(tmp[0]);
   time_end_minute = int(tmp[1]);
 
