@@ -7,7 +7,6 @@ app.use(express.static('./public'));
 let broadcaster;
 let socket = require('socket.io');
 const options = {
-  serveClient: true, // ←　これ使われてないな
   // pingInterval: 5000,
   //pingTimeout: 25000,
   //transports: ['polling']
