@@ -224,8 +224,7 @@ app.whenReady().then(() => {
     win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
       .then(result => {
       }).catch(console.error);
-  })
-    .catch(console.error);
+  }).catch(console.error);
 
 
   win.webContents.on('did-finish-load', () => {
@@ -243,8 +242,6 @@ app.whenReady().then(() => {
       //createWindow()
     }
   })
-
-
 })
 
 app.on('window-all-closed', () => {
