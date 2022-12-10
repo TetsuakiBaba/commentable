@@ -3,7 +3,6 @@ let socket;
 let sound;
 let timestamp_last_send
 let flg_deactivate_comment_control;
-let peerConnection;
 let color_text;
 let color_text_stroke;
 
@@ -76,12 +75,6 @@ function setup() {
     flg_deactivate_comment_control = data.control;
   });
 
-  socket.on("candidate", (id, candidate) => {
-    peerConnection
-      .addIceCandidate(new RTCIceCandidate(candidate))
-      .catch(e => console.error(e));
-  });
-
   socket.on("connect", () => {
     socket.emit("watcher", socket.id);
   });
@@ -92,10 +85,6 @@ function setup() {
 
   socket.on("stop streaming", () => {
 
-  });
-
-  socket.on("disconnectPeer", () => {
-    peerConnection.close();
   });
 
   window.onunload = window.onbeforeunload = () => {
