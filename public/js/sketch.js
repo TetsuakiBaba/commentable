@@ -238,7 +238,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     if (_str_comment.length > 0) {
       socket.emit("comment", data);
     }
-
     newComment(data);
     clearTextBox();
   } else {
