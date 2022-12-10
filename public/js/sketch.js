@@ -291,31 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function toggleStreamMute() {
-  print(this.value());
-  // no sound
-  if (this.value() == "true") this.value("false");
-  else this.value("true");
-
-  if (this.value() == "true") {
-    this.html("&#x1f507;");
-    // turn off broadcasting sound
-    if (is_streaming) {
-      let element = document.getElementById("stream_video");
-      element.muted = true;
-    }
-  }
-  // with sound
-  else {
-    this.html("&#x1f508;");
-    // turn on broadcasting sound
-    if (is_streaming) {
-      let element = document.getElementById("stream_video");
-      element.muted = false;
-    }
-  }
-}
-
 let flg_camera_is_opened = false;
 function toggleCamera() {
   if (flg_camera_is_opened == false) {
