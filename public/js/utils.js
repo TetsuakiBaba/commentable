@@ -35,8 +35,4 @@ class Flash {
   }
 }
 
-function getDevices() {
-  return navigator.mediaDevices.enumerateDevices();
-}
-
 const videoSelect = document.querySelector("select#videoSource");
