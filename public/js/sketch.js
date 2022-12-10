@@ -291,14 +291,6 @@ function sendSoundReaction() {
   );
 }
 
-function changeVolume() {
-  this.html("test", false);
-  volume = this.value();
-  if (volume == 0) {
-    //console.log(this);
-  }
-}
-
 function changeStreamVolume() {
   let element = document.getElementById("stream_video");
   element.volume = this.value();
