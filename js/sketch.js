@@ -81,8 +81,6 @@ function toggleQR(checked, position, room) {
     }
   });
 
-
-
   if (checked && position == "center") {
     document.getElementById("QR_center").innerHTML = "";
     document.getElementById("QR_top_right").innerHTML = "";
@@ -166,7 +164,6 @@ class Comment {
     this.size = 72.0;
     this.flg_img = false;
     this.volume = 0.1;
-
   }
   setColor(_color_text, _color_text_stroke) {
     this.color_text = _color_text;
@@ -195,7 +192,6 @@ class Comment {
     this.volume = _volume;
   }
   playSound() {
-
     if (sound[this.id_sound].length > 1) {
       let number = int(random(sound[this.id_sound].length));
       sound[this.id_sound][number].setVolume(this.volume);
@@ -217,7 +213,6 @@ class Comment {
     return;
   }
   draw() {
-
     if (this.flg_img == false) {
       textSize(this.size);
       strokeWeight(5.0 * this.alpha / 255.0);
@@ -284,7 +279,6 @@ function preload() {
 
 function startSocketConnection(room) {
   socket = io.connect(hostname);
-
   socket.on('you_are_connected', function () {
     // 部屋名を指定してジョインする．
     socket.emit('join', room);
