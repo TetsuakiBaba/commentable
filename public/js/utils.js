@@ -52,32 +52,6 @@ function gotDevices(deviceInfos) {
 }
 
 const videoSelect = document.querySelector("select#videoSource");
-//audioSelect.onchange = getStream;
-//videoSelect.onchange = getStream;
-
-function getStream() {
-  number_of_viewers = 0;
-  if (window.stream) {
-    window.stream.getTracks().forEach(track => {
-      track.stop();
-    });
-  }
-  is_streaming = false;
-
-  const videoSource = videoSelect.value;
-  const constraints = {
-    audio: false,
-    video: {
-      deviceId: videoSource ? { exact: videoSource } : undefined,
-      width: { max: 1280 }, height: { max: 720 }, frameRate: { max: 30 }
-    }
-  };
-
-  return navigator.mediaDevices
-    .getUserMedia(constraints)
-    .then(gotStream)
-    .catch(handleError);
-}
 
 function gotStream(stream) {
   window.stream = stream;
