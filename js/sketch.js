@@ -115,7 +115,6 @@ function toggleQR(checked, position, room) {
   //    document.querySelector('#QR').hidden = !document.querySelector('#QR').hidden;
 }
 
-
 class ProtofessionalEffect {
   constructor() {
     this.is_activating = false;
