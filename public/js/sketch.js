@@ -114,7 +114,6 @@ function setup() {
         socket.emit("candidate", id, event.candidate);
       }
     };
-
   });
 
   socket.on("candidate", (id, candidate) => {
@@ -125,7 +124,6 @@ function setup() {
 
   socket.on("connect", () => {
     socket.emit("watcher", socket.id);
-
   });
 
   socket.on("broadcaster", () => {
@@ -151,13 +149,11 @@ function setup() {
   select("#color_text").changed(changeTextColor);
   select("#color_text_stroke").changed(changeTextOutlineColor);
 
-
   select("#button_emoji_reaction_01").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_02").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_05").mouseClicked(sendEmojiReaction);
-
 
   select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
@@ -169,7 +165,6 @@ function setup() {
   select("#button_sound_reaction_07").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);
-
 
   select("#download_all_comments").mouseClicked(downloadAllComments);
 
