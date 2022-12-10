@@ -144,7 +144,6 @@ function setup() {
 
 
   select("#button_send").mouseClicked(pushedSendButton);
-  select("#button_send_letter").mouseClicked(pushedSendLetterButton);
   select("#checkbox_speech").mouseClicked(toggleSpeech);
   select("#color_text").changed(changeTextColor);
   select("#color_text_stroke").changed(changeTextOutlineColor);
@@ -201,13 +200,6 @@ function pushedSendButton() {
   );
 }
 
-function pushedSendLetterButton() {
-  sendLetter(
-    document.getElementById("text_letter").value,
-    document.getElementById("text_my_name").value
-  );
-}
-
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
@@ -256,28 +248,6 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
   timestamp_last_send = millis();
 }
 
-// お手紙送信機能
-function sendLetter(_str_letter, _str_my_name) {
-  if (_str_letter.length <= 0) {
-    return;
-  }
-  if (_str_letter.length > 400) {
-    alert("はがきの場合、一度に送れる文字数は400文字までです。");
-    return;
-  }
-  var data = {
-    key: api_key,
-    my_name: _str_my_name,
-    letter: _str_letter
-  }
-  if (_str_letter.length > 0) {
-    let result = confirm('はがきを送る際はName設定（ペンネーム等）を推奨します。以下の内容でよければOKを押して送信します。\n\nペンネーム：' + _str_my_name + '\n内容：' + _str_letter);
-    if (result) {
-      socket.emit("letter", data);
-      clearLetterTextBox();
-    }
-  }
-}
 
 var is_control_pressed = false;
 function keyReleased() {
