@@ -1,44 +1,43 @@
-var socket;
-var sound;
-var sound_chime;
-var flg_chime;
-var flg_clock;
-var flg_noDraw;
-var time_start;
-var time_start_hour;
-var time_start_minute;
-var time_end;
-var time_end_hour;
-var time_end_minute;
-var is_streaming = false;
+let socket;
+let sound;
+let sound_chime;
+let flg_chime;
+let flg_clock;
+let flg_noDraw;
+let time_start;
+let time_start_hour;
+let time_start_minute;
+let time_end;
+let time_end_hour;
+let time_end_minute;
+let is_streaming = false;
 
-var timestamp_last_send
+let timestamp_last_send
 
-var flg_speech;
-var flg_deactivate_comment_control;
+let flg_speech;
+let flg_deactivate_comment_control;
 let peerConnection;
 
-var color_text;
-var color_text_stroke;
-var volume = 0.1;
-var flash;
+let color_text;
+let color_text_stroke;
+let volume = 0.1;
+let flash;
 
-var speech;
-var mycanvas;
-var max_number_of_comment = 50;
+let speech;
+let mycanvas;
+let max_number_of_comment = 50;
 
 const hostname = "https://commentable.fly.dev";
 // const hostname = "http://localhost:8080";
 
-
-var comments = []; //new Array(50);
+let comments = []; //new Array(50);
 function whileLoading(total) {
   console.log('loaded: ', + total);
 }
 
 function preload() {
   let count_loaded = 0;
-  for (var i = 0; i < max_number_of_comment; i++) {
+  for (let i = 0; i < max_number_of_comment; i++) {
     comments[i] = new Comment();
     comments[i].setLife(0);
   }
@@ -145,7 +144,7 @@ function draw() {
   clear();
   background(0, 0, 0, 0);
 
-  for (var i = 0; i < max_number_of_comment; i++) {
+  for (let i = 0; i < max_number_of_comment; i++) {
     if (comments[i].getLife() > 0) {
       comments[i].update();
       comments[i].draw();
@@ -156,7 +155,7 @@ function draw() {
   flash.draw();
 }
 
-var count_comment = 0;
+let count_comment = 0;
 function newComment(data) {
   count_comment++;
   let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
@@ -185,7 +184,7 @@ function newComment(data) {
     if (data.comment.length <= 0) {
       return;
     }
-    for (var i = 0; i < max_number_of_comment; i++) {
+    for (let i = 0; i < max_number_of_comment; i++) {
       if (comments[i].getLife() == 0) {
         id = i;
         i = max_number_of_comment;
@@ -287,14 +286,14 @@ function toggleDraw() {
 
 function updateStartTime() {
   time_start = this.value();
-  var tmp_time = time_start.split(":");
+  let tmp_time = time_start.split(":");
   time_start_hour = int(tmp_time[0]);
   time_start_minute = int(tmp_time[1]);
 }
 
 function updateEndTime() {
   time_end = this.value();
-  var tmp = time_end.split(":");
+  let tmp = time_end.split(":");
   time_end_hour = int(tmp[0]);
   time_end_minute = int(tmp[1]);
 }
@@ -305,7 +304,7 @@ function readyLoading(count_loaded) {
 }
 
 function toggleCommentControl(checked) {
-  var data = {
+  let data = {
     key: 'dummy',
     control: checked
   }
