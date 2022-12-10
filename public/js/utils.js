@@ -52,17 +52,3 @@ function gotDevices(deviceInfos) {
 }
 
 const videoSelect = document.querySelector("select#videoSource");
-
-function gotStream(stream) {
-  window.stream = stream;
-  videoSelect.selectedIndex = [...videoSelect.options].findIndex(
-    option => option.text === stream.getVideoTracks()[0].label
-  );
-  //videoElement.srcObject = stream;
-  is_streaming = false;
-  //socket.emit("broadcaster");
-}
-
-function handleError(error) {
-  console.error("Error: ", error);
-}
