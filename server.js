@@ -8,9 +8,9 @@ let broadcaster;
 let socket = require('socket.io');
 const options = {
   // pingInterval: 5000,
-  //pingTimeout: 25000,
-  //transports: ['polling']
-  //transports: ['websockets']
+  // pingTimeout: 25000,
+  // transports: ['polling']
+  // transports: ['websockets']
 }
 let io = socket(server, options);
 
