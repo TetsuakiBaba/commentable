@@ -142,7 +142,6 @@ function setup() {
     socket.close();
   };
 
-
   select("#button_send").mouseClicked(pushedSendButton);
   select("#checkbox_speech").mouseClicked(toggleSpeech);
   select("#color_text").changed(changeTextColor);
