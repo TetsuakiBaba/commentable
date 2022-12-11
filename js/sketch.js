@@ -161,39 +161,39 @@ function newComment(data) {
   //here
   select("#textarea_comment_history").html(comment_format, true);
 
-    let id = -1;
-    if (data.comment.length <= 0) {
-      return;
+  let id = -1;
+  if (data.comment.length <= 0) {
+    return;
+  }
+  for (let i = 0; i < max_number_of_comment; i++) {
+    if (comments[i].getLife() == 0) {
+      id = i;
+      i = max_number_of_comment;
     }
-    for (let i = 0; i < max_number_of_comment; i++) {
-      if (comments[i].getLife() == 0) {
-        id = i;
-        i = max_number_of_comment;
-      }
+  }
+  if (id >= 0) {
+    comments[id].setLife(255);
+    comments[id].setText(data.comment);
+    textSize(abs((height / 20) * sin(0.5 * PI)));
+    let text_width = textWidth(data.comment);
+    console.log(textWidth(data.comment));
+    if (text_width < width) {
+      comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
-    if (id >= 0) {
-      comments[id].setLife(255);
-      comments[id].setText(data.comment);
-      textSize(abs((height / 20) * sin(0.5 * PI)));
-      let text_width = textWidth(data.comment);
-      console.log(textWidth(data.comment));
-      if (text_width < width) {
-        comments[id].setX(random(text_width / 2, width - text_width / 2));
-      }
-      else {
-        comments[id].setX(text_width / 2);
-      }
-      comments[id].setY(random(100, height - 100));
-      comments[id].setColor(data.color_text, data.color_text_stroke);
-      comments[id].flg_image = data.flg_img;
-      comments[id].id_image = data.id_img;
-      comments[id].flg_sound = data.flg_sound;
-      comments[id].id_sound = data.id_sound;
+    else {
+      comments[id].setX(text_width / 2);
+    }
+    comments[id].setY(random(100, height - 100));
+    comments[id].setColor(data.color_text, data.color_text_stroke);
+    comments[id].flg_image = data.flg_img;
+    comments[id].id_image = data.id_img;
+    comments[id].flg_sound = data.flg_sound;
+    comments[id].id_sound = data.id_sound;
 
-      if (data.flg_sound == true && flg_sound_mute == false) {
-        comments[id].setVolume(volume);
-        comments[id].playSound();
-      }
+    if (data.flg_sound == true && flg_sound_mute == false) {
+      comments[id].setVolume(volume);
+      comments[id].playSound();
+    }
 
     let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
     comment_format += data.comment;
