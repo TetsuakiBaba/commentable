@@ -18,8 +18,9 @@ let peerConnection;
 
 let color_text;
 let color_text_stroke;
-let volume = 0.1;
-let flash;
+// TODO: 音量を調節できる様にした
+let volume = 0.025;
+// let volume = 0.1;
 
 let mycanvas;
 let max_number_of_comment = 50;
