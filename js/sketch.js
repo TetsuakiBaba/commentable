@@ -125,7 +125,9 @@ function setup() {
   frameRate(30); // フレームレートを30fpsに設定してあるみたい
   flg_deactivate_comment_control = false;
   let params = getURLParams();
-  if (params.name) {}
+  if (params.name) {
+    
+  }
 
   timestamp_last_send = millis();
   console.log(timestamp_last_send);
