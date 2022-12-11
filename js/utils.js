@@ -35,10 +35,6 @@ class Flash {
   }
 }
 
-function getDevices() {
-  return navigator.mediaDevices.enumerateDevices();
-}
-
 function gotDevices(deviceInfos) {
   window.deviceInfos = deviceInfos;
   for (const deviceInfo of deviceInfos) {
