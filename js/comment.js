@@ -80,4 +80,16 @@ class Comment {
     }
     return;
   }
+
+  reset() {
+    this.x = random(100);
+    this.y = random(100);
+    this.text = "test";
+    this.alpha = random(100);
+    this.life = 1; // 0 - 255
+    this.size = 72.0;
+    this.flg_img = false;
+    this.volume = 0.1;
+    return;
+  }
 }

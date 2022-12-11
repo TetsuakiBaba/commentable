@@ -159,7 +159,7 @@ function newComment(data) {
   for (let i = 0; i < max_number_of_comment; i++) {
     if (comments[i].getLife() == 0) {
       id = i;
-      i = max_number_of_comment;
+      comments[id].reset();
     }
   }
 
