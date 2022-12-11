@@ -175,7 +175,6 @@ function newComment(data) {
     comments[id].setText(data.comment);
     textSize(height / 20);
     const text_width = textWidth(data.comment);
-    console.log(textWidth(data.comment));
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
