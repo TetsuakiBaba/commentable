@@ -79,7 +79,5 @@ function toggleQR(checked, position, room) {
 
     document.getElementById("QR_top_right").hidden = true;
     document.getElementById("QR_center").hidden = false;
-
   }
-  //    document.querySelector('#QR').hidden = !document.querySelector('#QR').hidden;
 }
