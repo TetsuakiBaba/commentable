@@ -74,9 +74,6 @@ class Comment {
       stroke(this.color_text_stroke + str(hex(this.alpha, 2)));
       fill(this.color_text + str(hex(this.alpha, 2)));
       text(this.text, this.x, this.y);
-    } else {
-      //imageMode(CENTER);
-      //image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
     }
     return;
   }
