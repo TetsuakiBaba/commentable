@@ -189,9 +189,7 @@ function sendComment(param) {
   data.flg_sound = _flg_sound;
   data.id_sound = _id_sound;
 
-  if (_str_comment.length > 0) {
-    socket.emit("comment", data);
-  }
+  socket.emit("comment", data);
   newComment(data);
   clearTextBox();
 }
