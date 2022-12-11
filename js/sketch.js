@@ -23,7 +23,7 @@ let volume = 0.025;
 // let volume = 0.1;
 
 let mycanvas;
-let max_number_of_comment = 50; // Maxの描画できるコメント数
+let max_number_of_comment = 200; // Maxの描画できるコメント数
 
 const hostname = "https://commentable.fly.dev";
 // const hostname = "http://localhost:8080";
