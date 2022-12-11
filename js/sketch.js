@@ -126,7 +126,7 @@ function setup() {
   flg_deactivate_comment_control = false;
   let params = getURLParams();
   if (params.name) {
-    
+
   }
 
   timestamp_last_send = millis();
