@@ -209,42 +209,8 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-function changeVolume() {
-  this.html("test", false);
-  volume = this.value();
-  if (volume == 0) {
-    //console.log(this);
-  }
-}
-
 function toggleSoundMute() {
   flg_sound_mute = !flg_sound_mute;
-}
-
-function toggleDraw() {
-  flg_noDraw = this.checked();
-  let canvas_element = document.getElementById("sketch-holder");
-  if (flg_noDraw) {
-    //noLoop();
-    canvas_element.style.display = "none";
-  } else {
-    //loop();
-    canvas_element.style.display = "block";
-  }
-}
-
-function updateStartTime() {
-  time_start = this.value();
-  let tmp_time = time_start.split(":");
-  time_start_hour = int(tmp_time[0]);
-  time_start_minute = int(tmp_time[1]);
-}
-
-function updateEndTime() {
-  time_end = this.value();
-  let tmp = time_end.split(":");
-  time_end_hour = int(tmp[0]);
-  time_end_minute = int(tmp[1]);
 }
 
 function readyLoading(count_loaded) {
