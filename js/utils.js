@@ -34,5 +34,3 @@ class Flash {
     }
   }
 }
-
-const videoSelect = document.querySelector("select#videoSource");
