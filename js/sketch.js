@@ -166,7 +166,7 @@ function newComment(data) {
   // 上書きできる変数が見つかった場合は、その変数を更新する
     comments[id].setLife(255);
     comments[id].setText(data.comment);
-    textSize(abs((height / 20) * sin(0.5 * PI)));
+    textSize(height / 20);
     const text_width = textWidth(data.comment);
     console.log(textWidth(data.comment));
     if (text_width < width) {
