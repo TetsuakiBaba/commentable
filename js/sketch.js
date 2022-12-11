@@ -158,16 +158,19 @@ function newComment(data) {
     return;
   }
 
+  let isUpdate = false;
   // ライフがゼロになっている変数を探す（一番古い変数を探す）
   for (let i = 0; i < max_number_of_comment; i++) {
     if (comments[i].getLife() == 0) {
       id = i;
       comments[id].reset();
+      isUpdaet = true;
       break; // ライフがゼロの変数が見つかったらループを抜ける
     }
   }
 
   // 上書きできる変数が見つかった場合は、その変数を更新する
+  if (isUpdate) {
     comments[id].setLife(255);
     comments[id].setText(data.comment);
     textSize(height / 20);
