@@ -9,10 +9,10 @@ env:
 
 jobs:
   deploy:
-      name: Deploy app
-      runs-on: ubuntu-latest
-      environment: PROD
-      steps:
-        - uses: actions/checkout@v2
-        - uses: superfly/flyctl-actions/setup-flyctl@master
-        - run: flyctl deploy --remote-only
+    name: Deploy app
+    runs-on: ubuntu-latest
+    environment: PROD
+    steps:
+      - uses: actions/checkout@v2
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
