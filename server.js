@@ -190,7 +190,6 @@ io.on('connection', (socket) => {
 
   // when the user disconnects.. perform this
   socket.on('disconnect', () => {
-
     number_of_users--;
 
     // echo globally that this client has left

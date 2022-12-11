@@ -145,6 +145,22 @@ function pushedSendButton() {
   sendComment(param);
 }
 
+// WebSocketで送信するデータのクラス
+class Data {
+  constructor() {
+    this.key = String(),
+    this.my_name = String(),
+    this.comment = String(),
+    this.color_text = String(),
+    this.color_text_stroke = String(),
+    this.flg_emoji = Boolean(),
+    this.flg_image = Boolean(),
+    this.id_image = Number(),
+    this.flg_sound = Boolean(),
+    this.id_sound = String()
+  }
+}
+
 function sendComment(param) {
   const _str_comment = param.str_comment;
   const _flg_emoji = param.flg_emoji;
@@ -161,18 +177,18 @@ function sendComment(param) {
     return;
   }
 
-  let data = {
-    key: api_key,
-    my_name: _str_my_name,
-    comment: _str_comment,
-    color_text: color_text,
-    color_text_stroke: color_text_stroke,
-    flg_emoji: _flg_emoji,
-    flg_image: false,
-    id_image: 0,
-    flg_sound: _flg_sound,
-    id_sound: _id_sound,
-  }
+  let data = new Data();
+  data.key = api_key;
+  data.my_name = _str_my_name;
+  data.comment = _str_comment;
+  data.color_text = color_text;
+  data.color_text_stroke = color_text_stroke;
+  data.flg_emoji = _flg_emoji;
+  data.flg_image = false;
+  data.id_image = 0;
+  data.flg_sound = _flg_sound;
+  data.id_sound = _id_sound;
+
   if (_str_comment.length > 0) {
     socket.emit("comment", data);
   }
