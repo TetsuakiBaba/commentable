@@ -39,3 +39,37 @@ class Animetion {
     console.log(this.position.getPosition());
   }
 }
+
+class Move {
+  constructor(width, height, frame) {
+    this.width = width;   // 画面の横幅
+    this.height = height;  // 画面の縦幅
+    this.delta_x = width / frame; // 1フレームあたりの移動量
+    this.delta_y = height / frame; // 1フレームあたりの移動量
+    this.progress = 0; // 進捗（0〜1）
+  }
+
+  getProgress() {
+    return this.progress;
+  }
+
+  // 横への移動量を計算：→　左から右へ
+  moveXPlus(x) {
+    return this.delta_x + x;
+  }
+
+  // 横への移動量を計算：←　右から左へ
+  moveXMinus(x) {
+    return x - this.delta_x;
+  }
+
+  // 縦への移動量を計算：↓　上から下へ
+  moveYPuls(y) {
+    return this.delta_y + y;
+  }
+
+  // 縦への移動量を計算：↑　下から上へ
+  moveYMinus(y) {
+    return y - this.delta_y;
+  }
+}
