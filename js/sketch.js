@@ -164,7 +164,7 @@ function newComment(data) {
     if (comments[i].getLife() == 0) {
       id = i;
       comments[id].reset();
-      isUpdaet = true;
+      isUpdate = true;
       break; // ライフがゼロの変数が見つかったらループを抜ける
     }
   }
