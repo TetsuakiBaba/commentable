@@ -128,7 +128,6 @@ function setup() {
   timestamp_last_send = millis();
   console.log(timestamp_last_send);
   textAlign(CENTER, CENTER);
-  flash = new Flash();
   flg_sound_mute = false;
 }
 
@@ -142,8 +141,6 @@ function draw() {
       comments[i].draw();
     }
   }
-
-  flash.draw();
 }
 
 let count_comment = 0;
@@ -190,9 +187,6 @@ function newComment(data) {
       comments[id].flg_sound = data.flg_sound;
       comments[id].id_sound = data.id_sound;
 
-      if (data.flg_sound == true && data.id_sound == 0) { // camera
-        flash.do();
-      }
       if (data.flg_sound == true && flg_sound_mute == false) {
         comments[id].setVolume(volume);
         comments[id].playSound();
