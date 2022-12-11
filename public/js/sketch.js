@@ -7,11 +7,11 @@ let color_text_stroke;
 
 class Param {
   constructor() {
-    this.str_comment = '';
-    this.flg_emoji = false;
-    this.str_my_name = '';
-    this.flg_sound = false;
-    this.id_sound = 0;
+    this.str_comment = String();
+    this.flg_emoji = Boolean();
+    this.str_my_name = String();
+    this.flg_sound = Boolean();
+    this.id_sound = Number();
   }
 }
 
