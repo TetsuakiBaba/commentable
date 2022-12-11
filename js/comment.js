@@ -9,32 +9,41 @@ class Comment {
     this.flg_img = false;
     this.volume = 0.1;
   }
+
   setColor(_color_text, _color_text_stroke) {
     this.color_text = _color_text;
     this.color_text_stroke = _color_text_stroke;
   }
+
   setLife(_life) {
     this.life = _life;
   }
+
   getLife() {
     return this.life;
   }
+
   setText(_text) {
     this.text = _text;
     return;
   }
+
   setX(_x) {
     this.x = _x;
   }
+
   setY(_y) {
     this.y = _y;
   }
+
   useImage(_id) {
     this.flg_img = true;
   }
+
   setVolume(_volume) {
     this.volume = _volume;
   }
+
   playSound() {
     if (sound[this.id_sound].length > 1) {
       let number = int(random(sound[this.id_sound].length));
@@ -45,6 +54,7 @@ class Comment {
       sound[this.id_sound].play();
     }
   }
+
   update() {
     if (this.life > 0) {
       this.alpha = this.life;
@@ -56,6 +66,7 @@ class Comment {
     }
     return;
   }
+
   draw() {
     if (this.flg_img == false) {
       textSize(this.size);
