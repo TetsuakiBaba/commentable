@@ -33,6 +33,7 @@ function whileLoading(total) {
   console.log('loaded: ', + total);
 }
 
+// setup関数より前に呼ばれる関数
 function preload() {
   let count_loaded = 0;
   for (let i = 0; i < max_number_of_comment; i++) {
@@ -116,6 +117,7 @@ function startSocketConnection(room) {
   };
 }
 
+// 起動時、一番最初に呼ばれる関数
 function setup() {
   textFont("Noto Sans JP");
   mycanvas = createCanvas(windowWidth, windowHeight);
@@ -135,6 +137,7 @@ function setup() {
   flg_sound_mute = false;
 }
 
+// 毎フレームごとに呼ばれる関数
 function draw() {
   clear();
   background(0, 0, 0, 0);
