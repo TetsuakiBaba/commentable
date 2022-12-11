@@ -178,12 +178,15 @@ io.on('connection', (socket) => {
   socket.on("watcher", () => {
     socket.to(broadcaster).emit("watcher", socket.id, number_of_users);
   });
+
   socket.on("offer", (id, message) => {
     socket.to(id).emit("offer", socket.id, message);
   });
+
   socket.on("answer", (id, message) => {
     socket.to(id).emit("answer", socket.id, message);
   });
+
   socket.on("candidate", (id, message) => {
     socket.to(id).emit("candidate", socket.id, message);
   });
@@ -191,7 +194,6 @@ io.on('connection', (socket) => {
   // when the user disconnects.. perform this
   socket.on('disconnect', () => {
     number_of_users--;
-
     // echo globally that this client has left
     socket.to(room).emit('user left', {
       username: socket.username,
