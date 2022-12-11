@@ -202,19 +202,6 @@ function newComment(data) {
     }
 
     comment_format += "[" + data.my_name + "]" + "\n";
-  } else { // image reaction
-    for (var i = 0; i < max_number_of_comment; i++) {
-      if (comments[i].getLife() == 0) {
-        id = i;
-        i = max_number_of_comment;
-      }
-    }
-    if (id >= 0) {
-      comments[id].setLife(255);
-      comments[id].setX(random(100, width - 100));
-      comments[id].setY(random(100, height - 100));
-      comments[id].useImage(0);
-    }
   }
 }
 
