@@ -193,7 +193,7 @@ app.whenReady().then(() => {
     sc_count = 0;
     for (sc of screens) {
       data_append.submenu[sc_count] = {
-        label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height,
+        label: `Display-${sc.id} [${sc.bounds.x}, ${sc.bounds.y}] ${sc.bounds.width}x${sc.bounds.height}`,
         type: 'radio',
         x: sc.workArea.x,
         y: sc.workArea.y,
