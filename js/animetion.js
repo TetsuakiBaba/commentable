@@ -31,6 +31,10 @@ class Animetion {
     this.position.setPosition(x, y);
   }
 
+  getPosition() {
+    return this.position.getPosition();
+  }
+
   print() {
     console.log(this.position.getPosition());
   }
