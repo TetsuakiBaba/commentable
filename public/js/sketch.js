@@ -119,13 +119,13 @@ function setup() {
 let count_comment = 0;
 function newComment(data) {
   count_comment++;
-  let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+  let comment_format = `[${nf(year(), 4)}:${nf(month(), 2)}:${nf(day(), 2)}:${nf(hour(), 2)}:${nf(minute(), 2)}:${nf(second(), 2)}-${nf(count_comment, 4)}]`;
   comment_format += data.comment;
   if (data.flg_sound == true) {
     comment_format += " [sound]";
   }
 
-  comment_format += "[" + data.my_name + "]" + "\n";
+  comment_format += `[${data.my_name}]` + "\n";
   //here
   select("#textarea_comment_history").html(comment_format, true);
   let psconsole = $('#textarea_comment_history');
