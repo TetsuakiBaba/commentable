@@ -124,7 +124,6 @@ app.whenReady().then(() => {
           console.log(hostname + '/?room=' + encodeURI(g_room));
         }
       },
-
       {
         type: 'separator',
       },
