@@ -27,7 +27,7 @@ class Animetion {
     this.size = size;
   }
 
-  updatePosition(x, y) {
+  setPosition(x, y) {
     this.position.setPosition(x, y);
   }
 
