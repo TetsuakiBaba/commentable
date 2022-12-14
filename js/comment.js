@@ -13,7 +13,7 @@ class Comment {
 
   // Emoji -> true
   // Text -> false
-  isEmoji() {
+  getFlgEmoji() {
     return this.flg_emoji;
   }
 
