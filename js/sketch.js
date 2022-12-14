@@ -1,26 +1,13 @@
 let socket;
 let sound;
 let sound_chime;
-let flg_chime;
-let flg_clock;
-let flg_noDraw;
-let time_start;
-let time_start_hour;
-let time_start_minute;
-let time_end;
-let time_end_hour;
-let time_end_minute;
-let is_streaming = false;
 
-let timestamp_last_send
-let flg_deactivate_comment_control;
 let peerConnection;
 
 let color_text;
 let color_text_stroke;
 // TODO: 音量を調節できる様にした
 let volume = 0.025;
-// let volume = 0.1;
 
 let mycanvas;
 let max_number_of_comment = 100; // Maxの描画できるコメント数
@@ -42,7 +29,6 @@ function preload() {
   }
   // Load sound files
   // TODO:この音声を読み込む処理で使っている、URI管理はフロント側で行いたい
-  sound_chime = loadSound('./sounds/chime.mp3', readyLoading(++count_loaded), null, whileLoading);
   sound = [
     [loadSound('./sounds/camera1.mp3', readyLoading(++count_loaded)),
     loadSound('./sounds/camera2.mp3', readyLoading(++count_loaded)),
@@ -125,14 +111,11 @@ function setup() {
   document.getElementById("canvas_placeholder").append(mycanvas.elt);
 
   frameRate(30); // フレームレートを30fpsに設定してあるみたい
-  flg_deactivate_comment_control = false;
   let params = getURLParams();
   if (params.name) {
 
   }
 
-  timestamp_last_send = millis();
-  console.log(timestamp_last_send);
   textAlign(CENTER, CENTER);
   flg_sound_mute = false;
 }
