@@ -241,13 +241,12 @@ function sendEmojiReaction() {
 }
 
 function sendSoundReaction() {
-  let id_sound = this.attribute("value");
   let param = new Param();
   param.str_comment = this.html();
   param.flg_emoji = false;
   param.str_my_name = document.getElementById("text_my_name").value;
   param.flg_sound = true;
-  param.id_sound = id_sound;
+  param.id_sound = this.attribute("value");
 
   sendComment(param);
 }
