@@ -202,8 +202,17 @@ function newCommentAnimetion(data) {
 
   // 上書きできる変数が見つかった場合は、その変数を更新する
   if (isUpdate) {
-    comments[id].setFlgEmoji(data.flg_emoji);
-    comments[id].setLife(255);
+
+    if (data.flg_emoji) {
+      // 絵文字の場合の処理
+      // 描画時間: 1500ms
+      comments[id].setLife(1.5*FRAME_RATE);
+    } else {
+      // テキストの場合の処理
+      // 描画時間: 3000ms
+      comments[id].setLife(3.0*FRAME_RATE);
+    }
+
     comments[id].setText(data.comment);
     textSize(height / 20);
     const text_width = textWidth(data.comment);
