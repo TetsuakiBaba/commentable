@@ -1,6 +1,5 @@
 const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
 const prompt = require('electron-prompt');
-const { autoUpdater } = require("electron-updater");
 
 const is_windows = process.platform === 'win32'
 const is_mac = process.platform === 'darwin'
