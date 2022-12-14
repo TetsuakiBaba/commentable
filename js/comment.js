@@ -66,10 +66,10 @@ class Comment {
     }
   }
 
-  update() {
+  update(_FRAME) {
     if (this.life > 0) {
-      this.alpha = this.life;
-      this.size = abs((height / 20) * sin(0.5 * PI * this.life / 255.0));
+      // this.alpha = this.life;
+      this.size = abs((height / 20) * sin(0.5 * PI * this.life / 50.0));
       this.life = this.life - 1; // 0 - 255
       if (this.life == 0) {
         this.flg_img = false;

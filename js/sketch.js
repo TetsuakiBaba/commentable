@@ -9,6 +9,8 @@ let color_text_stroke;
 // TODO: 音量を調節できる様にした
 let volume = 0.025;
 const FRAME_RATE = 30;
+const EMOJI_SEC = 2.0;
+const TEXT_SEC = 4.0;
 
 let mycanvas;
 let max_number_of_comment = 100; // Maxの描画できるコメント数
@@ -128,8 +130,15 @@ function draw() {
   background(0, 0, 0, 0);
 
   for (let i = 0; i < max_number_of_comment; i++) {
+    let frames = 0;
+    if (comments[i].getFlgEmoji()) {
+      frames = EMOJI_SEC * FRAME_RATE;
+    } else {
+      frames = TEXT_SEC * FRAME_RATE;
+    }
+
     if (comments[i].getLife() > 0) {
-      comments[i].update();
+      comments[i].update(frames);
       comments[i].draw();
     }
   }
@@ -206,11 +215,11 @@ function newCommentAnimetion(data) {
     if (data.flg_emoji) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
-      comments[id].setLife(1.5*FRAME_RATE);
+      comments[id].setLife(EMOJI_SEC*FRAME_RATE);
     } else {
       // テキストの場合の処理
       // 描画時間: 3000ms
-      comments[id].setLife(3.0*FRAME_RATE);
+      comments[id].setLife(TEXT_SEC*FRAME_RATE);
     }
 
     comments[id].setText(data.comment);
