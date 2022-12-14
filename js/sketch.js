@@ -8,6 +8,7 @@ let color_text;
 let color_text_stroke;
 // TODO: 音量を調節できる様にした
 let volume = 0.025;
+const FRAME_RATE = 30;
 
 let mycanvas;
 let max_number_of_comment = 100; // Maxの描画できるコメント数
@@ -111,7 +112,7 @@ function setup() {
   console.log(windowWidth, windowHeight);
   document.getElementById("canvas_placeholder").append(mycanvas.elt);
 
-  frameRate(30); // フレームレートを30fpsに設定してあるみたい
+  frameRate(FRAME_RATE); // フレームレートを30fpsに設定してあるみたい
   let params = getURLParams();
   if (params.name) {
 
