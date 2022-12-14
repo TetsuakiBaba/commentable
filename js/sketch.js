@@ -154,6 +154,7 @@ function newComment(data) {
 
   // 上書きできる変数が見つかった場合は、その変数を更新する
   if (isUpdate) {
+    comments[id].setFlgEmoji(data.flg_emoji);
     comments[id].setLife(255);
     comments[id].setText(data.comment);
     textSize(height / 20);

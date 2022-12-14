@@ -7,7 +7,18 @@ class Comment {
     this.life = 1; // 0 - 255
     this.size = 72.0;
     this.flg_img = false;
+    this.flg_emoji = false;
     this.volume = 0.1;
+  }
+
+  // Emoji -> true
+  // Text -> false
+  isEmoji() {
+    return this.flg_emoji;
+  }
+
+  setFlgEmoji(_flg_emoji) {
+    this.flg_emoji = _flg_emoji;
   }
 
   setColor(_color_text, _color_text_stroke) {
