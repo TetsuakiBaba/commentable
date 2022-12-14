@@ -139,7 +139,7 @@ function draw() {
 
     if (comments[i].getLife() > 0) {
       comments[i].update(frames);
-      comments[i].draw();
+      comments[i].draw(frames);
     }
   }
 }

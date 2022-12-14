@@ -69,7 +69,7 @@ class Comment {
   update(_FRAME) {
     if (this.life > 0) {
       // this.alpha = this.life;
-      this.size = abs((height / 20) * sin(0.5 * PI * this.life / 50.0));
+      this.size = abs((height / 20) * sin(0.5 * PI * this.life / _FRAME));
       this.life = this.life - 1; // 0 - 255
       if (this.life == 0) {
         this.flg_img = false;
@@ -78,10 +78,10 @@ class Comment {
     return;
   }
 
-  draw() {
+  draw(_FRAME) {
     if (this.flg_img == false) {
       textSize(this.size);
-      strokeWeight(5.0 * this.alpha / 255.0);
+      strokeWeight(5.0 * this.alpha / _FRAME);
       stroke(this.color_text_stroke + str(hex(this.alpha, 2)));
       fill(this.color_text + str(hex(this.alpha, 2)));
       text(this.text, this.x, this.y);
