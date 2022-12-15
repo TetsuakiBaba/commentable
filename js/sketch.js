@@ -223,6 +223,7 @@ function newCommentAnimetion(data) {
     comments[id].id_image = data.id_img;
     comments[id].flg_sound = data.flg_sound;
     comments[id].id_sound = data.id_sound;
+    comments[id].flg_emoji = data.flg_emoji;
 
     // X座標を設定
     const text_width = textWidth(data.comment);
@@ -234,7 +235,7 @@ function newCommentAnimetion(data) {
     }
 
     // Y座標を設定, 描画時間の設定
-    if (data.flg_emoji) {
+    if (comments[id].getFlgEmoji()) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
       comments[id].setLife(EMOJI_SEC * FRAME_RATE);
