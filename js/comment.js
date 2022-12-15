@@ -70,7 +70,7 @@ class Comment {
     if (this.life > 0) {
       // this.alpha = this.life;
       this.size = abs((height / 20) * sin(0.5 * PI * this.life / _FRAME));
-      this.life = this.life - 1; // 0 - 255
+      this.life--; // 0 - 255
       if (this.life == 0) {
         this.flg_img = false;
       }
