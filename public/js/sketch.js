@@ -99,14 +99,16 @@ function setup() {
   select("#button_emoji_reaction_03").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_04").mouseClicked(sendEmojiReaction);
   select("#button_emoji_reaction_05").mouseClicked(sendEmojiReaction);
+  select("#button_emoji_reaction_06").mouseClicked(sendEmojiReaction);
+  select("#button_emoji_reaction_07").mouseClicked(sendEmojiReaction);
 
   select("#button_sound_reaction_00").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_01").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_02").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_03").mouseClicked(sendSoundReaction);
-  select("#button_sound_reaction_04").mouseClicked(sendSoundReaction);
+  // select("#button_sound_reaction_04").mouseClicked(sendSoundReaction);
   // select("#button_sound_reaction_05").mouseClicked(sendSoundReaction);
-  select("#button_sound_reaction_06").mouseClicked(sendSoundReaction);
+  // select("#button_sound_reaction_06").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_07").mouseClicked(sendSoundReaction);
   select("#button_sound_reaction_08").mouseClicked(sendSoundReaction);
   // select("#button_sound_reaction_09").mouseClicked(sendSoundReaction);
