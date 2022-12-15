@@ -223,7 +223,9 @@ function newCommentAnimetion(data) {
     }
 
     comments[id].setText(data.comment);
-    textSize(height / 20);
+    // テキストサイズを設定
+    const test_size = height / 20;
+    textSize(test_size);
     const text_width = textWidth(data.comment);
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
