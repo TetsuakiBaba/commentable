@@ -249,6 +249,7 @@ function newCommentAnimetion(data) {
       comments[id].setY(random(height - test_size));
     }
 
+    // サウンドを再生する
     if (data.flg_sound == true && flg_sound_mute == false) {
       comments[id].setVolume(volume);
       comments[id].playSound();
