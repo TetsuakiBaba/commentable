@@ -218,6 +218,8 @@ function newCommentAnimetion(data) {
     const text_size = height / 20;
     textSize(text_size);
     const text_width = textWidth(data.comment);
+
+    // X座標を設定
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
@@ -225,6 +227,7 @@ function newCommentAnimetion(data) {
       comments[id].setX(text_width / 2);
     }
 
+    // Y座標を設定, 描画時間の設定
     if (data.flg_emoji) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
