@@ -212,6 +212,8 @@ function newCommentAnimetion(data) {
   // 上書きできる変数が見つかった場合は、その変数を更新する
   if (isUpdate) {
 
+    comments[id].setText(data.comment);
+    comments[id].setColor(data.color_text, data.color_text_stroke);
     if (data.flg_emoji) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
@@ -222,7 +224,6 @@ function newCommentAnimetion(data) {
       comments[id].setLife(TEXT_SEC*FRAME_RATE);
     }
 
-    comments[id].setText(data.comment);
     // テキストサイズを設定
     const test_size = height / 20;
     textSize(test_size);
@@ -238,7 +239,6 @@ function newCommentAnimetion(data) {
     const min_height = height - (height/6);
     // px単位で指定する
     comments[id].setY(random(min_height, max_height));
-    comments[id].setColor(data.color_text, data.color_text_stroke);
     comments[id].flg_image = data.flg_img;
     comments[id].id_image = data.id_img;
     comments[id].flg_sound = data.flg_sound;
