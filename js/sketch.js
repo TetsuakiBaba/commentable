@@ -217,7 +217,6 @@ function newCommentAnimetion(data) {
     // テキストサイズを設定
     const text_size = height / 20;
     textSize(text_size);
-    const text_width = textWidth(data.comment);
 
     comments[id].flg_image = data.flg_img;
     comments[id].id_image = data.id_img;
@@ -225,6 +224,7 @@ function newCommentAnimetion(data) {
     comments[id].id_sound = data.id_sound;
 
     // X座標を設定
+    const text_width = textWidth(data.comment);
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
