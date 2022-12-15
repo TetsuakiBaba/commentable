@@ -12,6 +12,14 @@ class Comment {
     this.volume = 0.1;
   }
 
+  setAlpha(_alpha) {
+    this.alpha = _alpha;
+  }
+
+  getAlpha() {
+    return this.alpha;
+  }
+
   setIdSound(_id_sound) {
     this.id_sound = _id_sound;
   }
