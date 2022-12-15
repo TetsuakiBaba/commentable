@@ -226,7 +226,8 @@ function newCommentAnimetion(data) {
     comments[id].flg_emoji = data.flg_emoji;
 
     // X座標を設定
-    const text_width = textWidth(data.comment);
+    comments[id].setTextWidth(textWidth(data.comment));
+    const text_width = comments[id].getTextWidth();
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
