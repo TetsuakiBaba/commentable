@@ -106,7 +106,7 @@ class Comment {
         // this.alpha = this.life;
         this.life--;
         let dy = 2;
-        let _y = dy * _FRAME;
+        let _y = dy * _FRAME; // トータルフレームの移動px数
         this.y = this.y - dy;
 
         let amp = 0.6;  // 振幅
