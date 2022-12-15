@@ -83,6 +83,7 @@ class Comment {
         // this.size = abs((height / 20) * sin(0.5 * PI * this.life / _FRAME));
         this.life--; // 0 - 255
         let dy = 2;
+        let _y = dy * _FRAME;
         this.y = this.y - dy;
 
         if (this.life == 0) {
