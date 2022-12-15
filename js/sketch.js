@@ -247,7 +247,7 @@ function newCommentAnimetion(data) {
       // テキストの場合の処理
       // 描画時間: 3000ms
       comments[id].setLife(TEXT_SEC * FRAME_RATE);
-      comments[id].setY(random(height - test_size));
+      comments[id].setY(random(height - text_size));
     }
 
     // サウンドを再生する
