@@ -94,6 +94,9 @@ class Comment {
       } else {
         // テキストの場合の移動
         this.life--; // 0 - 255
+        let dx = width / (_FRAME - this.text_width);
+        this.x = this.x - dx;
+
         if (this.life == 0) {
           this.flg_img = false;
         }
