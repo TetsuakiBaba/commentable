@@ -241,7 +241,7 @@ function newCommentAnimetion(data) {
       comments[id].setLife(EMOJI_SEC * FRAME_RATE);
 
       const max_height = height - (text_size / 2);
-      const min_height = height - (height / 4);
+      const min_height = height - (height / 10);
       // px単位で指定する
       comments[id].setY(random(min_height, max_height));
     } else {
