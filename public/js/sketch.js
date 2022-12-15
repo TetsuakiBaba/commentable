@@ -243,7 +243,7 @@ function sendEmojiReaction() {
 function sendSoundReaction() {
   let param = new Param();
   param.str_comment = this.html();
-  param.flg_emoji = false;
+  param.flg_emoji = true;
   param.str_my_name = document.getElementById("text_my_name").value;
   param.flg_sound = true;
   param.id_sound = this.attribute("value");
