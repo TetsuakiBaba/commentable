@@ -80,7 +80,7 @@ class Comment {
     this.y = _y;
   }
 
-  useImage(_id) {
+  useImage() {
     this.flg_img = true;
   }
 
