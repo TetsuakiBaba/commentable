@@ -219,11 +219,11 @@ function newCommentAnimetion(data) {
     const text_size = height / 20;
     textSize(text_size);
 
-    comments[id].flg_image = data.flg_img;
-    comments[id].id_image = data.id_img;
-    comments[id].flg_sound = data.flg_sound;
-    comments[id].id_sound = data.id_sound;
-    comments[id].flg_emoji = data.flg_emoji;
+    comments[id].setFlgImage(data.flg_img);
+    comments[id].setIdImg(data.id_img);
+    comments[id].setFlgSound(data.flg_sound);
+    comments[id].setIdSound(data.id_sound);
+    comments[id].setFlgEmoji(data.flg_emoji);
 
     // X座標を設定
     comments[id].setTextWidth(textWidth(data.comment));

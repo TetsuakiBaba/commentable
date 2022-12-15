@@ -12,6 +12,34 @@ class Comment {
     this.volume = 0.1;
   }
 
+  setIdSound(_id_sound) {
+    this.id_sound = _id_sound;
+  }
+
+  getIdSound() {
+    return this.id_sound;
+  }
+
+  setFlgSound(_flg_sound) {
+    this.flg_sound = _flg_sound;
+  }
+
+  getFlgSound() {
+    return this.flg_sound;
+  }
+
+  setIdImg(_id_img) {
+    this.id_img = _id_img;
+  }
+
+  setFlgImage(_flg_img) {
+    this.flg_img = _flg_img;
+  }
+
+  getFlgImage() {
+    return this.flg_img;
+  }
+
   setTextWidth(_text_width) {
     this.text_width = _text_width;
   }
