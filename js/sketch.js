@@ -214,6 +214,10 @@ function newCommentAnimetion(data) {
 
     comments[id].setText(data.comment);
     comments[id].setColor(data.color_text, data.color_text_stroke);
+    // テキストサイズを設定
+    const text_size = height / 20;
+    textSize(text_size);
+    const text_width = textWidth(data.comment);
     if (data.flg_emoji) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
@@ -224,10 +228,6 @@ function newCommentAnimetion(data) {
       comments[id].setLife(TEXT_SEC*FRAME_RATE);
     }
 
-    // テキストサイズを設定
-    const text_size = height / 20;
-    textSize(text_size);
-    const text_width = textWidth(data.comment);
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
     }
