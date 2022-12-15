@@ -139,8 +139,6 @@ class Comment {
 
   draw(_FRAME) {
     if (this.flg_img == false) {
-      textSize(this.size);
-      strokeWeight(600.0 / _FRAME);
       stroke(this.color_text_stroke);
       fill(this.color_text);
       text(this.text, this.x, this.y);
