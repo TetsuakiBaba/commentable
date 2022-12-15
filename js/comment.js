@@ -140,6 +140,7 @@ class Comment {
   draw(_FRAME) {
     if (this.flg_img == false) {
       stroke(this.color_text_stroke);
+      strokeWeight(5); // 縁取りは5px
       fill(this.color_text);
       text(this.text, this.x, this.y);
     }
