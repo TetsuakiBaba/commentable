@@ -211,9 +211,7 @@ function newCommentAnimetion(data) {
 
   // 上書きできる変数が見つかった場合は、その変数を更新する
   if (isUpdate) {
-
     comments[id].setText(data.comment);
-
     // data.color_text: テキストの色
     // data.color_text_stroke: テキストの縁取りの色
     comments[id].setColor(data.color_text, data.color_text_stroke);
