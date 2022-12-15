@@ -3,7 +3,7 @@ class Comment {
     this.x = random(100);
     this.y = random(100);
     this.text = "test";
-    this.alpha = random(100);
+    this.alpha = 0;
     this.life = 1; // 0 - 255
     this.size = 72.0;
     this.flg_img = false;
@@ -93,7 +93,7 @@ class Comment {
     this.x = random(100);
     this.y = random(100);
     this.text = "test";
-    this.alpha = random(100);
+    this.alpha = 0;
     this.life = 1; // 0 - 255
     this.size = 72.0;
     this.flg_img = false;
