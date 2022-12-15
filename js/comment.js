@@ -32,6 +32,10 @@ class Comment {
     this.id_img = _id_img;
   }
 
+  getIdImg() {
+    return this.id_img;
+  }
+
   setFlgImage(_flg_img) {
     this.flg_img = _flg_img;
   }
