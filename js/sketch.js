@@ -176,6 +176,7 @@ function newComment(data) {
     comments[id].setFlgSound(data.flg_sound);
     comments[id].setIdSound(data.id_sound);
     comments[id].setFlgEmoji(data.flg_emoji);
+    // comments[id].setAlpha(255.0); // 1.0: 不透明, 0.0: 透明
 
     // X座標を設定
     comments[id].setTextWidth(textWidth(data.comment));

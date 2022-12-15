@@ -111,7 +111,8 @@ class Comment {
     if (this.life > 0) {
       if (this.flg_emoji) {
         // 絵文字の場合の移動
-        // this.alpha = this.life;
+        // this.alpha = this.alpha - 10;
+        // this.size = this.life
         this.life--;
         let dy = 2;
         let _y = dy * _FRAME; // トータルフレームの移動px数
