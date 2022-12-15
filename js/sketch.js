@@ -218,6 +218,13 @@ function newCommentAnimetion(data) {
     const text_size = height / 20;
     textSize(text_size);
     const text_width = textWidth(data.comment);
+    if (text_width < width) {
+      comments[id].setX(random(text_width / 2, width - text_width / 2));
+    }
+    else {
+      comments[id].setX(text_width / 2);
+    }
+
     if (data.flg_emoji) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
@@ -226,13 +233,6 @@ function newCommentAnimetion(data) {
       // テキストの場合の処理
       // 描画時間: 3000ms
       comments[id].setLife(TEXT_SEC*FRAME_RATE);
-    }
-
-    if (text_width < width) {
-      comments[id].setX(random(text_width / 2, width - text_width / 2));
-    }
-    else {
-      comments[id].setX(text_width / 2);
     }
 
     const max_height = height-(text_size/2);
