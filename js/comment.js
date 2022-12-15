@@ -104,8 +104,7 @@ class Comment {
       if (this.flg_emoji) {
         // 絵文字の場合の移動
         // this.alpha = this.life;
-        // this.size = abs((height / 20) * sin(0.5 * PI * this.life / _FRAME));
-        this.life--; // 0 - 255
+        this.life--;
         let dy = 2;
         let _y = dy * _FRAME;
         this.y = this.y - dy;
@@ -117,7 +116,7 @@ class Comment {
         }
       } else {
         // テキストの場合の移動
-        this.life--; // 0 - 255
+        this.life--;
         let dx = (width + this.text_width) / _FRAME;
         this.x = this.x - dx;
 
