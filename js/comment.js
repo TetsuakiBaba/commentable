@@ -6,9 +6,18 @@ class Comment {
     this.alpha = 0;
     this.life = 1; // 0 - 255
     this.size = 72.0;
+    this.text_width = 0;
     this.flg_img = false;
     this.flg_emoji = false;
     this.volume = 0.1;
+  }
+
+  setTextWidth(_text_width) {
+    this.text_width = _text_width;
+  }
+
+  getTextWidth() {
+    return this.text_width;
   }
 
   // Emoji -> true
@@ -114,6 +123,7 @@ class Comment {
     this.alpha = 0;
     this.life = 1; // 0 - 255
     this.size = 72.0;
+    this.text_width = 0;
     this.flg_img = false;
     this.volume = 0.1;
     return;
