@@ -233,7 +233,11 @@ function newCommentAnimetion(data) {
     else {
       comments[id].setX(text_width / 2);
     }
-    comments[id].setY(random(100, height - 100));
+
+    const max_height = height-(test_size/2);
+    const min_height = height - (height/6);
+    // px単位で指定する
+    comments[id].setY(random(min_height, max_height));
     comments[id].setColor(data.color_text, data.color_text_stroke);
     comments[id].flg_image = data.flg_img;
     comments[id].id_image = data.id_img;
