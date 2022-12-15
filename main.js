@@ -70,8 +70,8 @@ app.whenReady().then(() => {
     title: 'Commentable',
     alwaysOnTop: true,
     label: '部屋名を入力して入室してください',
-    // value: generateName(),
-    value: "test_room",
+    value: generateName(),
+    // value: "test_room",
     //menuBarVisible: true,
     buttonLabels: {
       ok: '入室',
@@ -108,8 +108,8 @@ app.whenReady().then(() => {
     if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
     else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
 
-    // const hostname = "https://commentable.fly.dev";
-    const hostname = "http://localhost:8080";
+    const hostname = "https://commentable.fly.dev";
+    // const hostname = "http://localhost:8080";
     // const hostname = proccess.env.HOSTNAME;
 
     let contextMenu = Menu.buildFromTemplate([
