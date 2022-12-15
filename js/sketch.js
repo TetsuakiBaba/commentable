@@ -219,7 +219,6 @@ function newCommentAnimetion(data) {
     const text_size = height / 20;
     textSize(text_size);
 
-    comments[id].setFlgImage(data.flg_img);
     comments[id].setIdImg(data.id_img);
     comments[id].setFlgSound(data.flg_sound);
     comments[id].setIdSound(data.id_sound);

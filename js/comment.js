@@ -36,14 +36,6 @@ class Comment {
     return this.id_img;
   }
 
-  setFlgImage(_flg_img) {
-    this.flg_img = _flg_img;
-  }
-
-  getFlgImage() {
-    return this.flg_img;
-  }
-
   setTextWidth(_text_width) {
     this.text_width = _text_width;
   }
