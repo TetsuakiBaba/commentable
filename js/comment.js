@@ -82,11 +82,8 @@ class Comment {
         // this.alpha = this.life;
         // this.size = abs((height / 20) * sin(0.5 * PI * this.life / _FRAME));
         this.life--; // 0 - 255
-        this.y = this.y - 2;
-        this.x = this.x + sin(PI * this.y * 8);
-        // if (this.lift > _FRAME * 0.6) {
-        // this.lift = 0;
-        // }
+        let dy = 2;
+        this.y = this.y - dy;
 
         if (this.life == 0) {
           this.flg_img = false;
