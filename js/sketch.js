@@ -219,6 +219,11 @@ function newCommentAnimetion(data) {
     textSize(text_size);
     const text_width = textWidth(data.comment);
 
+    comments[id].flg_image = data.flg_img;
+    comments[id].id_image = data.id_img;
+    comments[id].flg_sound = data.flg_sound;
+    comments[id].id_sound = data.id_sound;
+
     // X座標を設定
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
@@ -243,11 +248,6 @@ function newCommentAnimetion(data) {
       comments[id].setLife(TEXT_SEC*FRAME_RATE);
       comments[id].setY(random(height - test_size));
     }
-
-    comments[id].flg_image = data.flg_img;
-    comments[id].id_image = data.id_img;
-    comments[id].flg_sound = data.flg_sound;
-    comments[id].id_sound = data.id_sound;
 
     if (data.flg_sound == true && flg_sound_mute == false) {
       comments[id].setVolume(volume);
