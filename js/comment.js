@@ -109,7 +109,7 @@ class Comment {
         let _y = dy * _FRAME;
         this.y = this.y - dy;
 
-        let amp = 1.0;  // 振幅
+        let amp = 0.6;  // 振幅
         this.x = this.x + sin(8.0 * PI * ((dy*this.life)/_y)) * amp;
         if (this.life == 0) {
           this.flg_img = false;
