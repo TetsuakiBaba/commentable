@@ -229,16 +229,17 @@ function newCommentAnimetion(data) {
       // 絵文字の場合の処理
       // 描画時間: 1500ms
       comments[id].setLife(EMOJI_SEC*FRAME_RATE);
+
+      const max_height = height-(text_size/2);
+      const min_height = height - (height/6);
+      // px単位で指定する
+      comments[id].setY(random(min_height, max_height));
     } else {
       // テキストの場合の処理
       // 描画時間: 3000ms
       comments[id].setLife(TEXT_SEC*FRAME_RATE);
     }
 
-    const max_height = height-(text_size/2);
-    const min_height = height - (height/6);
-    // px単位で指定する
-    comments[id].setY(random(min_height, max_height));
     comments[id].flg_image = data.flg_img;
     comments[id].id_image = data.id_img;
     comments[id].flg_sound = data.flg_sound;
