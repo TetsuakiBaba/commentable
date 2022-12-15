@@ -10,7 +10,7 @@ let color_text_stroke;
 let volume = 0.025;
 const FRAME_RATE = 60;
 const EMOJI_SEC = 2.0;
-const TEXT_SEC = 4.0;
+const TEXT_SEC = 6.0;
 
 let mycanvas;
 let max_number_of_comment = 100; // Maxの描画できるコメント数
