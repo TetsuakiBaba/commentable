@@ -225,8 +225,8 @@ function newCommentAnimetion(data) {
     }
 
     // テキストサイズを設定
-    const test_size = height / 20;
-    textSize(test_size);
+    const text_size = height / 20;
+    textSize(text_size);
     const text_width = textWidth(data.comment);
     if (text_width < width) {
       comments[id].setX(random(text_width / 2, width - text_width / 2));
@@ -235,7 +235,7 @@ function newCommentAnimetion(data) {
       comments[id].setX(text_width / 2);
     }
 
-    const max_height = height-(test_size/2);
+    const max_height = height-(text_size/2);
     const min_height = height - (height/6);
     // px単位で指定する
     comments[id].setY(random(min_height, max_height));
