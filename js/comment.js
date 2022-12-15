@@ -86,7 +86,7 @@ class Comment {
         let _y = dy * _FRAME;
         this.y = this.y - dy;
 
-        this.x = this.x + sin(8.0 * PI * ((dy*this.life)/_y)) * 2.0;
+        this.x = this.x + sin(8.0 * PI * ((dy*this.life)/_y)) * 1.0;
         if (this.life == 0) {
           this.flg_img = false;
         }
