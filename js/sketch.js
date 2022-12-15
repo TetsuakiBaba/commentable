@@ -75,8 +75,7 @@ function startSocketConnection(room) {
     socket.emit('join', room);
   });
 
-  // socket.on('comment', newComment);
-  socket.on('comment', newCommentAnimetion);
+  socket.on('comment', newComment);
   socket.on('disconnect', () => {
     log('you have been disconnected');
   });
@@ -147,52 +146,6 @@ function draw() {
 // newComment function でコメントを画面に描画する処理をしている
 let count_comment = 0;
 function newComment(data) {
-  // 送られてきたコメントが空の場合は処理を終了する
-  if (data.comment.length <= 0) {
-    return;
-  }
-
-  let isUpdate = false;
-  // ライフがゼロになっている変数を探す（一番古い変数を探す）
-  for (let i = 0; i < max_number_of_comment; i++) {
-    if (comments[i].getLife() == 0) {
-      id = i;
-      comments[id].reset();
-      isUpdate = true;
-      break; // ライフがゼロの変数が見つかったらループを抜ける
-    }
-  }
-
-  // 上書きできる変数が見つかった場合は、その変数を更新する
-  if (isUpdate) {
-    comments[id].setFlgEmoji(data.flg_emoji);
-    comments[id].setLife(255);
-    comments[id].setText(data.comment);
-    textSize(height / 20);
-    const text_width = textWidth(data.comment);
-    if (text_width < width) {
-      comments[id].setX(random(text_width / 2, width - text_width / 2));
-    }
-    else {
-      comments[id].setX(text_width / 2);
-    }
-    comments[id].setY(random(100, height - 100));
-    comments[id].setColor(data.color_text, data.color_text_stroke);
-    comments[id].flg_image = data.flg_img;
-    comments[id].id_image = data.id_img;
-    comments[id].flg_sound = data.flg_sound;
-    comments[id].id_sound = data.id_sound;
-
-    if (data.flg_sound == true && flg_sound_mute == false) {
-      comments[id].setVolume(volume);
-      comments[id].playSound();
-    }
-  }
-}
-
-// newComment function でコメントを画面に描画する処理をしている
-// let count_comment = 0;
-function newCommentAnimetion(data) {
   // 送られてきたコメントが空の場合は処理を終了する
   if (data.comment.length <= 0) {
     return;
