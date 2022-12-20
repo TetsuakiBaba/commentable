@@ -8,6 +8,9 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 const { exit } = require('process');
 
+
+
+
 let win;
 function createWindow() {
   console.log(screen.getAllDisplays());
