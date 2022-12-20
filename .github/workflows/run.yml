@@ -47,11 +47,10 @@ jobs:
             fi
           done
 
-      - name: fly.io deploy1
-        uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: fly.io init
         if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
-        # with:
-          # api-token: ${{ secrets.FLY_API_TOKEN }}
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: fly.io deploy2
+      - name: fly.io deploy
+        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
         run: cd web && flyctl --config fly.toml deploy --remote-only
