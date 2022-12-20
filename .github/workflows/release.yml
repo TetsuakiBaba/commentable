@@ -57,7 +57,7 @@ jobs:
 
       - name: tag version get
         id: tag
-        # if: ${{ steps.run.outputs.isClientRelease == 'true' }}
+        if: ${{ steps.run.outputs.isClientRelease == 'true' }}
 
         # package.jsonのversionを取得
         run: |
@@ -68,7 +68,7 @@ jobs:
           echo "::set-output name=version::${version}"
 
       - name: new tag release
-        # if: ${{ steps.run.outputs.isClientRelease == 'true' }}
+        if: ${{ steps.run.outputs.isClientRelease == 'true' }}
 
         # タグを作成
         run: |
