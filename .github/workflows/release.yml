@@ -56,6 +56,7 @@ jobs:
         run: cd web && flyctl --config fly.toml deploy --remote-only
 
       - name: tag version get
+        id: tag
         # if: ${{ steps.run.outputs.isClientRelease == 'true' }}
 
         # package.jsonのversionを取得
@@ -74,6 +75,7 @@ jobs:
           git config --local user.email "szrkw2ui2a@gmail.com"
           git config --local user.name "chihiros"
 
+          version=${{ steps.tag.outputs.version }}
           # タグが存在するか確認する
           if git rev-parse "v${version}" >/dev/null 2>&1; then
             echo "Tag already exists"
