@@ -1,0 +1,16 @@
+name: Deploy to Fly.io
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  deploy:
+    name: Deploy app
+    runs-on: ubuntu-latest
+    environment: PROD
+    steps:
+      - uses: actions/checkout@v2
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: |
+        cd web
+        flyctl --config ./web/fly.toml deploy --remote-only
