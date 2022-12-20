@@ -15,5 +15,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: |
-        cd web
+        # cd web
         flyctl --config ./web/fly.toml deploy --remote-only
