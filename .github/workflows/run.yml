@@ -1,5 +1,7 @@
 name: Test
-on: [push]
+on:
+  workflow_dispatch:
+  push:
 
 jobs:
   deploy:
@@ -49,4 +51,5 @@ jobs:
 
       - name: Web Deploy
         # if: steps.run.outputs.isWebDeploy == 'true'
+        Reuse:
         uses: .github/workflows/deploy-flyio.yml
