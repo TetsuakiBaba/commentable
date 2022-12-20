@@ -47,10 +47,11 @@ jobs:
             fi
           done
 
-      - name: fly.io init
-        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: fly.io deploy
-        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
-        run: cd web && flyctl --config fly.toml deploy --remote-only
+      # # /client のReleaseを行う
+      # - name: Checkout client
+      #   if: ${{ steps.run.outputs.isClientRelease == 'true' }}
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: 'kazukazuinaina/nextjs-electron-template'
+      #     path: client
+      #     fetch-depth: 0
