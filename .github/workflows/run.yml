@@ -29,5 +29,13 @@ jobs:
       - name: Run
         run: |
           for dir in $(echo "${{ steps.changed.outputs.directory }}") ; do
-            echo "Run $dir"
+            # もし、dirが"web"なら、web/.github/workflows/deploy-flyio.ymlを実行する
+            if [ "${dir}" = "web" ]; then
+              echo "web"
+            fi
+
+            # もし、dirが"client"なら、client/.github/workflows/electron-builder.ymlを実行する
+            if [ "${dir}" = "client" ]; then
+              echo "client"
+            fi
           done
