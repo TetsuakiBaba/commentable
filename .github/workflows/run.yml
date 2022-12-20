@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   push:
 
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
 jobs:
   deploy:
     name: Run
@@ -44,11 +47,11 @@ jobs:
             fi
           done
 
-      - name: fly.io deploy
+      - name: fly.io deploy1
         uses: superfly/flyctl-actions/setup-flyctl@master
-        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
-        with:
-          api-token: ${{ secrets.FLY_API_TOKEN }}
+        # if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
+        # with:
+          # api-token: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: fly.io deploy
+      - name: fly.io deploy2
         run: cd web && flyctl --config fly.toml deploy --remote-only
