@@ -48,10 +48,4 @@ jobs:
           done
 
       - name: fly.io deploy
-        uses: |
-          actions/checkout@v2
-          superfly/flyctl-actions/setup-flyctl@master
-
-        run: |
-          cd web
-          flyctl --config fly.toml deploy --remote-only
+        uses: ./.github/workflows/deploy-flyio.yml
