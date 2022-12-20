@@ -25,4 +25,6 @@ jobs:
 
       - name: Run
         run: |
-          echo "${{ steps.changed.outputs.directory }}"
+          for dir in $(echo "${{ steps.changed.outputs.directory }}") ; do
+            echo "Run $dir"
+          done
