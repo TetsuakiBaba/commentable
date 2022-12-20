@@ -1,0 +1,23 @@
+name: Test
+on: [push]
+
+jobs:
+  deploy:
+    name: Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Deploy Lambda
+        run: |
+          diff="git diff ${{github.event.before}}..${{github.event.after}} --name-only -- "
+          diff+=${extensions}
+          diff+=" | grep -E "./{1}" | sed -e 's/\/.*//' | uniq"
+          directories=$(eval ${diff})
+          for dir in ${directories} ; do
+            echo ${dir}
+          done
