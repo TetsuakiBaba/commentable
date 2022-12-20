@@ -1,4 +1,4 @@
-name: Test
+name: Web, App Release
 on:
   workflow_dispatch:
   push:
