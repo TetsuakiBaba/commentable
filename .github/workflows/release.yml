@@ -75,10 +75,10 @@ jobs:
           git config --local user.name "chihiros"
 
           # タグが存在するか確認する
-          if git rev-parse "v${{ steps.tag.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "v${version}" >/dev/null 2>&1; then
             echo "Tag already exists"
             exit 0
           fi
 
-          git tag -a v${{ steps.tag.outputs.version }} -m "v${{ steps.tag.outputs.version }}"
-          git push origin v${{ steps.tag.outputs.version }}
+          git tag -a v${version} -m "v${version}"
+          git push origin v${version}
