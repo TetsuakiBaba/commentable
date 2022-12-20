@@ -46,12 +46,3 @@ jobs:
               echo "::set-output name=isClientRelease::true"
             fi
           done
-
-      # # /client のReleaseを行う
-      # - name: Checkout client
-      #   if: ${{ steps.run.outputs.isClientRelease == 'true' }}
-      #   uses: actions/checkout@v2
-      #   with:
-      #     repository: 'kazukazuinaina/nextjs-electron-template'
-      #     path: client
-      #     fetch-depth: 0
