@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+  <title>Commentable-Viewer</title>
+  <meta charset="utf-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: hidden;
+    }
+
+    .QR_top_right {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      animation: fadeIn 2.0s ease 0.0s 1 normal;
+    }
+
+    .QR_center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-top: -16%;
+      margin-left: -16%;
+      animation: fadeIn 2.0s ease 0.0s 1 normal;
+    }
+
+    @keyframes rotation {
+      0% {
+        transform: scale(1.0);
+      }
+
+      10% {
+        transform: scale(1.1)
+      }
+
+      100% {
+        transform: scale(1.0)
+      }
+    }
+
+    @keyframes fadeIn {
+      /*animation-nameで設定した値を書く*/
+      0% {
+        opacity: 0
+      }
+
+      /*アニメーション開始時は不透明度0%*/
+      100% {
+        opacity: 1
+      }
+
+      /*アニメーション終了時は不透明度100%*/
+    }
+
+    @keyframes fadeOut {
+      /*animation-nameで設定した値を書く*/
+      0% {
+        opacity: 0
+      }
+
+      /*アニメーション開始時は不透明度0%*/
+      100% {
+        opacity: 1
+      }
+
+      /*アニメーション終了時は不透明度100%*/
+    }
+
+  </style>
+</head>
+<body>
+  <div id="p5_loading"></div>
+  <div id="canvas_placeholder"></div>
+  <div id="QR_center" class="QR_center"></div>
+  <div id="QR_top_right" class="QR_top_right"></div>
+
+  <textarea id="textarea_comment_history" readonly class="form-control" rows="4" placeholder="Comment History" hidden></textarea>
+
+  <script src="js/lib/p5.min.js"></script>
+  <script src="js/lib/p5.sound.min.js"></script>
+  <script src="js/lib/socket.io.js"></script>
+  <script src="js/lib/qr-code-styling.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/animetion.js"></script>
+  <script src="js/comment.js"></script>
+  <script src="js/sketch.js"></script>
+</body>
+</html>
