@@ -27,11 +27,12 @@ jobs:
           echo "::set-output name=directory::${dirs}"
 
       - name: Run
+        id: run
         run: |
           for dir in $(echo "${{ steps.changed.outputs.directory }}") ; do
-            # もし、dirが"web"なら、web/.github/workflows/deploy-flyio.ymlを実行する
+            # もし、dirが"web"なら
             if [ "${dir}" = "web" ]; then
-              echo "web"
+              echo "::set-output name=isWebDeploy::true"
             fi
 
             # もし、dirが"client"なら、client/.github/workflows/electron-builder.ymlを実行する
@@ -39,3 +40,7 @@ jobs:
               echo "client"
             fi
           done
+
+      - name: Web Deploy
+        if: steps.run.outputs.isWebDeploy == 'true'
+        uses: ./web/.github/workflows/deploy-flyio.yml
