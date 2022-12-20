@@ -54,3 +54,21 @@ jobs:
       - name: fly.io deploy
         if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
         run: cd web && flyctl --config fly.toml deploy --remote-only
+
+      - name: tag version get
+        if: ${{ steps.run.outputs.isClientRelease == 'true' }}
+
+        # package.jsonのversionを取得
+        run: |
+          version=$(cat client/package.json | jq -r .version)
+          echo "::set-output name=version::${version}"
+
+      - name: new tag release
+        if: ${{ steps.run.outputs.isClientRelease == 'true' }}
+
+        # タグを作成
+        run: |
+          git config --local user.email "szrkw2ui2a@gmail.com"
+          git config --local user.name "chihiros"
+          git tag -a v${{ steps.tag.outputs.version }} -m "v${{ steps.tag.outputs.version }}"
+          git push origin v${{ steps.tag.outputs.version }}
