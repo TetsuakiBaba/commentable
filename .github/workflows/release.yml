@@ -62,6 +62,8 @@ jobs:
         run: |
           ls -lah
           version=$(cat client/package.json | jq -r .version)
+          cat client/package.json
+          echo $version
           echo "::set-output name=version::${version}"
 
       - name: new tag release
