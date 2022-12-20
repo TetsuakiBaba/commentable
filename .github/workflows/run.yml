@@ -46,3 +46,11 @@ jobs:
               echo "::set-output name=isClientRelease::true"
             fi
           done
+
+      - name: fly.io init
+        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: fly.io deploy
+        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
+        run: cd web && flyctl --config fly.toml deploy --remote-only
