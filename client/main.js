@@ -10,16 +10,6 @@ const { exit } = require('process');
 
 let win;
 
-
-
-
-
-
-
-
-
-
-
 function createWindow() {
   console.log(screen.getAllDisplays());
   //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
