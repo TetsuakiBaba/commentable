@@ -44,7 +44,6 @@ jobs:
           done
 
       - name: fly.io deploy
-        # if: steps.run.outputs.isWebDeploy == 'true'
         uses: .github/workflows/deploy-flyio.yml
 
       # - name: Web Deploy
