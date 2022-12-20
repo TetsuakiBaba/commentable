@@ -70,5 +70,12 @@ jobs:
         run: |
           git config --local user.email "szrkw2ui2a@gmail.com"
           git config --local user.name "chihiros"
+
+          # タグが存在するか確認する
+          if git rev-parse "v${{ steps.tag.outputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists"
+            exit 1
+          fi
+
           git tag -a v${{ steps.tag.outputs.version }} -m "v${{ steps.tag.outputs.version }}"
           git push origin v${{ steps.tag.outputs.version }}
