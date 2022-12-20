@@ -1,12 +1,16 @@
 name: Test
 on:
-  workflow_dispatch:
+  # workflow_dispatch:
   push:
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 jobs:
   deploy:
     name: Run
     runs-on: ubuntu-latest
+    environment: PROD
 
     steps:
       - name: Checkout
@@ -44,9 +48,10 @@ jobs:
           done
 
       - name: fly.io deploy
-        uses: .github/workflows/deploy-flyio.yml
+        uses: |
+          actions/checkout@v2
+          superfly/flyctl-actions/setup-flyctl@master
 
-      # - name: Web Deploy
-      #   # if: steps.run.outputs.isWebDeploy == 'true'
-      #   Reuse:
-      #     uses: .github/workflows/deploy-flyio.yml
+        run: |
+          cd web
+          flyctl --config fly.toml deploy --remote-only
