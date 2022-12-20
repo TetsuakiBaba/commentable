@@ -2,17 +2,17 @@
 install: install-electron install-web
 
 install-electron:
-	cd commentable-electron-client; \
+	cd client; \
 	npm install
 
 install-web:
-	cd commentable-web; \
+	cd web; \
 	npm install
 
 up-electron:
-	cd commentable-electron-client; \
+	cd client; \
 	npm start
 
 up-web:
-	cd commentable-web; \
+	cd web; \
 	npm start
