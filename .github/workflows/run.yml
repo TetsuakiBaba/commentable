@@ -41,6 +41,12 @@ jobs:
             fi
           done
 
+      - name: ls -lah
+        run: ls -lah
+
+      - name: tree
+        run: tree
+
       - name: Web Deploy
         # if: steps.run.outputs.isWebDeploy == 'true'
         uses: ./web/.github/workflows/deploy-flyio.yml
