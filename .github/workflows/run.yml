@@ -19,10 +19,12 @@ jobs:
           diff+=${extensions}
           diff+=" | grep -E "./{1}" | sed -e 's/\/.*//' | uniq"
           directories=$(eval ${diff})
+          dirs=""
           for dir in ${directories} ; do
             echo "${dir}"
-            echo "::set-output name=directory::${dir}"
+            dirs+="${dir} "
           done
+          echo "::set-output name=directory::${dirs}"
 
       - name: Run
         run: |
