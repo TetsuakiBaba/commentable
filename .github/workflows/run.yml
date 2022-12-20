@@ -49,7 +49,7 @@ jobs:
 
       - name: fly.io deploy1
         uses: superfly/flyctl-actions/setup-flyctl@master
-        # if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
+        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
         # with:
           # api-token: ${{ secrets.FLY_API_TOKEN }}
 
