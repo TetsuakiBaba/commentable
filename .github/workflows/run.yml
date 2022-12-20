@@ -49,4 +49,4 @@ jobs:
 
       - name: Web Deploy
         # if: steps.run.outputs.isWebDeploy == 'true'
-        uses: ./web/.github/workflows/deploy-flyio.yml
+        uses: .github/workflows/deploy-flyio.yml
