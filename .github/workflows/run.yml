@@ -12,7 +12,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Deploy Lambda
+      - name: Deploy
         run: |
           diff="git diff ${{github.event.before}}..${{github.event.after}} --name-only -- "
           diff+=${extensions}
