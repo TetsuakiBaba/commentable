@@ -45,7 +45,7 @@ jobs:
         run: ls -lah
 
       - name: tree
-        run: tree
+        run: tree　-a
 
       - name: Web Deploy
         # if: steps.run.outputs.isWebDeploy == 'true'
