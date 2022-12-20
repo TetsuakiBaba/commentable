@@ -1,10 +1,7 @@
 name: Test
 on:
-  # workflow_dispatch:
+  workflow_dispatch:
   push:
-
-env:
-  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 jobs:
   deploy:
@@ -43,9 +40,15 @@ jobs:
 
             # もし、dirが"client"なら、client/.github/workflows/electron-builder.ymlを実行する
             if [ "${dir}" = "client" ]; then
-              echo "client"
+              echo "::set-output name=isClientRelease::true"
             fi
           done
 
       - name: fly.io deploy
-        uses: ./.github/workflows/deploy-flyio.yml
+        uses: superfly/flyctl-actions/setup-flyctl@master
+        if: ${{ steps.run.outputs.isWebDeploy == 'true' }}
+        with:
+          api-token: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: fly.io deploy
+        run: cd web && flyctl --config fly.toml deploy --remote-only
