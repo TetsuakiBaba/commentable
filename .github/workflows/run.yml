@@ -12,12 +12,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Deploy
+      - name: Detected changed directories
+        id: changed
         run: |
           diff="git diff ${{github.event.before}}..${{github.event.after}} --name-only -- "
           diff+=${extensions}
           diff+=" | grep -E "./{1}" | sed -e 's/\/.*//' | uniq"
           directories=$(eval ${diff})
           for dir in ${directories} ; do
-            echo ${dir}
+            echo "::set-output name=directory::${dir}"
           done
+
+      - name: Run
+        run: |
+          echo "${{ steps.changed.outputs.directory }}"
