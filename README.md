@@ -1,4 +1,6 @@
-![](./icons/commentable_logo_text.png)
+<p align="center">
+  <img src="./icons/commentable.app.logo.png" width="25%"/>
+</p>
 
 | ![](./commentable_sample.gif) | 
 |:--:|
@@ -7,6 +9,9 @@
 # Getting Started
 とにかくCommentableを利用するだけ，という方は以下のページを参照してください．
   * https://tetsuakibaba.github.io/commentable/
+
+なお、@chihiros 氏によってcommentSreenっぽく表示形式が変更された commentable もよろしければお試しください。
+  * https://github.com/chihiros/commentable-managed
 
 CommentableをOBSと連携したい場合，開発参加や自前サーバへのデプロイなどをお考えの場合は，ここから下の文章をご参照ください．
 # Commentableとは
