@@ -8,7 +8,7 @@
 
 # Getting Started
 とにかくCommentableを利用するだけ，という方は以下のページを参照してください．
-  * https://tetsuakibaba.github.io/commentable/
+  * https://commentable.carrd.co/
 
 なお、@chihiros 氏によってcommentSreenっぽく表示形式が変更された commentable もよろしければお試しください。
   * https://github.com/chihiros/commentable-managed
