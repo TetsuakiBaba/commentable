@@ -54,6 +54,7 @@ io.on('connection', (socket) => {
             let past_h = ((today - d) / (1000 * 60 * 60));
             let past_s = ((today - d) / 1000);
             // 最終更新から24時間経過してればファイル内容は削除
+            console.log("file timestamp: ", past_h);
             if (past_h > 24) {
                 fs.unlinkSync(filepath);
                 console.log("24 h over: deleted ", filepath);
