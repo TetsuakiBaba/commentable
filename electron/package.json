@@ -1,39 +1,38 @@
 {
-  "name": "commentable-viewer",
-  "version": "1.1.6",
+  "name": "commentable-desktop",
+  "version": "1.2.0",
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build-mac": "electron-builder --mac",
-    "build-win": "electron-builder --win",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron-forge start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
   },
-  "author": "",
+  "author": "Tetsuaki Baba",
   "license": "ISC",
-  "devDependencies": {
-    "electron": "^15.3.0",
-    "electron-builder": "^22.11.7"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TetsuakiBaba/commentable.git"
   },
-  "build": {
-    "productName": "Commentable-Viewer",
-    "copyright": "Copyright © 2021 Tetsuaki Baba",
-    "mac": {
-      "target": {
-        "target": "dmg",
-        "arch": "universal"
-      },
-      "icon": "./images/icon.icns"
-    },
-    "win": {
-      "target": {
-        "target": "nsis",
-        "arch": "x64"
-      },
-      "icon": "./images/icon.ico"
-    }
+  "bugs": {
+    "url": "https://github.com/TetsuakiBaba/commentable/issues"
+  },
+  "homepage": "https://commentable.carrd.co/",
+  "devDependencies": {
+    "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-rpm": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
+    "@electron-forge/publisher-github": "^6.1.1",
+    "electron": "^24.8.6"
   },
   "dependencies": {
-    "electron-prompt": "^1.7.0"
+    "electron-prompt": "^1.7.0",
+    "electron-squirrel-startup": "^1.0.0",
+    "update-electron-app": "^2.0.1"
   }
 }

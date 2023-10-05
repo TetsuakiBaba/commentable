@@ -1,3 +1,5 @@
+require('update-electron-app')()
+
 const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
 const prompt = require('electron-prompt');
 

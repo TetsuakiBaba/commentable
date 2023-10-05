@@ -3,3 +3,5 @@
 /public/api_key.json
 /electron/node_modules
 /electron/dist
+out/
+forge.config.js
