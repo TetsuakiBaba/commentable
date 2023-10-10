@@ -17,12 +17,14 @@ function createWindow() {
     //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     let active_screen = screen.getPrimaryDisplay();
     console.log("active_screen", active_screen);
-    const { width, height } = active_screen.workAreaSize
+    let { width, height } = active_screen.workAreaSize
     const x = active_screen.workArea.x;
     const y = active_screen.workArea.y;
-    console.log(x, y);
+    // width = 1200;
+    // height = 800;
+    //console.log(x, y);
     win = new BrowserWindow({
-        title: "Commentable-Viewer",
+        title: "commentable-desktop",
         width: width,
         height: height,
         x: x,
@@ -32,14 +34,15 @@ function createWindow() {
         hasShadow: false,
         transparent: true,
         frame: false,
-        resizable: true,
+        resizable: false,
         //alwaysOnTop: true,
         //focusable: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
         }
     })
-
+    // debug
+    //win.webContents.openDevTools();
     // const child = new BrowserWindow({ parent: win, modal: true, show: false })
     // child.loadURL('https://github.com')
     // child.once('ready-to-show', () => {
@@ -95,7 +98,7 @@ app.whenReady().then(() => {
         alwaysOnTop: true,
         label: '部屋名を入力して入室してください',
         value: generateName(),
-        //menuBarVisible: true,
+        menuBarVisible: true,
         buttonLabels: {
             ok: '入室',
             cancel: 'やめる'
@@ -205,7 +208,7 @@ app.whenReady().then(() => {
                 {
                     type: 'separator',
                 },
-                { label: 'Quit Commentable-Viewer', role: 'quit' },
+                { label: 'Quit commentable-desktop', role: 'quit' },
             ])
 
             let screens = screen.getAllDisplays();
@@ -235,7 +238,7 @@ app.whenReady().then(() => {
             }
             contextMenu.insert(3, new MenuItem(data_append));
 
-            tray.setToolTip('commentable-viewer')
+            tray.setToolTip('commentable-desktop')
 
             tray.setContextMenu(contextMenu)
             //クリック時の操作を設定
