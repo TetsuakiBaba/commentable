@@ -201,6 +201,7 @@ class Comment {
 
         if (sound[this.id_sound].length > 1) {
             let number = int(random(sound[this.id_sound].length));
+            // console.log(number);
             sound[this.id_sound][number].setVolume(this.volume);
             sound[this.id_sound][number].play();
         } else {
@@ -236,7 +237,7 @@ class Comment {
 }
 var comments = []; //new Array(50);
 function whileLoading(total) {
-    console.log('loaded: ', + total);
+    //console.log('loaded: ', + total);
 }
 
 
@@ -338,7 +339,7 @@ function setup() {
 
     textFont("Noto Sans JP");
     mycanvas = createCanvas(windowWidth, windowHeight);
-    console.log(windowWidth, windowHeight);
+    //console.log(windowWidth, windowHeight);
     document.getElementById("canvas_placeholder").append(mycanvas.elt);
 
     frameRate(30);
@@ -350,7 +351,7 @@ function setup() {
     }
 
     timestamp_last_send = millis();
-    console.log(timestamp_last_send);
+    //console.log(timestamp_last_send);
     textAlign(CENTER, CENTER);
     flash = new Flash();
     flg_sound_mute = false;
@@ -420,7 +421,7 @@ function newComment(data) {
             comments[id].setText(data.comment);
             textSize(abs((height / 20) * sin(0.5 * PI)));
             let text_width = textWidth(data.comment);
-            console.log(textWidth(data.comment));
+            // console.log(textWidth(data.comment));
             if (text_width < width) {
                 comments[id].setX(random(text_width / 2, width - text_width / 2));
             }
@@ -530,7 +531,7 @@ function updateEndTime() {
 }
 
 function readyLoading(count_loaded) {
-    console.log(count_loaded);
+    //console.log(count_loaded);
     document.getElementById('p5_loading').innerHTML = str(count_loaded) + ' files loaded.';
 }
 
