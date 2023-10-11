@@ -408,6 +408,7 @@ function newComment(data) {
             protofessional_effect.setVolume(volume);
             protofessional_effect.activate();
         }
+
     } else if (data.flg_image == false) {
         let id = -1;
         if (data.comment.length <= 0) {
