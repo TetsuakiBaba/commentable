@@ -210,12 +210,12 @@ function newComment(data) {
         if (data.hidden == 100) {
             // 指定のDOM内にcardを利用してテキストを表示する
             let card = document.createElement("div");
-            card.setAttribute("class", "card");
+            card.setAttribute("class", "card mb-2");
             let card_body = document.createElement("div");
             card_body.setAttribute("class", "card-body");
             let card_header = document.createElement("small");
-            card_header.setAttribute("class", "card-header");
-            card_header.textContent = comment_timestamp;
+            card_header.setAttribute("class", "card-header d-flex justify-content-between align-items-center");
+            card_header.textContent = `${data.my_name} ${comment_timestamp}`;
             card.appendChild(card_header);
             let card_pre = document.createElement("pre");
             let card_code = document.createElement("pre");
@@ -230,10 +230,19 @@ function newComment(data) {
                 document.getElementById("code_share").firstChild
             );
             let copy_button = document.createElement("button");
-            copy_button.setAttribute("class", "btn btn-outline-primary btn-sm copy-btn");
+            copy_button.setAttribute("class", "btn btn-outline-secondary btn-sm copy-btn");
             copy_button.setAttribute("data-clipboard-target", `#${card_code.id}`);
-            copy_button.innerHTML = "コピー";
-            card_body.appendChild(copy_button);
+            copy_button.innerHTML = `<i class="bi bi-clipboard"></i> Copy`;
+            // copy_buttonが押された場合に、アイコンをチェックマークに変更し、successのクラスに変更、3秒後に元に戻す
+            copy_button.addEventListener("click", function () {
+                copy_button.innerHTML = `<i class="bi bi-check-lg"></i> Copied!!`;
+                copy_button.setAttribute("class", "btn btn-outline-success btn-sm copy-btn");
+                setTimeout(function () {
+                    copy_button.innerHTML = `<i class="bi bi-clipboard"></i> Copy`;
+                    copy_button.setAttribute("class", "btn btn-outline-secondary btn-sm copy-btn");
+                }, 2000);
+            });
+            card_header.appendChild(copy_button);
             new ClipboardJS(copy_button);
         }
     }
@@ -258,6 +267,9 @@ function pushedSendLetterButton() {
 }
 
 
+
+
+
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(
     _str_comment,
@@ -269,8 +281,8 @@ function sendComment(
     _id_sound,
     _hidden) {
 
-    _str_comment = _str_comment.replace(/,/g, '、');
-    _str_my_name = _str_my_name.replace(/,/g, '、');
+    // _str_comment = _str_comment.replace(/,/g, '、');
+    // _str_my_name = _str_my_name.replace(/,/g, '、');
 
     if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
         if (_flg_img == false) {
@@ -409,13 +421,17 @@ function clearTextBox() {
     textarea.value = ' ';
     textarea.value = '';
     textarea.blur();
+
+    // ブラウザレンダリングが間に合わないので、フォーカスを戻すのはちょっとだけ待つ
+    setTimeout(function () {
+        textarea.focus();
+    }, 50);
+    textarea.innerText = '';
 }
 
 function clearLetterTextBox() {
     document.getElementById("text_letter").value = "";
 }
-
-
 
 function changeRoomName() {
 

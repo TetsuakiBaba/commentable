@@ -1,0 +1,759 @@
+Wed Oct 11 2023 21:05:09 GMT+0900 (日本標準時),匿名,undefined,"<!doctype html>
+<html lang=""en"">
+  <head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
+    <title>Bootstrap demo</title>
+    <link href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"" rel=""stylesheet"" integrity=""sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"" crossorigin=""anonymous"">
+  </head>
+  <body>
+    <h1>Hello, world!</h1>
+    <script src=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"" integrity=""sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"" crossorigin=""anonymous""></script>
+  </body>
+</html>",undefined,false,false,false,uBrhKOIYwcrsK56cAAAC
+Wed Oct 11 2023 21:06:16 GMT+0900 (日本標準時),匿名,undefined,http://localhost/?room=test,undefined,false,false,false,uBrhKOIYwcrsK56cAAAC
+Wed Oct 11 2023 21:06:24 GMT+0900 (日本標準時),匿名,undefined,"<!doctype html>
+<html lang=""en"">
+  <head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
+    <title>Bootstrap demo</title>
+    <link href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"" rel=""stylesheet"" integrity=""sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"" crossorigin=""anonymous"">
+  </head>
+  <body>
+    <h1>Hello, world!</h1>
+    <script src=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"" integrity=""sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"" crossorigin=""anonymous""></script>
+  </body>
+</html>",undefined,false,false,false,uBrhKOIYwcrsK56cAAAC
+Wed Oct 11 2023 21:10:51 GMT+0900 (日本標準時),匿名,undefined,"function escapeForCSV(input) {
+    if (/["",\n\t]/.test(input)) { // タブもエスケープの対象に追加
+        input = '""' + input.replace(/""/g, '""""') + '""';
+    }
+    return input;
+}
+
+// dataの各項目をエスケープ処理
+data.my_name = escapeForCSV(data.my_name);
+data.name_to = escapeForCSV(data.name_to);
+data.comment = escapeForCSV(data.comment);
+",undefined,false,false,false,uBrhKOIYwcrsK56cAAAC
+Wed Oct 11 2023 21:11:18 GMT+0900 (日本標準時),馬場,全員,test,aubbotg84eo,false,0,false,GxqOslvtDYtUQA-_AAAH
+Wed Oct 11 2023 21:11:25 GMT+0900 (日本標準時),馬場,全員,"function escapeForCSV(input) {<br>    if (/[""、\n\t]/.test(input)) { // タブもエスケープの対象に追加<br>        input = '""' + input.replace(/""/g、 '""""') + '""';<br>    }<br>    return input;<br>}<br><br>// dataの各項目をエスケープ処理<br>data.my_name = escapeForCSV(data.my_name);<br>data.name_to = escapeForCSV(data.name_to);<br>data.comment = escapeForCSV(data.comment);<br>",i5njo1gh34g,false,0,false,GxqOslvtDYtUQA-_AAAH
+Wed Oct 11 2023 21:12:10 GMT+0900 (日本標準時),馬場, 馬場,"<div class=""quote""><p><p class=""card-text"">""function escapeForCSV(input) {<br>    if (/[""""、\n\t]/.test(input)) { // タブもエスケープの対象に追加<br>        input = '""""' + input.replace(/""""/g、 '""""""""') + '""""';<br>    }<br>    return input;<br>}<br><br>// dataの各項目をエスケープ処理<br><a href=""http://data.my"" target=""_blank"" rel=""noopener noreferrer"">data.my</a>_name = escapeForCSV(<a href=""http://data.my"" target=""_blank"" rel=""noopener noreferrer"">data.my</a>_name);<br><a href=""http://data.name"" target=""_blank"" rel=""noopener noreferrer"">data.name</a>_to = escapeForCSV(<a href=""http://data.name"" target=""_blank"" rel=""noopener noreferrer"">data.name</a>_to);<br>data.comment = escapeForCSV(data.comment);<br>""</p></p></div>aaadsf",q2aaikm8v4,false,0,false,E2Ev8cIHa5moNeOFAAAJ
+Wed Oct 11 2023 21:13:16 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,uBrhKOIYwcrsK56cAAAC
+Wed Oct 11 2023 21:15:19 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,Wf1-BN-JXub8ZkKMAAAL
+Wed Oct 11 2023 21:15:48 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,-Z34G4bXPObYZ1vkAAAM
+Wed Oct 11 2023 21:18:48 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,ifEepB4wZr1hEqwXAAAN
+Wed Oct 11 2023 21:19:39 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,Z6SgKca52L0DW_9OAAAO
+Wed Oct 11 2023 21:33:17 GMT+0900 (日本標準時),匿名,undefined,"test, test",undefined,false,false,false,Z6SgKca52L0DW_9OAAAO
+Wed Oct 11 2023 21:37:28 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,5rcS_Bje--0v-s4QAAAP
+Wed Oct 11 2023 21:38:32 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,Zy0rNAduUk-BJLcnAAAQ
+Wed Oct 11 2023 21:38:47 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,AVprwrKPjEsMp79eAAAR
+Wed Oct 11 2023 21:39:07 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,JFJ4aUkLh3b3lL2JAAAS
+Wed Oct 11 2023 21:40:15 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,6KUo6bjJr4d6ycbXAAAV
+Wed Oct 11 2023 21:42:16 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,HW9UqWpjJ1Hf-SVNAAAW
+Wed Oct 11 2023 21:44:09 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,zm1451QbGhGsKbuaAAAY
+Wed Oct 11 2023 21:44:12 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,zm1451QbGhGsKbuaAAAY
+Wed Oct 11 2023 21:44:33 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,nqBzcrhYMAGg9UwCAAAZ
+Wed Oct 11 2023 21:44:51 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,34kf8HBuYQ7-tpAIAAAa
+Wed Oct 11 2023 21:45:35 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,k5DfmyqoTAn70i-QAAAb
+Wed Oct 11 2023 21:46:09 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,WrZP3mIqXGm_nOaXAAAc
+Wed Oct 11 2023 21:46:15 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,GRyD--rYBsLS1P5sAAAd
+Wed Oct 11 2023 21:46:31 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,rK9BId0rTfkg8_NTAAAe
+Wed Oct 11 2023 21:46:40 GMT+0900 (日本標準時),匿名,undefined,"var api_key;
+var socket;
+var flg_sound_mute = true;
+var sound;
+var sound_chime;
+
+var flg_chime;
+var flg_clock;
+var flg_noDraw;
+var time_start;
+var time_start_hour;
+var time_start_minute;
+var time_end;
+var time_end_hour;
+var time_end_minute;
+var is_streaming = false;
+
+var timestamp_last_send
+
+var p5_captures;
+var flg_speech = false;
+var flg_deactivate_comment_control;
+let peerConnection;
+const config = {
+    iceServers: [{
+        urls: [""stun:stun.l.google.com:19302""]
+    }]
+};
+
+
+var color_text;
+var color_text_stroke;
+var capture;
+var capture_screen;
+var volume = 0.1;
+var flash;
+
+var speech;
+
+function setup() {
+
+    textFont(""Noto Sans JP"");
+    flg_deactivate_comment_control = false;
+    color_text = document.getElementById(""color_text"").value;
+    color_text_stroke = document.getElementById(""color_text_stroke"").value;
+
+    //socket = io.connect('http://localhost:80');
+    //socket = io.connect('https://commentable.lolipop.io')
+    socket = io.connect(window.location.origin);
+
+    // 誰かがコメント送信してきた場合
+    socket.on('comment', newComment);
+
+    // 接続確認のメッセージがきた場合
+    socket.on('you_are_connected', function () {
+        // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
+        let params = getURLParams();
+        if (params.room) {
+            var room = decodeURIComponent(params.room);
+            socket.emit('join', room);
+        } else {
+            while ((room = prompt(""部屋名を入力してください"", 'test_room')) == '');
+            //var room = prompt(""部屋名を入力してください"", 'test_room');
+            socket.emit('join', room);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        log('you have been disconnected');
+    });
+    // Whenever the server emits 'user joined', log it in the chat body
+    socket.on('user joined', (data) => {
+        log(data.username + ' joined');
+        document.getElementById('text_number_of_joined').value = str(data.numUsers);
+    });
+    // Whenever the server emits 'user left', log it in the chat body
+    socket.on('user left', (data) => {
+        log(data.username + ' left');
+        document.getElementById('text_number_of_joined').value = str(data.numUsers);
+    });
+    socket.on('reconnect', () => {
+        log('you have been reconnected');
+        // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
+        let params = getURLParams();
+        if (params.room) {
+            var room = decodeURIComponent(params.room);
+            socket.emit('join', room);
+        } else {
+            var room = prompt(""部屋名を入力してください"", 'test_room');
+            socket.emit('join', room);
+        }
+    });
+    socket.on('login', (data) => {
+        document.getElementById('text_number_of_joined').value = str(data.numUsers);
+        flg_deactivate_comment_control = data.deactivate_comment_control;
+        document.getElementById('checkbox_deactivate_comment_control').checked = flg_deactivate_comment_control;
+    });
+    socket.on('deactivate_comment_control', (data) => {
+        document.getElementById('checkbox_deactivate_comment_control').checked = data.control;
+        flg_deactivate_comment_control = data.control;
+    });
+
+    socket.on(""offer"", (id, description) => {
+
+        peerConnection = new RTCPeerConnection(config);
+        peerConnection
+            .setRemoteDescription(description)
+            .then(() => peerConnection.createAnswer())
+            .then(sdp => peerConnection.setLocalDescription(sdp))
+            .then(() => {
+                socket.emit(""answer"", id, peerConnection.localDescription);
+            });
+
+        peerConnection.ontrack = event => { };
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                socket.emit(""candidate"", id, event.candidate);
+            }
+        };
+
+    });
+
+    socket.on(""candidate"", (id, candidate) => {
+        peerConnection
+            .addIceCandidate(new RTCIceCandidate(candidate))
+            .catch(e => console.error(e));
+    });
+
+    socket.on(""connect"", () => {
+        socket.emit(""watcher"", socket.id);
+
+    });
+
+    socket.on(""broadcaster"", () => {
+        socket.emit(""watcher"", socket.id);
+    });
+
+    socket.on(""stop streaming"", () => {
+
+    });
+
+    socket.on(""disconnectPeer"", () => {
+        peerConnection.close();
+    });
+
+    window.onunload = window.onbeforeunload = () => {
+        socket.close();
+    };
+
+
+    select(""#button_send"").mouseClicked(pushedSendButton);
+    select(""#button_send_letter"").mouseClicked(pushedSendLetterButton);
+    select(""#checkbox_speech"").mouseClicked(toggleSpeech);
+    select(""#color_text"").changed(changeTextColor);
+    select(""#color_text_stroke"").changed(changeTextOutlineColor);
+
+
+    select(""#button_emoji_reaction_01"").mouseClicked(sendEmojiReaction);
+    select(""#button_emoji_reaction_02"").mouseClicked(sendEmojiReaction);
+    select(""#button_emoji_reaction_03"").mouseClicked(sendEmojiReaction);
+    select(""#button_emoji_reaction_04"").mouseClicked(sendEmojiReaction);
+    select(""#button_emoji_reaction_05"").mouseClicked(sendEmojiReaction);
+
+
+    select(""#button_sound_reaction_00"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_01"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_02"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_03"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_04"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_05"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_06"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_07"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_08"").mouseClicked(sendSoundReaction);
+    select(""#button_sound_reaction_09"").mouseClicked(sendSoundReaction);
+
+
+    select(""#download_all_comments"").mouseClicked(downloadAllComments);
+
+    timestamp_last_send = millis();
+    // console.log(timestamp_last_send);
+    noCanvas();
+}
+
+
+var count_comment = 0;
+
+function newComment(data) {
+
+    //console.log(data);
+    count_comment++;
+
+    let comment_timestamp = ""["" + nf(year(), 4) + "":"" + nf(month(), 2) + "":"" + nf(day(), 2) + "":"" + nf(hour(), 2) + "":"" + nf(minute(), 2) + "":"" + nf(second(), 2) + ""-"" + nf(count_comment, 4) + ""] "";
+    let comment_format = comment_timestamp;
+    comment_format += data.comment;
+    if (data.flg_sound == true) {
+        comment_format += "" [sound]"";
+    }
+
+    comment_format += ""["" + data.my_name + ""]"" + ""\n"";
+    //here
+    select(""#textarea_comment_history"").html(comment_format, true);
+    var psconsole = $('#textarea_comment_history');
+    psconsole.scrollTop(
+        psconsole[0].scrollHeight - psconsole.height()
+    );
+
+
+    if (data.hidden >= 0) {
+        // code共有（ロングテキスト共有）
+        if (data.hidden == 100) {
+            // 指定のDOM内にcardを利用してテキストを表示する
+            let card = document.createElement(""div"");
+            card.setAttribute(""class"", ""card"");
+            let card_body = document.createElement(""div"");
+            card_body.setAttribute(""class"", ""card-body"");
+            let card_header = document.createElement(""small"");
+            card_header.setAttribute(""class"", ""card-header d-flex justify-content-between align-items-center"");
+            card_header.textContent = `${data.my_name} ${comment_timestamp}`;
+            card.appendChild(card_header);
+            let card_pre = document.createElement(""pre"");
+            let card_code = document.createElement(""pre"");
+            card_code.setAttribute(""class"", """");
+            card_code.id = `codeBlock${count_comment}`;
+            card_code.textContent = data.comment;
+            card_pre.appendChild(card_code);
+            card_body.appendChild(card_pre);
+            card.appendChild(card_body);
+            document.getElementById(""code_share"").insertBefore(
+                card,
+                document.getElementById(""code_share"").firstChild
+            );
+            let copy_button = document.createElement(""button"");
+            copy_button.setAttribute(""class"", ""btn btn-outline-secondary btn-sm copy-btn"");
+            copy_button.setAttribute(""data-clipboard-target"", `#${card_code.id}`);
+            copy_button.innerHTML = `<i class=""bi bi-clipboard""></i> Copy`;
+            // copy_buttonが押された場合に、アイコンをチェックマークに変更し、successのクラスに変更、3秒後に元に戻す
+            copy_button.addEventListener(""click"", function () {
+                copy_button.innerHTML = `<i class=""bi bi-check-lg""></i> Copied!!`;
+                copy_button.setAttribute(""class"", ""btn btn-outline-success btn-sm copy-btn"");
+                setTimeout(function () {
+                    copy_button.innerHTML = `<i class=""bi bi-clipboard""></i> Copy`;
+                    copy_button.setAttribute(""class"", ""btn btn-outline-secondary btn-sm copy-btn"");
+                }, 2000);
+            });
+            card_header.appendChild(copy_button);
+            new ClipboardJS(copy_button);
+        }
+    }
+
+
+
+}
+
+function pushedSendButton() {
+    sendComment(
+        document.getElementById(""text_comment"").value, false,
+        document.getElementById(""text_my_name"").value,
+        false, 0,
+        false, 0, -1);
+}
+
+function pushedSendLetterButton() {
+    sendLetter(
+        document.getElementById(""text_letter"").value,
+        document.getElementById(""text_my_name"").value
+    );
+}
+
+
+// _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
+function sendComment(
+    _str_comment,
+    _flg_emoji,
+    _str_my_name,
+    _flg_img,
+    _id_img,
+    _flg_sound,
+    _id_sound,
+    _hidden) {
+
+    // _str_comment = _str_comment.replace(/,/g, '、');
+    // _str_my_name = _str_my_name.replace(/,/g, '、');
+
+    if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
+        if (_flg_img == false) {
+            if (_str_comment.length <= 0) {
+                return;
+            }
+            if (_str_comment.length > 80 && _hidden != 100) {
+                alert(""一度に遅れる文字数は80文字までです．"");
+                return;
+            }
+            var data = {
+                key: api_key,
+                my_name: _str_my_name,
+                comment: _str_comment,
+                flg_speech: flg_speech,
+                color_text: color_text,
+                color_text_stroke: color_text_stroke,
+                flg_emoji: _flg_emoji,
+                flg_image: false,
+                id_image: 0,
+                flg_sound: _flg_sound,
+                id_sound: _id_sound,
+                hidden: _hidden
+            }
+            if (_str_comment.length > 0) {
+                socket.emit(""comment"", data);
+            }
+
+            newComment(data);
+            clearTextBox();
+        } else {
+            var data = {
+                room_name: _str_room_name,
+                comment: """",
+                flg_speech: flg_speech,
+                color_text: color_text,
+                color_text_stroke: color_text_stroke,
+                flg_image: true,
+                id_image: 0,
+                flg_sound: _flg_sound,
+                id_sound: _id_sound
+            }
+            socket.emit(""comment"", data);
+            newComment(data);
+        }
+        timestamp_last_send = millis();
+    }
+    else {
+        alert(""いつも素敵なコメントありがとうございます\n投稿まで後 "" + str(5 - parseInt((millis() - timestamp_last_send) / 1000)) + "" 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。"");
+    }
+}
+
+
+// お手紙送信機能
+function sendLetter(_str_letter, _str_my_name) {
+
+    if (_str_letter.length <= 0) {
+        return;
+    }
+    if (_str_letter.length > 400) {
+        alert(""はがきの場合、一度に遅れる文字数は400文字までです。"");
+        return;
+    }
+    var data = {
+        key: api_key,
+        my_name: _str_my_name,
+        letter: _str_letter
+    }
+    if (_str_letter.length > 0) {
+        let result = confirm('はがきを送る際はName設定（ペンネーム等）を推奨します。以下の内容でよければOKを押して送信します。\n\nペンネーム：' + _str_my_name + '\n内容：' + _str_letter);
+        if (result) {
+            socket.emit(""letter"", data);
+            clearLetterTextBox();
+        }
+    }
+
+
+}
+
+var is_control_pressed = false;
+var is_shift_pressed = false;
+function keyReleased() {
+    if (keyCode == CONTROL) {
+        is_control_pressed = false;
+    }
+
+    // keyCodeがコマンドのとき
+    if (keyCode == SHIFT) {
+        is_shift_pressed = false;
+    }
+}
+
+function keyPressed() {
+    if (keyIsPressed === true && event.metaKey) {
+        // console.log(""Command + A is pressed"");
+    }
+
+    if (keyCode == CONTROL) {
+        is_control_pressed = true;
+    }
+    // keyCodeがコマンドのとき
+    if (keyCode == SHIFT) {
+        is_shift_pressed = true;
+    }
+
+    if (key == ""Enter"") {
+        let hidden = -1;
+        if (is_control_pressed && !is_shift_pressed) {
+            hidden = 0;
+        }
+        // 80文字制限解除コード投稿用途
+        if (is_control_pressed && is_shift_pressed) {
+            hidden = 100; // 100は80文字制限解除でコードを送信するためのコマンド
+        }
+
+        sendComment(
+            document.getElementById(""text_comment"").value,
+            false,
+            document.getElementById(""text_my_name"").value,
+            false,
+            0,
+            false,
+            0,
+            hidden
+        );
+
+
+    } else {
+
+    }
+}
+
+function clearTextBox() {
+    //document.getElementById(""text_comment"").value = """";
+    let textarea = document.getElementById('text_comment');
+    textarea.value = ' ';
+    textarea.value = '';
+    textarea.blur();
+}
+
+function clearLetterTextBox() {
+    document.getElementById(""text_letter"").value = """";
+}
+
+
+
+function changeRoomName() {
+
+}
+
+function changeTextColor() {
+    color_text = this.value();
+}
+
+function changeTextOutlineColor() {
+    color_text_stroke = this.value();
+}
+
+function windowResized() {
+
+}
+
+function sendEmojiReaction() {
+    sendComment(
+        this.html(),
+        true,
+        document.getElementById(""text_my_name"").value,
+        false,
+        0,
+        false,
+        0, -1
+    );
+}
+
+function sendSoundReaction() {
+    var id_sound = this.attribute(""value"");
+    sendComment(
+        this.html(),  // comment 
+        true,         // emoji
+        document.getElementById(""text_my_name"").value, // name
+        false,        // image flg
+        0,            // image id
+        true,         // sound flg
+        id_sound,     // sound id
+        -1            // hidden command
+    );
+}
+
+
+function changeVolume() {
+    this.html(""test"", false);
+    volume = this.value();
+    if (volume == 0) {
+        //console.log(this);
+    }
+}
+
+function changeStreamVolume() {
+    var element = document.getElementById(""stream_video"");
+    element.volume = this.value();
+}
+
+function toggleSoundMute() {
+    flg_sound_mute = !flg_sound_mute;
+    // no sound
+    if (flg_sound_mute == true) {
+        this.html(""&#x1f507;"");
+    }
+    // with sound
+    else {
+        this.html(""&#x1f508;"");
+    }
+}
+
+function toggleStreamMute() {
+    print(this.value());
+    // no sound
+    if (this.value() == ""true"") this.value(""false"");
+    else this.value(""true"");
+
+    if (this.value() == ""true"") {
+        this.html(""&#x1f507;"");
+        // turn off broadcasting sound    
+        if (is_streaming) {
+            var element = document.getElementById(""stream_video"");
+            element.muted = true;
+        }
+    }
+    // with sound
+    else {
+        this.html(""&#x1f508;"");
+        // turn on broadcasting sound
+        if (is_streaming) {
+            var element = document.getElementById(""stream_video"");
+            element.muted = false;
+        }
+    }
+}
+
+
+var flg_camera_is_opened = false;
+
+function toggleCamera() {
+    if (flg_camera_is_opened == false) {
+        flg_camera_is_opened = true;
+        var videoSelect = document.querySelector(""select#videoSource"");
+        //console.log(videoSelect.value);
+        p5_captures.openCamera(videoSelect.value);
+        this.attribute('class', ""btn btn-danger btn-sm"");
+    } else {
+        flg_camera_is_opened = false;
+        p5_captures.closeCamera();
+        this.attribute('class', ""btn btn-outline-secondary btn-sm"");
+    }
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * 9.0 / 16.0);
+}
+
+function toggleChime() {
+    print(this.checked());
+    flg_chime = this.checked();
+}
+
+function toggleClock() {
+    flg_clock = this.checked();
+}
+
+function toggleSpeech() {
+    flg_speech = this.checked();
+    if (flg_speech == true) {
+        // set red button class
+        //<div class=""input-group-prepend""><button id=""button_send"" class=""btn btn-outline-primary btn-sm""></button>
+        //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-danger btn-sm');
+    } else {
+        // set normal(primary) button class
+        //document.getElementById('button_send').setAttribute('class', 'btn btn-outline-primary btn-sm');
+    }
+}
+
+function toggleDraw() {
+    flg_noDraw = this.checked();
+    let canvas_element = document.getElementById(""sketch-holder"");
+    if (flg_noDraw) {
+        //noLoop();
+        canvas_element.style.display = ""none"";
+    } else {
+        //loop();
+        canvas_element.style.display = ""block"";
+    }
+}
+
+
+function updateStartTime() {
+    time_start = this.value();
+    var tmp_time = time_start.split("":"");
+    time_start_hour = int(tmp_time[0]);
+    time_start_minute = int(tmp_time[1]);
+}
+
+function updateEndTime() {
+    time_end = this.value();
+    var tmp = time_end.split("":"");
+    time_end_hour = int(tmp[0]);
+    time_end_minute = int(tmp[1]);
+
+}
+
+function toggleScreenCapture() {
+    if (!p5_captures.screen) {
+        p5_captures.openScreen();
+        this.attribute('class', ""btn btn-danger btn-sm"");
+    }
+
+    if (p5_captures.screen.c.loadedmetadata) {
+        p5_captures.closeScreen();
+        this.attribute('class', ""btn btn-outline-secondary btn-sm"");
+    }
+    resizeCanvas(windowWidth - 30, (windowWidth - 30) * 10.0 / 16.0);
+}",undefined,false,false,false,rK9BId0rTfkg8_NTAAAe
+Wed Oct 11 2023 21:46:54 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,rK9BId0rTfkg8_NTAAAe
+Wed Oct 11 2023 21:47:05 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:47:08 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:57:41 GMT+0900 (日本標準時),匿名,undefined,hello,undefined,false,false,false,uhC_mhwEq_OtjHFqAAAg
+Wed Oct 11 2023 21:58:44 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:44 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:45 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:45 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:45 GMT+0900 (日本標準時),匿名,undefined,📸,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:47 GMT+0900 (日本標準時),匿名,undefined,👊,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:47 GMT+0900 (日本標準時),匿名,undefined,👊,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:47 GMT+0900 (日本標準時),匿名,undefined,👊,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:48 GMT+0900 (日本標準時),匿名,undefined,👊,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:48 GMT+0900 (日本標準時),匿名,undefined,👌,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:49 GMT+0900 (日本標準時),匿名,undefined,👊,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:50 GMT+0900 (日本標準時),匿名,undefined,🤣,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:50 GMT+0900 (日本標準時),匿名,undefined,🤣,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:50 GMT+0900 (日本標準時),匿名,undefined,🤣,undefined,true,true,false,9rtNbgXmH5UcJxaUAAAf
+Wed Oct 11 2023 21:58:58 GMT+0900 (日本標準時),馬場,undefined,テスト,undefined,false,false,false,uhC_mhwEq_OtjHFqAAAg
+Wed Oct 11 2023 22:11:09 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,H8FihGWA3zRR7i2oAAAh
+Wed Oct 11 2023 22:11:13 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,H8FihGWA3zRR7i2oAAAh
+Wed Oct 11 2023 22:11:22 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,H8FihGWA3zRR7i2oAAAh
+Wed Oct 11 2023 22:16:31 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,quvtFUy8baWj1F2yAAAn
+Wed Oct 11 2023 22:16:33 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,quvtFUy8baWj1F2yAAAn
+Wed Oct 11 2023 22:17:35 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,3y_jj-z5PppdYKzYAAAo
+Wed Oct 11 2023 22:17:38 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,3y_jj-z5PppdYKzYAAAo
+Wed Oct 11 2023 22:17:41 GMT+0900 (日本標準時),匿名,undefined,teste,undefined,false,false,false,3y_jj-z5PppdYKzYAAAo
+Wed Oct 11 2023 22:17:49 GMT+0900 (日本標準時),匿名,undefined,"<button type=""button"" class=""btn btn-primary"" id=""liveToastBtn"">Show live toast</button>
+
+<div class=""toast-container position-fixed bottom-0 end-0 p-3"">
+  <div id=""liveToast"" class=""toast"" role=""alert"" aria-live=""assertive"" aria-atomic=""true"">
+    <div class=""toast-header"">
+      <img src=""..."" class=""rounded me-2"" alt=""..."">
+      <strong class=""me-auto"">Bootstrap</strong>
+      <small>11 mins ago</small>
+      <button type=""button"" class=""btn-close"" data-bs-dismiss=""toast"" aria-label=""Close""></button>
+    </div>
+    <div class=""toast-body"">
+      Hello, world! This is a toast message.
+    </div>
+  </div>
+</div>",undefined,false,false,false,3y_jj-z5PppdYKzYAAAo
+Wed Oct 11 2023 22:35:54 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,VKm0G_9Vl-t71nldAAAp
+Wed Oct 11 2023 22:35:56 GMT+0900 (日本標準時),匿名,undefined,asdf,undefined,false,false,false,VKm0G_9Vl-t71nldAAAp
+Wed Oct 11 2023 22:36:28 GMT+0900 (日本標準時),匿名,undefined,"text(""hello"", width/2, height/2)",undefined,false,false,false,VKm0G_9Vl-t71nldAAAp
+Wed Oct 11 2023 22:36:37 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,VKm0G_9Vl-t71nldAAAp
+Wed Oct 11 2023 22:36:40 GMT+0900 (日本標準時),匿名,undefined,tes,undefined,false,false,false,VKm0G_9Vl-t71nldAAAp
+Wed Oct 11 2023 22:36:54 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:55 GMT+0900 (日本標準時),匿名,undefined,"
+asdf",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:56 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:56 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:57 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:57 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:57 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:57 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:36:57 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,C7JtPQrhbCBATwwVAAAq
+Wed Oct 11 2023 22:37:17 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,B49yuNxy6mcCtu0nAAAr
+Wed Oct 11 2023 22:37:19 GMT+0900 (日本標準時),匿名,undefined,a,undefined,false,false,false,B49yuNxy6mcCtu0nAAAr
+Wed Oct 11 2023 22:38:33 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,B49yuNxy6mcCtu0nAAAr
+Wed Oct 11 2023 22:38:45 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,qG-Nnqv8Vw_pJTRRAAAs
+Wed Oct 11 2023 22:39:44 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,7WVk-C2ZdLRh1Sn8AAAt
+Wed Oct 11 2023 22:39:47 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,7WVk-C2ZdLRh1Sn8AAAt
+Wed Oct 11 2023 22:39:47 GMT+0900 (日本標準時),匿名,undefined,"
+",undefined,false,false,false,7WVk-C2ZdLRh1Sn8AAAt
+Wed Oct 11 2023 22:39:49 GMT+0900 (日本標準時),匿名,undefined,"
+asdf",undefined,false,false,false,7WVk-C2ZdLRh1Sn8AAAt
+Wed Oct 11 2023 22:40:58 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,4nhJMI4zt4qPmVxcAAAu
+Wed Oct 11 2023 22:41:04 GMT+0900 (日本標準時),匿名,undefined,a,undefined,false,false,false,4nhJMI4zt4qPmVxcAAAu
+Wed Oct 11 2023 22:45:16 GMT+0900 (日本標準時),匿名,undefined,sd;kj,undefined,false,false,false,4nhJMI4zt4qPmVxcAAAu
+Wed Oct 11 2023 22:45:19 GMT+0900 (日本標準時),匿名,undefined,aadsfk,undefined,false,false,false,4nhJMI4zt4qPmVxcAAAu
+Wed Oct 11 2023 22:45:48 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,ExIGDaeuStO7fTKwAAAv
+Wed Oct 11 2023 22:45:50 GMT+0900 (日本標準時),匿名,undefined,asdf,undefined,false,false,false,ExIGDaeuStO7fTKwAAAv
+Wed Oct 11 2023 22:47:45 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,I9ahv1FEbR-w8Kl4AAAw
+Wed Oct 11 2023 22:47:48 GMT+0900 (日本標準時),匿名,undefined,asdf,undefined,false,false,false,I9ahv1FEbR-w8Kl4AAAw
+Wed Oct 11 2023 22:47:55 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,68lIrjzgNSqkZ9kUAAAx
+Wed Oct 11 2023 22:47:56 GMT+0900 (日本標準時),匿名,undefined,taset,undefined,false,false,false,68lIrjzgNSqkZ9kUAAAx
+Wed Oct 11 2023 22:48:06 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,IpgG-Glq3yOeY1IqAAAy
+Wed Oct 11 2023 22:48:34 GMT+0900 (日本標準時),匿名,undefined,tset,undefined,false,false,false,1-LYflVXj3uIFGiBAAA0
+Wed Oct 11 2023 22:48:39 GMT+0900 (日本標準時),匿名,undefined,fjeie,undefined,false,false,false,1-LYflVXj3uIFGiBAAA0
+Wed Oct 11 2023 22:48:42 GMT+0900 (日本標準時),匿名,undefined,asdfkl,undefined,false,false,false,1-LYflVXj3uIFGiBAAA0
+Wed Oct 11 2023 22:48:44 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,1-LYflVXj3uIFGiBAAA0
+Wed Oct 11 2023 22:55:33 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,1-LYflVXj3uIFGiBAAA0
+Wed Oct 11 2023 22:57:50 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,n7IyPn6Nn55xW79ZAAA1
+Wed Oct 11 2023 22:58:00 GMT+0900 (日本標準時),匿名,undefined,test,undefined,false,false,false,PbLkmTIYiaUd6itdAAA2
+Wed Oct 11 2023 22:58:10 GMT+0900 (日本標準時),匿名,undefined,"a(1,2,3)",undefined,false,false,false,PbLkmTIYiaUd6itdAAA2
+Wed Oct 11 2023 22:58:25 GMT+0900 (日本標準時),匿名,undefined,"text(""hello"")",undefined,false,false,false,PbLkmTIYiaUd6itdAAA2
+Wed Oct 11 2023 22:58:32 GMT+0900 (日本標準時),匿名,undefined,"text(""a"");",undefined,false,false,false,PbLkmTIYiaUd6itdAAA2

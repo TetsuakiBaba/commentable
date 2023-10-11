@@ -378,6 +378,28 @@ function draw() {
     flash.draw();
 
 }
+
+function parseFunctionString(str) {
+    // 関数呼び出しの正規表現パターン
+    const pattern = /(\w+)\(([^)]*)\)/;
+    const match = str.match(pattern);
+
+    if (!match) return null; // 関数の形式でなければnullを返す
+
+    const functionName = match[1];
+    const argsString = match[2].trim();
+
+    // 引数をコンマで分割し、余白を取り除く
+    const args = argsString.split(',').map(arg => arg.trim());
+
+    return {
+        functionName: functionName,
+        args: args
+    };
+}
+
+
+
 var count_comment = 0;
 
 function newComment(data) {
@@ -420,6 +442,7 @@ function newComment(data) {
                 i = max_number_of_comment;
             }
         }
+        // パーティクルに空きがあれば
         if (id >= 0) {
             comments[id].setLife(255);
             comments[id].setText(data.comment);

@@ -28,6 +28,14 @@ function isExistFile(file) {
     }
 }
 
+function escapeForCSV(input) {
+    if (/[",\n\t]/.test(input)) { // タブもエスケープの対象に追加
+        input = '"' + input.replace(/"/g, '""') + '"';
+    }
+    return input;
+}
+
+
 io.on('connection', (socket) => {
     console.log('connection', socket.id);
     var room = "";
@@ -109,12 +117,16 @@ io.on('connection', (socket) => {
     socket.on('comment', (data) => {
         // we tell the client to execute 'new message'
         data.socketid = socket.id;
+        // 全員に送信
         socket.to(room).emit('comment', data);
-        const filepath = "public/chatlogs/" + room + ".csv";
-        let timestamp;
-        let today = new Date();
-        timestamp = today;
-        fs.appendFileSync(filepath, `${timestamp},${data.my_name},${data.name_to},${data.comment},${data.id_comment},${data.flg_emoji},${data.flg_sound},${data.flg_speech},${socket.id}\n`);
+
+        // ログを書き込む 現在は textableも使わないので、コメントアウトしちゃう
+        // const filepath = "public/chatlogs/" + room + ".csv";
+        // let timestamp;
+        // let today = new Date();
+        // timestamp = today;
+        // fs.appendFileSync(filepath, `${timestamp},${escapeForCSV(data.my_name)},${escapeForCSV(data.name_to)},${escapeForCSV(data.comment)},${data.id_comment},${data.flg_emoji},${data.flg_sound},${data.flg_speech},${socket.id}\n`);
+        // console.log(data.comment);
     });
 
     socket.on('delete comment', (data) => {
