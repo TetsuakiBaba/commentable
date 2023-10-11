@@ -56,7 +56,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": "https://bbcommentable.herokuapp.com/?room=" + encodeURI(room),
+        "data": "https://commentable.fun/?room=" + encodeURI(room),
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -396,15 +396,18 @@ function newComment(data) {
 
     // 隠しコマンド
     if (data.hidden >= 0) {
-        let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
-        comment_format += data.comment;
-        comment_format += " [hidden]";
-        comment_format += "[" + data.my_name + "]" + "\n";
-        //here
-        select("#textarea_comment_history").html(comment_format, true);
-        protofessional_effect.setText(data.comment);
-        protofessional_effect.setVolume(volume);
-        protofessional_effect.activate();
+        // protofessional
+        if (data.hidden == 0) {
+            let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+            comment_format += data.comment;
+            comment_format += " [hidden]";
+            comment_format += "[" + data.my_name + "]" + "\n";
+            //here
+            select("#textarea_comment_history").html(comment_format, true);
+            protofessional_effect.setText(data.comment);
+            protofessional_effect.setVolume(volume);
+            protofessional_effect.activate();
+        }
     } else if (data.flg_image == false) {
         let id = -1;
         if (data.comment.length <= 0) {

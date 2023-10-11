@@ -44,7 +44,7 @@ function setup() {
     color_text = document.getElementById("color_text").value;
     color_text_stroke = document.getElementById("color_text_stroke").value;
 
-    //socket = io.connect('http://localhost');
+    //socket = io.connect('http://localhost:80');
     //socket = io.connect('https://commentable.lolipop.io')
     socket = io.connect(window.location.origin);
 
@@ -177,7 +177,7 @@ function setup() {
     select("#download_all_comments").mouseClicked(downloadAllComments);
 
     timestamp_last_send = millis();
-    console.log(timestamp_last_send);
+    // console.log(timestamp_last_send);
     noCanvas();
 }
 
@@ -186,9 +186,11 @@ var count_comment = 0;
 
 function newComment(data) {
 
+    //console.log(data);
     count_comment++;
 
-    let comment_format = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    let comment_timestamp = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
+    let comment_format = comment_timestamp;
     comment_format += data.comment;
     if (data.flg_sound == true) {
         comment_format += " [sound]";
@@ -201,6 +203,42 @@ function newComment(data) {
     psconsole.scrollTop(
         psconsole[0].scrollHeight - psconsole.height()
     );
+
+
+    if (data.hidden >= 0) {
+        // code共有（ロングテキスト共有）
+        if (data.hidden == 100) {
+            // 指定のDOM内にcardを利用してテキストを表示する
+            let card = document.createElement("div");
+            card.setAttribute("class", "card");
+            let card_body = document.createElement("div");
+            card_body.setAttribute("class", "card-body");
+            let card_header = document.createElement("small");
+            card_header.setAttribute("class", "card-header");
+            card_header.textContent = comment_timestamp;
+            card.appendChild(card_header);
+            let card_pre = document.createElement("pre");
+            let card_code = document.createElement("pre");
+            card_code.setAttribute("class", "");
+            card_code.id = `codeBlock${count_comment}`;
+            card_code.textContent = data.comment;
+            card_pre.appendChild(card_code);
+            card_body.appendChild(card_pre);
+            card.appendChild(card_body);
+            document.getElementById("code_share").insertBefore(
+                card,
+                document.getElementById("code_share").firstChild
+            );
+            let copy_button = document.createElement("button");
+            copy_button.setAttribute("class", "btn btn-outline-primary btn-sm copy-btn");
+            copy_button.setAttribute("data-clipboard-target", `#${card_code.id}`);
+            copy_button.innerHTML = "コピー";
+            card_body.appendChild(copy_button);
+            new ClipboardJS(copy_button);
+        }
+    }
+
+
 
 }
 
@@ -221,7 +259,15 @@ function pushedSendLetterButton() {
 
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
-function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
+function sendComment(
+    _str_comment,
+    _flg_emoji,
+    _str_my_name,
+    _flg_img,
+    _id_img,
+    _flg_sound,
+    _id_sound,
+    _hidden) {
 
     _str_comment = _str_comment.replace(/,/g, '、');
     _str_my_name = _str_my_name.replace(/,/g, '、');
@@ -231,7 +277,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
             if (_str_comment.length <= 0) {
                 return;
             }
-            if (_str_comment.length > 80) {
+            if (_str_comment.length > 80 && _hidden != 100) {
                 alert("一度に遅れる文字数は80文字までです．");
                 return;
             }
@@ -305,21 +351,39 @@ function sendLetter(_str_letter, _str_my_name) {
 }
 
 var is_control_pressed = false;
-
+var is_shift_pressed = false;
 function keyReleased() {
     if (keyCode == CONTROL) {
         is_control_pressed = false;
     }
+
+    // keyCodeがコマンドのとき
+    if (keyCode == SHIFT) {
+        is_shift_pressed = false;
+    }
 }
 
 function keyPressed() {
+    if (keyIsPressed === true && event.metaKey) {
+        // console.log("Command + A is pressed");
+    }
+
     if (keyCode == CONTROL) {
         is_control_pressed = true;
     }
+    // keyCodeがコマンドのとき
+    if (keyCode == SHIFT) {
+        is_shift_pressed = true;
+    }
+
     if (key == "Enter") {
         let hidden = -1;
-        if (is_control_pressed) {
+        if (is_control_pressed && !is_shift_pressed) {
             hidden = 0;
+        }
+        // 80文字制限解除コード投稿用途
+        if (is_control_pressed && is_shift_pressed) {
+            hidden = 100; // 100は80文字制限解除でコードを送信するためのコマンド
         }
 
         sendComment(
@@ -333,13 +397,18 @@ function keyPressed() {
             hidden
         );
 
+
     } else {
 
     }
 }
 
 function clearTextBox() {
-    document.getElementById("text_comment").value = "";
+    //document.getElementById("text_comment").value = "";
+    let textarea = document.getElementById('text_comment');
+    textarea.value = ' ';
+    textarea.value = '';
+    textarea.blur();
 }
 
 function clearLetterTextBox() {
@@ -448,7 +517,7 @@ function toggleCamera() {
     if (flg_camera_is_opened == false) {
         flg_camera_is_opened = true;
         var videoSelect = document.querySelector("select#videoSource");
-        console.log(videoSelect.value);
+        //console.log(videoSelect.value);
         p5_captures.openCamera(videoSelect.value);
         this.attribute('class', "btn btn-danger btn-sm");
     } else {

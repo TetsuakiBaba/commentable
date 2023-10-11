@@ -169,7 +169,16 @@ function clickSendButton(value) {
     let id_comment = Math.random().toString(32).substring(2);
     if (comment != '' && name_from != '' && name_to != '') {
         sendComment(
-            id_comment, comment, false, name_from, 0, false, 0, false, 0, name_to
+            id_comment,
+            comment,
+            false,
+            name_from,
+            0,
+            false,
+            0,
+            false,
+            0,
+            name_to
         );
         closeQuote();
     }
