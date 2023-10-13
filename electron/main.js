@@ -10,6 +10,7 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 const { exit } = require('process');
 
+var admin_message = "15:00から再開します";
 var win;
 function createWindow() {
 
@@ -119,8 +120,8 @@ app.whenReady().then(() => {
             win.setFullScreenable(false);
             win.setAlwaysOnTop(true, "screen-saver")
             win.setIgnoreMouseEvents(true);
-            win.loadFile('index.html')
             //win.webContents.openDevTools();
+            win.loadFile('index.html')
 
             var room = "";
             if (r === null) {
@@ -196,7 +197,50 @@ app.whenReady().then(() => {
                     }
                 },
 
+                {
+                    label: '画面表示メッセージ', type: 'checkbox',
+                    click(item, focusedWindow) {
+                        if (item.checked == true) {
+                            prompt({
+                                title: 'Commentable',
+                                alwaysOnTop: true,
+                                label: '表示テキストを入力してください',
+                                value: admin_message,
+                                menuBarVisible: true,
+                                buttonLabels: {
+                                    ok: '表示する',
+                                    cancel: 'キャンセル'
+                                },
+                                inputAttrs: {
+                                    type: 'text',
+                                    required: true
+                                },
+                                type: 'input',
+                                //resizable: true,
+                                customStylesheet: path.join(__dirname, '/css/prompt.css')
+                            })
+                                .then((r) => {
+                                    if (r === null) {
+                                        //console.log('user cancelled');
+                                        return;
+                                    } else {
+                                        admin_message = r;
+                                        win.webContents.executeJavaScript(`toggleMessage(${item.checked},'${r}');`, true)
+                                            .then(result => {
 
+                                            }).catch(console.error)
+
+                                    }
+                                }).catch(console.error);
+                        }
+                        else {
+                            win.webContents.executeJavaScript(`toggleMessage(${item.checked},'');`, true)
+                                .then(result => {
+
+                                }).catch(console.error)
+                        }
+                    }
+                },
                 {
                     label: 'Mute sound', type: 'checkbox',
                     click(item, focusedWindow) {
@@ -228,10 +272,10 @@ app.whenReady().then(() => {
                     w: sc.workArea.width,
                     h: sc.workArea.height,
                     click: function (item) {
-                        console.log(item);
+                        //console.log(item);
                         win.setPosition(item.x, item.y, true);
                         win.setSize(item.w, item.h, true);
-                        console.log(item.x, item.y, item.w, item.h);
+                        //console.log(item.x, item.y, item.w, item.h);
                     }
                 };
                 sc_count++;

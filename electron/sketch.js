@@ -31,6 +31,15 @@ function testFunc() {
     alert("testFunc()")
 }
 
+var admin_message = {
+    show: false,
+    text: ""
+}
+function toggleMessage(checked, text_message) {
+    admin_message.show = checked;
+    admin_message.text = text_message;
+}
+
 function toggleQR(checked, position, room) {
 
     let qr_width;
@@ -377,6 +386,22 @@ function draw() {
     protofessional_effect.draw();
     flash.draw();
 
+    if (admin_message.show) {
+        textSize(height / 20);
+        let txt = admin_message.text;
+        let txtWidth = textWidth(txt);
+        let txtHeight = textAscent() + textDescent();
+        let padding = 0;  // テキスト周りの余白
+
+        // 背景の四角形を描画
+        fill("#000000");
+        rect((width - txtWidth) / 2 - padding, (height - txtHeight) / 2 - padding, txtWidth + 2 * padding, txtHeight + 2 * padding);
+
+        // テキストを描画
+        fill("#ffffff");
+        text(txt, width / 2, height / 2);
+
+    }
 }
 
 function parseFunctionString(str) {
