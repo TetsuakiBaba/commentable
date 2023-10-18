@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sound Effect Pad</title>
+    <link href="bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container-sm">
+        <div class="mt-5" style="text-align:center;">
+            <img src="images/icon.app.png" alt="icon" style="width: 30%;">
+        </div>
+        <h1 style="text-align:center;">Commentable SE Pad</h1>
+        <p class="small text-muted text-center" id="version"></p>
+
+
+        <div class="row">
+            <div class="col-12 mx-auto">
+                <div class="alert alert-dark" role="alert">
+                    <h4 class="alert-heading"> 音量設定</h4>
+                    <label for="customRange3" class="form-label" id="volume_label">音量：0.1</label>
+                    <input type="range" class="form-range" id="volume_value" value="0.1" min="0.0" max="1.0" step="0.01"
+                        id="customRange3" onchange="changedVolume(this);">
+                </div>
+
+            </div>
+
+            <div class="col-12 mx-auto">
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-heading"> 自動チャイム<span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="flexSwitchCheckChecked" onchange="changedAutoChime(this);">
+                                <label class="form-check-label" for="flexSwitchCheckChecked">
+                                </label>
+                            </div>
+                        </span>
+                    </h4>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="time" class="form-control" value="14:50" id="floatingInput"
+                                    placeholder="name@example.com">
+                                <label for="floatingInput">開始時間</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating">
+                                <input type="time" class="form-control" value="18:10" id="floatingPassword"
+                                    placeholder="Password">
+                                <label for="floatingPassword">終了時間</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-12 mx-auto">
+                <div class="alert alert-primary" role="alert">
+                    <h4 class="alert-heading">効果音セット</h4>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('dora');">ドラ</button>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('chime');">チャイム</button>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('chin')">チーン</button>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('applause');">拍手</button>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('quiz')">デデン</button>
+                    <button class="btn btn-lg btn-outline-danger m-2" type="button"
+                        onclick="playSE('seikai')">ピンポン</button>
+                </div>
+
+            </div>
+
+        </div>
+        <hr>
+        <p class="small text-muted text-center">&copy; 2023 Tetsuaki Baba</p>
+
+    </div>
+
+    <script src="./p5.min.js"></script>
+    <script src="./p5.sound.js"></script>
+    <script>
+        let sound_applause;
+        let sound_dora;
+        let sound_chime;
+        let sound_chin;
+        let sound_quiz;
+        let sound_seikai;
+        function preload() {
+            sound_applause = loadSound('./sounds/applause.mp3');
+            sound_dora = loadSound('./sounds/dora.mp3', () => {
+                sound_dora.onended(onSoundEnded);
+            });
+            sound_chime = loadSound('./sounds/chime.mp3');
+            sound_chin = loadSound('./sounds/chin.mp3');
+            sound_quiz = loadSound('./sounds/quiz.mp3');
+            sound_seikai = loadSound('./sounds/seikai.mp3');
+
+            // 音量は #volume_value の値を使う
+            let volume = parseFloat(document.querySelector('#volume_value').value);
+            sound_applause.setVolume(volume);
+            sound_dora.setVolume(volume);
+            sound_chime.setVolume(volume);
+            sound_chin.setVolume(volume);
+            sound_quiz.setVolume(volume);
+            sound_seikai.setVolume(volume);
+
+        }
+        function setup() {
+
+        }
+
+        function changedVolume(dom) {
+            // console.log('changedVolume', dom.value);
+            document.querySelector('#volume_label').textContent = '音量：' + dom.value;
+            // 音量を変更する
+            let volume = parseFloat(dom.value);
+            sound_applause.setVolume(volume);
+            sound_dora.setVolume(volume);
+            sound_chime.setVolume(volume);
+            sound_chin.setVolume(volume);
+            sound_quiz.setVolume(volume);
+            sound_seikai.setVolume(volume);
+
+
+        }
+
+        let interval_id;
+        function changedAutoChime(dom) {
+            // console.log('changedAutoChime', dom.checked);
+            if (dom.checked) {
+                // 1秒おきに時刻を確認して、開始時刻または終了時刻になったら音を鳴らす
+                interval_id = setInterval(() => {
+                    let now = new Date();
+                    let start = document.querySelector('#floatingInput').value + ":00";
+                    let end = document.querySelector('#floatingPassword').value + ":00";
+                    let nowTime = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+                    // notimeの時刻を 00:00:00 の書式にする
+                    nowTime = nowTime.split(':').map((v) => {
+                        return ('0' + v).slice(-2);
+                    }).join(':');
+                    // console.log('nowTime', nowTime);
+                    // console.log('start', start);
+                    // console.log('end', end);
+                    if (nowTime == start) {
+                        playSE('chime');
+                    }
+                    if (nowTime == end) {
+                        playSE('chime');
+                    }
+                }, 1000);
+            }
+            else {
+                // 自動チャイムを止める
+                clearInterval(interval_id);
+            }
+        }
+        function playSE(name) {
+            switch (name) {
+                case 'applause':
+                    sound_applause.play();
+                    break;
+                case 'dora':
+                    sound_dora.play();
+                    break;
+                case 'chime':
+                    sound_chime.play();
+                    break;
+                case 'chin':
+                    sound_chin.play();
+                    break;
+                case 'quiz':
+                    sound_quiz.play();
+                    break;
+                case 'seikai':
+                    sound_seikai.play();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        function onSoundEnded() {
+            // console.log('音声ファイルの再生が終わりました。');
+            // ここで任意の関数を呼び出す
+        }
+        function setVersion(version) {
+            document.querySelector('#version').textContent = version;
+        }
+    </script>
+</body>
+
+</html>
