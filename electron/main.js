@@ -3,6 +3,11 @@ require('update-electron-app')()
 const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
 const prompt = require('electron-prompt');
 
+const packageJson = require('./package.json');
+const version = packageJson.version;
+
+console.log(version);
+
 const is_windows = process.platform === 'win32'
 const is_mac = process.platform === 'darwin'
 const is_linux = process.platform === 'linux'
@@ -42,6 +47,8 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     })
+
+
     // debug
     //win.webContents.openDevTools();
     // const child = new BrowserWindow({ parent: win, modal: true, show: false })
@@ -242,6 +249,42 @@ app.whenReady().then(() => {
                     }
                 },
                 {
+                    label: 'Open SE Pad',
+                    click: () => {
+                        //mainWindow.loadFile(path.join(__dirname, 'about.html'));
+                        const mainWindowSize = win.getSize();
+                        const mainWindowPos = win.getPosition();
+
+                        const aboutWindowWidth = 400;
+                        const aboutWindowHeight = 900;
+
+                        const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
+                        const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
+
+                        let win_about = new BrowserWindow({
+                            title: "Sound Effect Pad",
+                            width: aboutWindowWidth,
+                            height: aboutWindowHeight,
+                            x: aboutWindowPosX,
+                            y: aboutWindowPosY,
+                            hasShadow: true,
+                            alwaysOnTop: false,
+                            resizable: false,
+                            frame: true,
+                            webPreferences: {
+                                preload: path.join(__dirname, 'preload.js'),
+                                nodeIntegration: false,
+                                contextIsolation: true
+                            }
+                        });
+                        win_about.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
+                            win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        });
+                    }
+                },
+                {
                     label: 'Mute sound', type: 'checkbox',
                     click(item, focusedWindow) {
                         win.webContents.executeJavaScript(`toggleSoundMute();`, true)
@@ -252,6 +295,44 @@ app.whenReady().then(() => {
                 {
                     type: 'separator',
                 },
+
+                {
+                    label: 'About',
+                    click: () => {
+                        //mainWindow.loadFile(path.join(__dirname, 'about.html'));
+                        const mainWindowSize = win.getSize();
+                        const mainWindowPos = win.getPosition();
+
+                        const aboutWindowWidth = 300;
+                        const aboutWindowHeight = 280;
+
+                        const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
+                        const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
+
+                        let win_about = new BrowserWindow({
+                            title: "About QuickGPT",
+                            width: aboutWindowWidth,
+                            height: aboutWindowHeight,
+                            x: aboutWindowPosX,
+                            y: aboutWindowPosY,
+                            hasShadow: false,
+                            alwaysOnTop: true,
+                            resizable: false,
+                            frame: false,
+                            webPreferences: {
+                                preload: path.join(__dirname, 'preload.js'),
+                                nodeIntegration: false,
+                                contextIsolation: true
+                            }
+                        });
+                        win_about.loadFile(path.join(__dirname, `about.html`)).then(() => {
+                            win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        });
+                    }
+                },
+
                 { label: 'Quit commentable-desktop', role: 'quit' },
             ])
 
@@ -322,5 +403,6 @@ app.on('window-all-closed', () => {
         app.quit()
     }
 })
+
 
 
