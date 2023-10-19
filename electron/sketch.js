@@ -21,11 +21,16 @@ let peerConnection;
 var color_text;
 var color_text_stroke;
 var volume = 0.1;
+
+function setVolume(value) {
+    volume = parseFloat(value);
+}
 var flash;
 
 var speech;
 var mycanvas;
 var max_number_of_comment = 50;
+
 
 function testFunc() {
     alert("testFunc()")

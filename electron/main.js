@@ -1,12 +1,13 @@
 require('update-electron-app')()
 
 const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
+const { ipcMain } = require('electron');
+
+
 const prompt = require('electron-prompt');
 
 const packageJson = require('./package.json');
 const version = packageJson.version;
-
-console.log(version);
 
 const is_windows = process.platform === 'win32'
 const is_mac = process.platform === 'darwin'
@@ -81,8 +82,6 @@ function generateName() {
 }
 
 // In main process.
-
-
 let tray = null
 var g_room;
 app.whenReady().then(() => {
@@ -194,7 +193,9 @@ app.whenReady().then(() => {
                         },
                     ]
                 },
-
+                {
+                    type: 'separator',
+                },
                 {
                     label: '投稿制限解除', type: 'checkbox',
                     click(item, focusedWindow) {
@@ -249,7 +250,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: 'Open SE Pad',
+                    label: '効果音',
                     click: () => {
                         //mainWindow.loadFile(path.join(__dirname, 'about.html'));
                         const mainWindowSize = win.getSize();
@@ -261,8 +262,8 @@ app.whenReady().then(() => {
                         const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
                         const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
 
-                        let win_about = new BrowserWindow({
-                            title: "Sound Effect Pad",
+                        let win_sepad = new BrowserWindow({
+                            title: "効果音",
                             width: aboutWindowWidth,
                             height: aboutWindowHeight,
                             x: aboutWindowPosX,
@@ -277,11 +278,20 @@ app.whenReady().then(() => {
                                 contextIsolation: true
                             }
                         });
-                        win_about.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
-                            win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                        win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
+                            win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
                                 .then(result => {
                                 }).catch(console.error);
+
+                            ipcMain.on('set-volume', (event, value) => {
+                                // arg には 'yourVariableHere' が格納されています。
+                                console.log(value, win_sepad);
+                                win.webContents.executeJavaScript(`setVolume("${value}");`, true)
+                                    .then(result => {
+                                    }).catch(console.error);
+                            });
                         });
+
                     }
                 },
                 {
@@ -386,6 +396,7 @@ app.whenReady().then(() => {
             .then(result => {
 
             }).catch(console.error);
+
 
     });
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sound Effect Pad</title>
+    <title>効果音</title>
     <link href="bootstrap.min.css" rel="stylesheet">
 
 </head>
@@ -14,54 +14,13 @@
         <div class="mt-5" style="text-align:center;">
             <img src="images/icon.app.png" alt="icon" style="width: 30%;">
         </div>
-        <h1 style="text-align:center;">Commentable SE Pad</h1>
+        <h1 style="text-align:center;">効果音</h1>
         <p class="small text-muted text-center" id="version"></p>
 
 
         <div class="row">
             <div class="col-12 mx-auto">
-                <div class="alert alert-dark" role="alert">
-                    <h4 class="alert-heading"> 音量設定</h4>
-                    <label for="customRange3" class="form-label" id="volume_label">音量：0.1</label>
-                    <input type="range" class="form-range" id="volume_value" value="0.1" min="0.0" max="1.0" step="0.01"
-                        id="customRange3" onchange="changedVolume(this);">
-                </div>
-
-            </div>
-
-            <div class="col-12 mx-auto">
-                <div class="alert alert-success" role="alert">
-                    <h4 class="alert-heading"> 自動チャイム<span>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                    id="flexSwitchCheckChecked" onchange="changedAutoChime(this);">
-                                <label class="form-check-label" for="flexSwitchCheckChecked">
-                                </label>
-                            </div>
-                        </span>
-                    </h4>
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="form-floating mb-3">
-                                <input type="time" class="form-control" value="14:50" id="floatingInput"
-                                    placeholder="name@example.com">
-                                <label for="floatingInput">開始時間</label>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-floating">
-                                <input type="time" class="form-control" value="18:10" id="floatingPassword"
-                                    placeholder="Password">
-                                <label for="floatingPassword">終了時間</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="col-12 mx-auto">
-                <div class="alert alert-primary" role="alert">
+                <div class="alert alert-light" role="alert">
                     <h4 class="alert-heading">効果音セット</h4>
                     <button class="btn btn-lg btn-outline-danger m-2" type="button"
                         onclick="playSE('dora');">ドラ</button>
@@ -79,10 +38,58 @@
 
             </div>
 
+            <div class="col-6 mx-auto">
+                <div class="alert alert-light" role="alert">
+                    <h4 class="alert-heading"> ボリューム</h4>
+                    <label for="customRange3" class="form-label" id="volume_label">音量：10%</label>
+                    <input type="range" class="form-range" id="volume_value" value="0.1" min="0.0" max="1.0" step="0.01"
+                        id="customRange3" onchange="changedVolume(this);">
+                    <p class="small text-muted">
+                        効果音セット及び、音声コメント等のすべての音量が調整できます。多くのコメントが寄せられると、音量もそれに合わせて大きくなってしまうため、あまり大きな音量にしないのがポイントです。</p>
+                </div>
+
+            </div>
+
+            <div class="col-6 mx-auto">
+                <div class="alert alert-light" role="alert">
+                    <h4 class="alert-heading"> 自動チャイム<span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="flexSwitchCheckChecked" onchange="changedAutoChime(this);">
+                                <label class="form-check-label" for="flexSwitchCheckChecked">
+                                </label>
+                            </div>
+                        </span>
+                    </h4>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-floating mb-3">
+                                <input type="time" class="form-control" value="14:50" id="floatingInput"
+                                    placeholder="name@example.com">
+                                <label for="floatingInput">開始時間</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <input type="time" class="form-control" value="18:10" id="floatingPassword"
+                                    placeholder="Password">
+                                <label for="floatingPassword">終了時間</label>
+                            </div>
+                        </div>
+                        <p class="mt-2 small text-muted">
+                            授業の開始時間と終了時間を設定すると、自動的にチャイムが鳴ります。
+                        </p>
+
+                    </div>
+                </div>
+
+            </div>
+
+
+
         </div>
         <hr>
         <p class="small text-muted text-center">&copy; 2023 Tetsuaki Baba</p>
-
     </div>
 
     <script src="./p5.min.js"></script>
@@ -94,6 +101,7 @@
         let sound_chin;
         let sound_quiz;
         let sound_seikai;
+
         function preload() {
             sound_applause = loadSound('./sounds/applause.mp3');
             sound_dora = loadSound('./sounds/dora.mp3', () => {
@@ -120,7 +128,7 @@
 
         function changedVolume(dom) {
             // console.log('changedVolume', dom.value);
-            document.querySelector('#volume_label').textContent = '音量：' + dom.value;
+            document.querySelector('#volume_label').textContent = '音量：' + parseInt(100 * dom.value) + '%';
             // 音量を変更する
             let volume = parseFloat(dom.value);
             sound_applause.setVolume(volume);
@@ -130,7 +138,7 @@
             sound_quiz.setVolume(volume);
             sound_seikai.setVolume(volume);
 
-
+            window.electronAPI.setVolume(volume);
         }
 
         let interval_id;
