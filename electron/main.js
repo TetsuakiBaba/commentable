@@ -14,8 +14,6 @@ const is_mac = process.platform === 'darwin'
 const is_linux = process.platform === 'linux'
 
 const path = require('path');
-const { exit } = require('process');
-const { send } = require('express/lib/response');
 
 var admin_message = "15:00から再開します";
 var win;
@@ -86,6 +84,10 @@ function generateName() {
 let tray = null
 var g_room;
 app.whenReady().then(() => {
+
+    if (process.platform === 'darwin') {
+        app.dock.hide();
+    }
 
     createWindow()
 
@@ -170,6 +172,7 @@ app.whenReady().then(() => {
                     }
                 },
 
+
                 {
                     type: 'separator',
                 },
@@ -217,15 +220,13 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: 'クリップボードをコードスニペットに送信',
-                    accelerator: process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V',
-                    click: () => {
-                        sendClipText2CodeSnippet();
-
+                    label: 'サウンドコメントをミュートする', type: 'checkbox',
+                    click(item, focusedWindow) {
+                        win.webContents.executeJavaScript(`toggleSoundMute();`, true)
+                            .then(result => {
+                            }).catch(console.error);
                     }
-
                 },
-
                 {
                     label: '画面表示メッセージ', type: 'checkbox',
                     click(item, focusedWindow) {
@@ -251,6 +252,7 @@ app.whenReady().then(() => {
                                 .then((r) => {
                                     if (r === null) {
                                         //console.log('user cancelled');
+                                        item.checked = false;
                                         return;
                                     } else {
                                         admin_message = r;
@@ -271,7 +273,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: '効果音',
+                    label: '効果音ツールを開く',
                     click: () => {
                         //mainWindow.loadFile(path.join(__dirname, 'about.html'));
                         const mainWindowSize = win.getSize();
@@ -316,12 +318,13 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: 'Mute sound', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        win.webContents.executeJavaScript(`toggleSoundMute();`, true)
-                            .then(result => {
-                            }).catch(console.error);
+                    label: 'クリップボードをコードスニペットに送信',
+                    accelerator: process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V',
+                    click: () => {
+                        sendClipText2CodeSnippet();
+
                     }
+
                 },
                 {
                     type: 'separator',
