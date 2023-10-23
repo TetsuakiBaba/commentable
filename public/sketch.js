@@ -182,6 +182,7 @@ function setup() {
 }
 
 
+
 var count_comment = 0;
 
 function newComment(data) {
@@ -206,6 +207,7 @@ function newComment(data) {
 
 
     if (data.hidden >= 0) {
+
         // code共有（ロングテキスト共有）
         if (data.hidden == 100) {
             // 指定のDOM内にcardを利用してテキストを表示する
