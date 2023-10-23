@@ -18,6 +18,8 @@ var flg_speech;
 var flg_deactivate_comment_control;
 let peerConnection;
 
+var g_room_name;
+
 var color_text;
 var color_text_stroke;
 var volume = 0.1;
@@ -305,6 +307,7 @@ function preload() {
 
 
 function startSocketConnection(room) {
+    g_room_name = room;
 
     //socket = io.connect('http://localhost');
     //socket = io.connect('https://commentable.lolipop.io')
@@ -598,4 +601,50 @@ function toggleCommentControl(checked) {
         control: checked
     }
     socket.emit('deactivate_comment_control', data);
+}
+
+// _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
+function sendComment(
+    _str_comment,
+    _flg_emoji,
+    _str_my_name,
+    _flg_img,
+    _id_img,
+    _flg_sound,
+    _id_sound,
+    _hidden) {
+
+    var data = {
+        room_name: _str_room_name,
+        comment: "",
+        flg_speech: flg_speech,
+        color_text: color_text,
+        color_text_stroke: color_text_stroke,
+        flg_image: true,
+        id_image: 0,
+        flg_sound: _flg_sound,
+        id_sound: _id_sound
+    }
+    socket.emit("comment", data);
+    newComment(data);
+}
+
+function sendCodeSnippet(clip_text) {
+
+    let data = {
+        room_name: g_room_name,
+        my_name: '管理人',
+        comment: clip_text,
+        flg_speech: false,
+        color_text: '#000000',
+        color_text_stroke: '#ffffff',
+        flg_image: false,
+        id_image: 0,
+        flg_sound: false,
+        id_sound: false,
+        hidden: 100
+    }
+
+    socket.emit("comment", data);
+    newComment(data);
 }

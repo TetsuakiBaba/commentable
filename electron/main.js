@@ -1,6 +1,6 @@
 require('update-electron-app')()
 
-const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard } = require('electron')
+const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard, globalShortcut } = require('electron')
 const { ipcMain } = require('electron');
 
 
@@ -15,6 +15,7 @@ const is_linux = process.platform === 'linux'
 
 const path = require('path');
 const { exit } = require('process');
+const { send } = require('express/lib/response');
 
 var admin_message = "15:00から再開します";
 var win;
@@ -98,6 +99,17 @@ app.whenReady().then(() => {
             }
         ]);
     Menu.setApplicationMenu(menu);
+
+    // グローバルショートカットの登録
+    const ret = globalShortcut.register('Shift+CommandOrControl+V', () => {
+        // console.log('Shift+CommandOrControl+V is pressed');
+        sendClipText2CodeSnippet();
+    });
+    if (!ret) {
+        console.log('registration failed');
+    }
+    // ショートカットが登録されているか確認
+    console.log(globalShortcut.isRegistered('Shift+CommandOrControl+V'));
 
 
     prompt({
@@ -203,6 +215,15 @@ app.whenReady().then(() => {
                             .then(result => {
                             }).catch(console.error);
                     }
+                },
+                {
+                    label: 'クリップボードをコードスニペットに送信',
+                    accelerator: process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V',
+                    click: () => {
+                        sendClipText2CodeSnippet();
+
+                    }
+
                 },
 
                 {
@@ -409,11 +430,27 @@ app.whenReady().then(() => {
 
 })
 
+app.on('will-quit', () => {
+    // アプリケーション終了前にショートカットを解除
+    globalShortcut.unregisterAll();
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
 })
 
+function sendClipText2CodeSnippet() {
+    const clip_text = clipboard.readText();
+    // clip_text内の改行コード、コーテーションをエスケープ処理する
 
+    const clip_text_escaped = clip_text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
+
+    //const clip_text_escaped = clip_text.replace(/\r?\n/g, '\\n');
+    win.webContents.executeJavaScript(`sendCodeSnippet("${clip_text_escaped}");`, true)
+        .then(result => {
+        }).catch(console.error);
+}
 
