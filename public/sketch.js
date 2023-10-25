@@ -1,4 +1,4 @@
-var comment_interval_ms = 100;
+var comment_interval_ms = 5000;
 var api_key;
 var socket;
 var flg_sound_mute = true;
