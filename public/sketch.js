@@ -1,3 +1,4 @@
+var comment_interval_ms = 100;
 var api_key;
 var socket;
 var flg_sound_mute = true;
@@ -149,7 +150,6 @@ function setup() {
 
 
     select("#button_send").mouseClicked(pushedSendButton);
-    select("#button_send_letter").mouseClicked(pushedSendLetterButton);
     select("#checkbox_speech").mouseClicked(toggleSpeech);
     select("#color_text").changed(changeTextColor);
     select("#color_text_stroke").changed(changeTextOutlineColor);
@@ -182,12 +182,10 @@ function setup() {
 }
 
 
-
 var count_comment = 0;
 
-function newComment(data) {
+async function newComment(data) {
 
-    //console.log(data);
     count_comment++;
 
     let comment_timestamp = "[" + nf(year(), 4) + ":" + nf(month(), 2) + ":" + nf(day(), 2) + ":" + nf(hour(), 2) + ":" + nf(minute(), 2) + ":" + nf(second(), 2) + "-" + nf(count_comment, 4) + "] ";
@@ -198,16 +196,13 @@ function newComment(data) {
     }
 
     comment_format += "[" + data.my_name + "]" + "\n";
-    //here
-    select("#textarea_comment_history").html(comment_format, true);
-    var psconsole = $('#textarea_comment_history');
-    psconsole.scrollTop(
-        psconsole[0].scrollHeight - psconsole.height()
-    );
 
+    document.querySelector('#textarea_comment_history').innerHTML += comment_format;
+    // #textare_comment_historyを一番下までスクロールする
+    var textarea = document.getElementById('textarea_comment_history');
+    textarea.scrollTop = textarea.scrollHeight;
 
     if (data.hidden >= 0) {
-
         // code共有（ロングテキスト共有）
         if (data.hidden == 100) {
             // 指定のDOM内にcardを利用してテキストを表示する
@@ -219,13 +214,34 @@ function newComment(data) {
             card_header.setAttribute("class", "card-header d-flex justify-content-between align-items-center");
             card_header.textContent = `${data.my_name} ${comment_timestamp}`;
             card.appendChild(card_header);
-            let card_pre = document.createElement("pre");
-            let card_code = document.createElement("pre");
-            card_code.setAttribute("class", "");
-            card_code.id = `codeBlock${count_comment}`;
-            card_code.textContent = data.comment;
-            card_pre.appendChild(card_code);
-            card_body.appendChild(card_pre);
+            // data.commentはURLである場合
+            let card_code;
+            if (data.comment.match(/^https?:\/\//)) {
+                card_code = document.createElement("a");
+                card_code.setAttribute("href", data.comment);
+                card_code.setAttribute("target", "_blank");
+                card_code.id = `codeBlock${count_comment}`;
+                card_code.textContent = data.comment;
+                card_body.appendChild(card_code);
+
+                // data.coomentのURLを新しいタブで開く
+                // window.open(data.comment, '_blank');
+            }
+            // data.commentはURLでない場合
+            else {
+                card_code = document.createElement("pre");
+                card_code.setAttribute("class", "");
+                card_code.id = `codeBlock${count_comment}`;
+                card_code.textContent = data.comment;
+                card_body.appendChild(card_code);
+            }
+            // let card_pre = document.createElement("pre");
+            // let card_code = document.createElement("pre");
+            // card_code.setAttribute("class", "");
+            // card_code.id = `codeBlock${count_comment}`;
+            // card_code.textContent = data.comment;
+            // card_pre.appendChild(card_code);
+            // card_body.appendChild(card_pre);
             card.appendChild(card_body);
             document.getElementById("code_share").insertBefore(
                 card,
@@ -249,8 +265,6 @@ function newComment(data) {
         }
     }
 
-
-
 }
 
 function pushedSendButton() {
@@ -261,12 +275,7 @@ function pushedSendButton() {
         false, 0, -1);
 }
 
-function pushedSendLetterButton() {
-    sendLetter(
-        document.getElementById("text_letter").value,
-        document.getElementById("text_my_name").value
-    );
-}
+
 
 
 
@@ -286,50 +295,35 @@ function sendComment(
     // _str_comment = _str_comment.replace(/,/g, '、');
     // _str_my_name = _str_my_name.replace(/,/g, '、');
 
-    if ((millis() - timestamp_last_send) > 5000 || flg_deactivate_comment_control == true) {
-        if (_flg_img == false) {
-            if (_str_comment.length <= 0) {
-                return;
-            }
-            if (_str_comment.length > 80 && _hidden != 100) {
-                alert("一度に遅れる文字数は80文字までです．");
-                return;
-            }
-            var data = {
-                key: api_key,
-                my_name: _str_my_name,
-                comment: _str_comment,
-                flg_speech: flg_speech,
-                color_text: color_text,
-                color_text_stroke: color_text_stroke,
-                flg_emoji: _flg_emoji,
-                flg_image: false,
-                id_image: 0,
-                flg_sound: _flg_sound,
-                id_sound: _id_sound,
-                hidden: _hidden
-            }
-            if (_str_comment.length > 0) {
-                socket.emit("comment", data);
-            }
+    if ((millis() - timestamp_last_send) > comment_interval_ms || flg_deactivate_comment_control == true) {
 
-            newComment(data);
-            clearTextBox();
-        } else {
-            var data = {
-                room_name: _str_room_name,
-                comment: "",
-                flg_speech: flg_speech,
-                color_text: color_text,
-                color_text_stroke: color_text_stroke,
-                flg_image: true,
-                id_image: 0,
-                flg_sound: _flg_sound,
-                id_sound: _id_sound
-            }
-            socket.emit("comment", data);
-            newComment(data);
+        if (_str_comment.length <= 0) {
+            return;
         }
+        if (_str_comment.length > 80 && _hidden != 100) {
+            alert("一度に遅れる文字数は80文字までです．");
+            return;
+        }
+        var data = {
+            key: api_key,
+            my_name: _str_my_name,
+            comment: _str_comment,
+            flg_speech: flg_speech,
+            color_text: color_text,
+            color_text_stroke: color_text_stroke,
+            text_direction: document.getElementById("select_text_direction").value,
+            flg_emoji: _flg_emoji,
+            flg_sound: _flg_sound,
+            id_sound: _id_sound,
+            hidden: _hidden
+        }
+        if (_str_comment.length > 0) {
+            socket.emit("comment", data);
+        }
+
+        newComment(data);
+        clearTextBox();
+
         timestamp_last_send = millis();
     }
     else {

@@ -7,15 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap CSS -->
-    <!-- CSS only -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-    <!-- JavaScript Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
-
-    <script src="./jquery-3.5.1.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
@@ -142,71 +138,84 @@
 
                 <hr>
 
-                <nav>
-                    <button class="comment green" id="button_emoji_reaction_01">👍</button>
-                    <button class="comment green" id="button_emoji_reaction_02">🙏</button>
-                    <button class="comment green" id="button_emoji_reaction_03">🙋</button>
-                    <button class="comment green" id="button_emoji_reaction_04">🥺</button>
-                    <button class="comment green" id="button_emoji_reaction_05">🤫</button>
-                    <button class="comment red" id="button_sound_reaction_00" value="0">&#x1f4f8;</button>
-                    <button class="comment red" id="button_sound_reaction_01" value="1" title="パチン（手を叩く音）">👏</button>
-                    <button class="comment red" id="button_sound_reaction_02" value="2" title="パーン（クラッカーの音）">🎉</button>
-                    <button class="comment red" id="button_sound_reaction_03" value="3" title="大歓声">🥳</button>
-                    <button class="comment red" id="button_sound_reaction_04" value="4" title="へぇ〜">😮</button>
-                    <button class="comment red" id="button_sound_reaction_05" value="5" title="ちょっとまって">🤔</button>
-                    <button class="comment red" id="button_sound_reaction_06" value="6" title="OK">👌</button>
-                    <button class="comment red" id="button_sound_reaction_07" value="7" title="パンチ音">👊</button>
-                    <button class="comment red" id="button_sound_reaction_08" value="8" title="大笑い">🤣</button>
-                    <button class="comment red" id="button_sound_reaction_09" value="9" title="w">😏</button>
 
-                    <hr>
-
-
-
-
-                    <div class="input-group mb-3">
-                        <button id="button_send" class="btn btn-outline-primary">送信 <i
-                                class="far fa-comment"></i></button>
-                        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="visually-hidden">Toggle Dropdown</span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text
-                                Color</input>
-                            </li>
-                            <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">
-                                Outline
-                                Color</input></li>
-                            <!-- <li class="dropdown-item"><input type="checkbox" id="checkbox_speech" value="option2"> Speech</li> -->
-                        </ul>
-
-                        <textarea style="resize:none" rows="1" type="text" class="form-control"
-                            placeholder="コメントはこちらから（最大80字）" id="text_comment"></textarea>
-
-                        <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
-                        <label class="btn btn-outline-danger" for="checkbox_speech"><i
-                                class="fas fa-volume-up"></i></label>
+                <div class="row justify-content-center">
+                    <div class="col-12">
+                        <button class="comment green" id="button_emoji_reaction_01">👍</button>
+                        <button class="comment green" id="button_emoji_reaction_02">🙏</button>
+                        <button class="comment green" id="button_emoji_reaction_03">🙋</button>
+                        <button class="comment green" id="button_emoji_reaction_04">🥺</button>
+                        <button class="comment green" id="button_emoji_reaction_05">🤫</button>
+                        <button class="comment red" id="button_sound_reaction_00" value="0">&#x1f4f8;</button>
+                        <button class="comment red" id="button_sound_reaction_01" value="1"
+                            title="パチン（手を叩く音）">👏</button>
+                        <button class="comment red" id="button_sound_reaction_02" value="2"
+                            title="パーン（クラッカーの音）">🎉</button>
+                        <button class="comment red" id="button_sound_reaction_03" value="3" title="大歓声">🥳</button>
+                        <button class="comment red" id="button_sound_reaction_04" value="4" title="へぇ〜">😮</button>
+                        <button class="comment red" id="button_sound_reaction_05" value="5" title="ちょっとまって">🤔</button>
+                        <button class="comment red" id="button_sound_reaction_06" value="6" title="OK">👌</button>
+                        <button class="comment red" id="button_sound_reaction_07" value="7" title="パンチ音">👊</button>
+                        <button class="comment red" id="button_sound_reaction_08" value="8" title="大笑い">🤣</button>
+                        <button class="comment red" id="button_sound_reaction_09" value="9" title="w">😏</button>
                     </div>
+                </div>
 
-                    <div class="input-group mb-3" hidden>
-                        <button id="button_send_letter" class="btn btn-outline-primary">送信 <i
-                                class="far fa-paper-plane"></i></button>
-                        <input type="text" class="form-control" placeholder="はがきはこちらから（最大400字、ボタンを押して送信）"
-                            id="text_letter" size="40"></input>
-                    </div>
-
-                    <hr>
+                <hr>
 
 
-                    <div class="input-group">
-                        <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
-                            placeholder="Comment History"></textarea>
 
-                    </div>
-                    <button type="button" class="btn btn-outline-secondary" id="download_all_comments">Download
-                        Comments</button>
-                    <hr>
+
+                <div class="input-group mb-3">
+                    <button id="button_send" class="btn btn-outline-primary">送信 <i class="far fa-comment"></i></button>
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text
+                            Color</input>
+                        </li>
+                        <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">
+                            Outline
+                            Color</input></li>
+                        <li class="dropdown-item">
+                            <select id="select_text_direction">
+                                <option value="still" selected>静止</option>
+                                <option value="up">↑</option>
+                                <option value="down">↓</option>
+                                <option value="left">←</option>
+                                <option value="right">→</option>
+                            </select>
+                            文字移動方向
+                        </li>
+                    </ul>
+
+                    <textarea style="resize:none" rows="1" type="text" class="form-control" placeholder="コメント（最大80字）"
+                        id="text_comment"></textarea>
+
+                    <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
+                    <label class="btn btn-outline-danger" for="checkbox_speech"><i class="fas fa-volume-up"></i></label>
+                </div>
+
+                <div class="input-group mb-3" hidden>
+                    <button id="button_send_letter" class="btn btn-outline-primary">送信 <i
+                            class="far fa-paper-plane"></i></button>
+                    <input type="text" class="form-control" placeholder="はがきはこちらから（最大400字、ボタンを押して送信）" id="text_letter"
+                        size="40"></input>
+                </div>
+
+                <hr>
+
+
+                <div class="input-group">
+                    <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
+                        placeholder="Comment History"></textarea>
+
+                </div>
+                <button type="button" class="btn btn-outline-secondary" id="download_all_comments">Download
+                    Comments</button>
+                <hr>
             </div>
             <div class="col-lg-12 col-xl-6">
                 <div class="alert alert-secondary alert-dismissible fade show" role="alert">
