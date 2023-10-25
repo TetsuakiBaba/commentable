@@ -11,7 +11,7 @@ var time_end;
 var time_end_hour;
 var time_end_minute;
 var is_streaming = false;
-
+let max_life = 255;
 var timestamp_last_send
 
 var flg_speech;
@@ -161,7 +161,7 @@ class ProtofessionalEffect {
 
         if (this.is_activating == true &&
             (millis() - this.timestamp) < this.effect_duration) {
-            let alpha = 255 * cos(radians(90 * (millis() - this.timestamp) / this.effect_duration));
+            let alpha = max_life * cos(radians(90 * (millis() - this.timestamp) / this.effect_duration));
             background(0, 0, 0, alpha);
             noStroke();
             fill(255, 255, 255, alpha);
@@ -185,6 +185,7 @@ class Comment {
         this.size = 72.0;
         this.flg_img = false;
         this.volume = 0.1;
+        this.text_direction = 'still';
 
     }
     setColor(_color_text, _color_text_stroke) {
@@ -226,28 +227,101 @@ class Comment {
         }
     }
     update() {
-        if (this.life > 0) {
-            this.alpha = this.life;
-            this.size = abs((height / 20) * sin(0.5 * PI * this.life / 255.0));
-            this.life = this.life - 1;
-            if (this.life == 0) {
-                this.flg_img = false;
+        this.size = abs((height / 20) * sin(0.5 * PI));
+
+        if (this.text_direction == 'still') {
+            if (this.life > 0) {
+                this.alpha = this.life;
+                this.size = abs((height / 20) * sin(0.5 * PI * this.life / max_life));
+                this.life = this.life - 1;
             }
+        }
+        else if (this.text_direction == 'left') {
+            if (this.life > 0) {
+                textAlign(LEFT, CENTER);
+                // this.textの横野長さを計算
+                textSize(this.size);
+                let text_width = textWidth(this.text);
+
+                let start_x = windowWidth;
+                let end_x = -text_width;
+
+                // lifeの割合を計算
+                let life_ratio = this.life / max_life;
+
+                // xの位置を更新
+                this.x = start_x + (1 - life_ratio) * (end_x - start_x);
+                this.alpha = 255;
+                this.life--;
+            }
+        }
+        else if (this.text_direction == "right") {
+            if (this.life > 0) {
+                textAlign(LEFT, CENTER);
+                // this.textの横野長さを計算
+                textSize(this.size);
+                let text_width = textWidth(this.text);
+
+                let start_x = -text_width;
+                let end_x = windowWidth;
+
+                // lifeの割合を計算
+                let life_ratio = this.life / max_life;
+
+                // xの位置を更新
+                this.x = start_x + (1 - life_ratio) * (end_x - start_x);
+                this.alpha = 255;
+                this.life--;
+            }
+        }
+        else if (this.text_direction == 'up') {
+            if (this.life > 0) {
+                textAlign(CENTER, TOP);
+
+                // this.textの縦の高さを計算
+                textSize(this.size);
+                let text_height = textAscent() + textDescent();
+
+                let start_y = windowHeight;
+                let end_y = -text_height;
+
+                // lifeの割合を計算
+                let life_ratio = this.life / max_life;
+
+                // xの位置を更新
+                this.y = start_y + (1 - life_ratio) * (end_y - start_y);
+                this.alpha = 255;
+                this.life--;
+            }
+        }
+        else if (this.text_direction == "down") {
+            if (this.life > 0) {
+                textAlign(CENTER, TOP);
+                // this.textの縦の高さを計算
+                textSize(this.size);
+                let text_height = textAscent() + textDescent();
+
+                let start_y = -text_height;
+                let end_y = windowHeight;
+
+                // lifeの割合を計算
+                let life_ratio = this.life / max_life;
+
+                // xの位置を更新
+                this.y = start_y + (1 - life_ratio) * (end_y - start_y);
+                this.alpha = 255;
+                this.life--;
+            }
+
         }
         return;
     }
     draw() {
-
-        if (this.flg_img == false) {
-            textSize(this.size);
-            strokeWeight(5.0 * this.alpha / 255.0);
-            stroke(this.color_text_stroke + str(hex(this.alpha, 2)));
-            fill(this.color_text + str(hex(this.alpha, 2)));
-            text(this.text, this.x, this.y);
-        } else {
-            //imageMode(CENTER);
-            //image(this.img[0],this.x, this.y, this.img[0].width*this.alpha/255, this.img[0].height*this.alpha/255);
-        }
+        textSize(this.size);
+        strokeWeight(5.0 * this.alpha / 255.0);
+        stroke(this.color_text_stroke + str(hex(this.alpha, 2)));
+        fill(this.color_text + str(hex(this.alpha, 2)));
+        text(this.text, this.x, this.y);
         return;
     }
 }
@@ -395,6 +469,7 @@ function draw() {
     flash.draw();
 
     if (admin_message.show) {
+        textAlign(CENTER, CENTER);
         textSize(height / 20);
         let txt = admin_message.text;
         let txtWidth = textWidth(txt);
@@ -463,8 +538,9 @@ function newComment(data) {
             protofessional_effect.setVolume(volume);
             protofessional_effect.activate();
         }
-
-    } else if (data.flg_image == false) {
+    }
+    // 通常のコメント
+    else {
         let id = -1;
         if (data.comment.length <= 0) {
             return;
@@ -477,8 +553,10 @@ function newComment(data) {
         }
         // パーティクルに空きがあれば
         if (id >= 0) {
+            console.log(data);
             comments[id].setLife(255);
             comments[id].setText(data.comment);
+            comments[id].text_direction = data.text_direction;
             textSize(abs((height / 20) * sin(0.5 * PI)));
             let text_width = textWidth(data.comment);
             // console.log(textWidth(data.comment));
@@ -514,23 +592,7 @@ function newComment(data) {
         }
 
         comment_format += "[" + data.my_name + "]" + "\n";
-    } else { // image reaction
-        for (var i = 0; i < max_number_of_comment; i++) {
-            if (comments[i].getLife() == 0) {
-                id = i;
-                i = max_number_of_comment;
-            }
-        }
-        if (id >= 0) {
-            comments[id].setLife(255);
-            comments[id].setX(random(100, width - 100));
-            comments[id].setY(random(100, height - 100));
-            comments[id].useImage(0);
-        }
-
     }
-
-
 }
 
 function windowResized() {
