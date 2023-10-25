@@ -13,6 +13,8 @@
 なお、@chihiros 氏によってcommentSreenっぽく表示形式が変更された commentable もよろしければお試しください。
   * https://github.com/chihiros/commentable-managed
 
+現在 commentable-desktopに開発リソースを集中しておりますので、従来手法のOBS等との併用は推奨していません。また public/master以下の利用も推奨しません。commentable-desktopを配信者はご利用いただくようお願い致します。
+
 CommentableをOBSと連携したい場合，開発参加や自前サーバへのデプロイなどをお考えの場合は，ここから下の文章をご参照ください．
 # Commentableとは
 授業中に気軽に学生にコメントしてほしい。このシンプルな欲求から開発をスタートしました。
