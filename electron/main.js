@@ -26,8 +26,8 @@ function createWindow() {
     let { width, height } = active_screen.workAreaSize
     const x = active_screen.workArea.x;
     const y = active_screen.workArea.y;
-    // width = 1200;
-    // height = 800;
+    //width = 1200;
+    //height = 800;
     //console.log(x, y);
     win = new BrowserWindow({
         title: "commentable-desktop",
@@ -41,7 +41,7 @@ function createWindow() {
         transparent: true,
         frame: false,
         resizable: false,
-        //alwaysOnTop: true,
+        alwaysOnTop: true,
         //focusable: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
@@ -133,7 +133,7 @@ app.whenReady().then(() => {
         customStylesheet: path.join(__dirname, '/css/prompt.css')
     })
         .then((r) => {
-            win.setAlwaysOnTop(true, 'floating');
+            //win.setAlwaysOnTop(true, 'floating');
             win.setVisibleOnAllWorkspaces(true, {
                 visibleOnFullScreen: true
             });
