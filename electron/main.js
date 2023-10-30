@@ -273,6 +273,16 @@ app.whenReady().then(() => {
                     }
                 },
                 {
+                    label: '時計を表示', type: 'checkbox',
+                    click(item, focusedWindow) {
+
+                        win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
+                            .then(result => {
+                            }).catch(console.error)
+
+                    }
+                },
+                {
                     label: '効果音ツールを開く',
                     click: () => {
                         //mainWindow.loadFile(path.join(__dirname, 'about.html'));
@@ -318,7 +328,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: 'クリップボードをコードスニペットに送信',
+                    label: 'クリップボード内容を配布資料欄に送信',
                     accelerator: process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V',
                     click: () => {
                         sendClipText2CodeSnippet();
