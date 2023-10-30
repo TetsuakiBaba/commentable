@@ -40,6 +40,16 @@ open http://localhost/broadcast.html on Chrome/Firefox browser for broadcasting 
 
 公式ページ (https://commentable.carrd.co/) には最新版のダウンロードリンクが貼られています。
 
+### Build
+以下の手順で自身でビルドすることもできます。また別のサーバにデプロイしている場合は、electron/sketch.js の url を変更してください。デフォルトでは、サービスを提供している herokuサーバに接続するようになっています。
+
+```
+$ cd electron
+$ npm install
+$ npm exec --package=@electron-forge/cli -c "electron-forge import"
+$ npm run make
+```
+
 # Author
   * Tetsuaki Baba
     * Tokyo Metropolitan University
