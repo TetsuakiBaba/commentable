@@ -456,9 +456,25 @@ function setup() {
 
 function draw() {
     clear();
-    background(0, 0, 0, 0);
+    //background(0, 0, 0, 0);
 
+    if (flg_clock == true) {
+        let now = new Date();
+        let hour = now.getHours();
+        let minute = now.getMinutes();
+        let second = now.getSeconds();
 
+        let time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        textStyle(BOLD);
+        strokeWeight(5.0);
+        stroke("#000");
+        fill("#ffffff");
+        textSize(height / 15);
+        textAlign(LEFT, TOP);
+        text(time, 20, 10);
+    }
+
+    textStyle(NORMAL);
     for (var i = 0; i < max_number_of_comment; i++) {
         if (comments[i].getLife() > 0) {
             comments[i].update();
@@ -612,6 +628,10 @@ function toggleSoundMute() {
     flg_sound_mute = !flg_sound_mute;
 }
 
+var flg_clock = false;
+function toggleClock(checked) {
+    flg_clock = checked;
+}
 
 function toggleSpeech() {
     flg_speech = this.checked();
