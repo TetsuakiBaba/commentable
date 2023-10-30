@@ -231,6 +231,7 @@ class Comment {
 
         if (this.text_direction == 'still') {
             if (this.life > 0) {
+                textAlign(CENTER, CENTER);
                 this.alpha = this.life;
                 this.size = abs((height / 20) * sin(0.5 * PI * this.life / max_life));
                 this.life = this.life - 1;
