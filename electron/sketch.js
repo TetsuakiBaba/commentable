@@ -33,9 +33,14 @@ var speech;
 var mycanvas;
 var max_number_of_comment = 50;
 
+let version = "undefined";
 
 function testFunc() {
     alert("testFunc()")
+}
+
+function setVersion(v) {
+    version = v;
 }
 
 var admin_message = {
@@ -72,7 +77,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": "https://commentable.fun/?room=" + encodeURI(room),
+        "data": `https://commentable.fun/?room=${encodeURI(room)}&v=${version}`,
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -454,6 +459,26 @@ function setup() {
 
 }
 
+function showNotification(text) {
+    // クラスを切り替えたい要素を取得
+    var element = document.getElementById('notification');
+
+    // notification_inクラスが存在する場合は、それを削除し、notification_outクラスを追加
+    if (element.classList.contains('notification_out')) {
+        element.innerHTML = `<i class="bi bi-info-circle"></i> ${text}`;
+        element.classList.remove('notification_out');
+        element.classList.add('notification_in');
+    }
+
+    // n秒後に消去
+    setTimeout(function () {
+        element.classList.remove('notification_in');
+        element.classList.add('notification_out');
+    }, 5000);
+
+
+
+}
 function draw() {
     clear();
     //background(0, 0, 0, 0);
@@ -730,4 +755,6 @@ function sendCodeSnippet(clip_text) {
 
     socket.emit("comment", data);
     newComment(data);
+
+    showNotification("資料スペースにクリップボードの内容を送信しました。");
 }
