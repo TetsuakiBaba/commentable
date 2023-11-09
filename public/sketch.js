@@ -178,6 +178,19 @@ function setup() {
 
     timestamp_last_send = millis();
     // console.log(timestamp_last_send);
+
+    // version情報を #versionに挿入
+    // 現在のページのURLからクエリパラメータを取得する場合
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('v'); // 'v'はクエリパラメータのキーです
+    if (v !== null) {
+        document.querySelector('#version').innerText = v;
+        console.log(`パラメータの値は: ${v}`);
+    } else {
+        document.querySelector('#version').innerText = 'undefined';
+        console.log('パラメータのキーは存在しません。');
+    }
+
     noCanvas();
 }
 

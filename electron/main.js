@@ -50,17 +50,8 @@ function createWindow() {
 
 
     // debug
-    //win.webContents.openDevTools();
-    // const child = new BrowserWindow({ parent: win, modal: true, show: false })
-    // child.loadURL('https://github.com')
-    // child.once('ready-to-show', () => {
-    //     child.show()
-    // })
+    // win.webContents.openDevTools();
 
-    // setInterval(function () {
-    //     // get the mouse position
-    //     let mousePos = screen.getCursorScreenPoint();
-    // }, 1000);
 }
 
 
@@ -89,6 +80,8 @@ app.whenReady().then(() => {
         app.dock.hide();
     }
 
+
+
     createWindow()
 
     let menu = Menu.buildFromTemplate(
@@ -103,7 +96,7 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(menu);
 
     // グローバルショートカットの登録
-    const ret = globalShortcut.register('Shift+CommandOrControl+V', () => {
+    const ret = globalShortcut.register('Alt+CommandOrControl+V', () => {
         // console.log('Shift+CommandOrControl+V is pressed');
         sendClipText2CodeSnippet();
     });
@@ -111,7 +104,7 @@ app.whenReady().then(() => {
         console.log('registration failed');
     }
     // ショートカットが登録されているか確認
-    console.log(globalShortcut.isRegistered('Shift+CommandOrControl+V'));
+    console.log(globalShortcut.isRegistered('Alt+CommandOrControl+V'));
 
 
     prompt({
@@ -156,19 +149,23 @@ app.whenReady().then(() => {
             if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
             else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
 
+            win.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                .then(result => {
+
+                }).catch(console.error)
 
             var contextMenu = Menu.buildFromTemplate([
                 {
                     label: "投稿ページを開く", click: async () => {
                         const { shell } = require('electron')
-                        await shell.openExternal('https://bbcommentable.herokuapp.com/?room=' + g_room);
+                        await shell.openExternal(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
                     }
                 },
                 {
                     label: '投稿ページURLをコピー',
                     click(item, focusedWindows) {
-                        clipboard.writeText('https://bbcommentable.herokuapp.com/?room=' + g_room);
-                        console.log('https://bbcommentable.herokuapp.com/?room=' + encodeURI(g_room));
+                        clipboard.writeText(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
+                        console.log(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
                     }
                 },
 
@@ -329,10 +326,9 @@ app.whenReady().then(() => {
                 },
                 {
                     label: 'クリップボード内容を配布資料欄に送信',
-                    accelerator: process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V',
+                    accelerator: process.platform === 'darwin' ? 'Command+Alt+V' : 'Control+Alt+V',
                     click: () => {
                         sendClipText2CodeSnippet();
-
                     }
 
                 },
@@ -397,10 +393,8 @@ app.whenReady().then(() => {
                     w: sc.workArea.width,
                     h: sc.workArea.height,
                     click: function (item) {
-                        //console.log(item);
                         win.setPosition(item.x, item.y, true);
                         win.setSize(item.w, item.h, true);
-                        //console.log(item.x, item.y, item.w, item.h);
                     }
                 };
                 sc_count++;
@@ -457,10 +451,7 @@ app.on('window-all-closed', () => {
 function sendClipText2CodeSnippet() {
     const clip_text = clipboard.readText();
     // clip_text内の改行コード、コーテーションをエスケープ処理する
-
     const clip_text_escaped = clip_text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-
-
     //const clip_text_escaped = clip_text.replace(/\r?\n/g, '\\n');
     win.webContents.executeJavaScript(`sendCodeSnippet("${clip_text_escaped}");`, true)
         .then(result => {
