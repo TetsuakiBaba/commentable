@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "openai": "^4.16.1",
-    "socket.io-client": "^2.5.0"
-  }
-}
