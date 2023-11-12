@@ -1,8 +1,7 @@
 require('update-electron-app')()
 
-const { app, BrowserWindow, Menu, Tray, screen, MenuItem, clipboard, globalShortcut } = require('electron')
+const { app, BrowserWindow, Menu, Tray, screen, MenuItem, shell, clipboard, globalShortcut } = require('electron')
 const { ipcMain } = require('electron');
-
 
 const prompt = require('electron-prompt');
 
@@ -35,8 +34,8 @@ function createWindow() {
         height: height,
         x: x,
         y: y,
-        nodeIntegration: false,
-        contextIsolation: false,
+        // nodeIntegration: false,
+        // contextIsolation: true,
         hasShadow: false,
         transparent: true,
         frame: false,
@@ -44,9 +43,13 @@ function createWindow() {
         alwaysOnTop: true,
         //focusable: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true
         }
     })
+
 
 
     // debug
@@ -217,7 +220,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: 'サウンドコメントをミュートする', type: 'checkbox',
+                    label: 'サウンドコメントのミュート', type: 'checkbox',
                     click(item, focusedWindow) {
                         win.webContents.executeJavaScript(`toggleSoundMute();`, true)
                             .then(result => {
@@ -225,7 +228,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: '画面表示メッセージ', type: 'checkbox',
+                    label: 'メッセージ表示', type: 'checkbox',
                     click(item, focusedWindow) {
                         if (item.checked == true) {
                             prompt({
@@ -270,7 +273,7 @@ app.whenReady().then(() => {
                     }
                 },
                 {
-                    label: '時計を表示', type: 'checkbox',
+                    label: '時刻表示', type: 'checkbox',
                     click(item, focusedWindow) {
 
                         win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
@@ -279,51 +282,7 @@ app.whenReady().then(() => {
 
                     }
                 },
-                {
-                    label: '効果音ツールを開く',
-                    click: () => {
-                        //mainWindow.loadFile(path.join(__dirname, 'about.html'));
-                        const mainWindowSize = win.getSize();
-                        const mainWindowPos = win.getPosition();
 
-                        const aboutWindowWidth = 400;
-                        const aboutWindowHeight = 900;
-
-                        const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
-                        const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
-
-                        let win_sepad = new BrowserWindow({
-                            title: "効果音",
-                            width: aboutWindowWidth,
-                            height: aboutWindowHeight,
-                            x: aboutWindowPosX,
-                            y: aboutWindowPosY,
-                            hasShadow: true,
-                            alwaysOnTop: false,
-                            resizable: false,
-                            frame: true,
-                            webPreferences: {
-                                preload: path.join(__dirname, 'preload.js'),
-                                nodeIntegration: false,
-                                contextIsolation: true
-                            }
-                        });
-                        win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
-                            win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
-                                .then(result => {
-                                }).catch(console.error);
-
-                            ipcMain.on('set-volume', (event, value) => {
-                                // arg には 'yourVariableHere' が格納されています。
-                                console.log(value, win_sepad);
-                                win.webContents.executeJavaScript(`setVolume("${value}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            });
-                        });
-
-                    }
-                },
                 {
                     label: 'クリップボード内容を配布資料欄に送信',
                     accelerator: process.platform === 'darwin' ? 'Command+Alt+V' : 'Control+Alt+V',
@@ -333,8 +292,72 @@ app.whenReady().then(() => {
 
                 },
                 {
+                    label: "ツール",
+                    submenu: [
+                        {
+                            label: '効果音セット',
+                            click: () => {
+                                //mainWindow.loadFile(path.join(__dirname, 'about.html'));
+                                const mainWindowSize = win.getSize();
+                                const mainWindowPos = win.getPosition();
+
+                                const aboutWindowWidth = 400;
+                                const aboutWindowHeight = 900;
+
+                                const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
+                                const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
+
+                                let win_sepad = new BrowserWindow({
+                                    title: "効果音",
+                                    width: aboutWindowWidth,
+                                    height: aboutWindowHeight,
+                                    x: aboutWindowPosX,
+                                    y: aboutWindowPosY,
+                                    hasShadow: true,
+                                    alwaysOnTop: false,
+                                    resizable: false,
+                                    frame: true,
+                                    webPreferences: {
+                                        preload: path.join(__dirname, 'preload.js'),
+                                        nodeIntegration: false,
+                                        contextIsolation: true
+                                    }
+                                });
+                                win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
+                                    win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                                        .then(result => {
+                                        }).catch(console.error);
+
+                                    ipcMain.on('set-volume', (event, value) => {
+                                        // arg には 'yourVariableHere' が格納されています。
+                                        console.log(value, win_sepad);
+                                        win.webContents.executeJavaScript(`setVolume("${value}");`, true)
+                                            .then(result => {
+                                            }).catch(console.error);
+                                    });
+                                });
+
+                            }
+                        },
+                        {
+                            label: "チャレンジブル", click: async () => {
+                                const { shell } = require('electron')
+                                await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                            }
+                        },
+                        {
+                            label: "アクセシブルスピーチトレーニング", click: async () => {
+                                const { shell } = require('electron')
+                                await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
+                            }
+                        },
+
+                    ]
+                },
+                {
                     type: 'separator',
                 },
+
 
                 {
                     label: 'About',
@@ -344,12 +367,12 @@ app.whenReady().then(() => {
                         const mainWindowPos = win.getPosition();
 
                         const aboutWindowWidth = 300;
-                        const aboutWindowHeight = 280;
+                        const aboutWindowHeight = 300;
 
                         const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
                         const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
 
-                        let win_about = new BrowserWindow({
+                        const win_about = new BrowserWindow({
                             title: "About QuickGPT",
                             width: aboutWindowWidth,
                             height: aboutWindowHeight,
@@ -361,19 +384,27 @@ app.whenReady().then(() => {
                             frame: false,
                             webPreferences: {
                                 preload: path.join(__dirname, 'preload.js'),
-                                nodeIntegration: false,
-                                contextIsolation: true
-                            }
+                            },
+                            show: true,
                         });
                         win_about.loadFile(path.join(__dirname, `about.html`)).then(() => {
+
                             win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
                                 .then(result => {
+
                                 }).catch(console.error);
                         });
+                        // 以下を追加
+                        win_about.webContents.setWindowOpenHandler(({ url }) => {
+                            if (url.startsWith('http')) {
+                                shell.openExternal(url)
+                            }
+                            return { action: 'deny' }
+                        })
                     }
                 },
 
-                { label: 'Quit commentable-desktop', role: 'quit' },
+                { label: 'Quit', role: 'quit' },
             ])
 
             let screens = screen.getAllDisplays();
