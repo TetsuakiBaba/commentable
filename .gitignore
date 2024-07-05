@@ -7,3 +7,6 @@ out/
 forge.config.js
 kometaro/
 sakura/
+/public/textable
+/public/master
+.DS_Store
