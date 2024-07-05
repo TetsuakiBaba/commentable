@@ -317,6 +317,7 @@ function sendComment(
             alert("一度に遅れる文字数は80文字までです．");
             return;
         }
+        console.log(document.querySelector('#select_text_direction'));
         var data = {
             key: api_key,
             my_name: _str_my_name,
