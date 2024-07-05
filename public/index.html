@@ -18,6 +18,11 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
+    <!-- i18next ライブラリの読み込み -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next/21.6.10/i18next.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-http-backend/1.3.1/i18nextHttpBackend.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/i18next-browser-languagedetector/6.1.3/i18nextBrowserLanguageDetector.min.js"></script> 
+    
     <meta charset="utf-8">
     <style>
         .card {
@@ -55,8 +60,8 @@
 
 
                 <div class="input-group">
-                    <span class="input-group-text" id="name">名前</span>
-                    <input class="form-control" size="5" type="text" id="text_my_name" value="匿名"></input>
+                    <span class="input-group-text" id="name" data-i18n="name">名前</span>
+                    <input class="form-control" size="5" type="text" id="text_my_name" data-i18n="[value]anonymous" value="匿名"></input>
 
 
                     <span class="input-group-text" id="icon_number_of_joined"><i class="fas fa-user-friends"></i></span>
@@ -78,41 +83,41 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="staticBackdropLabel">
+                                <h5 class="modal-title" id="staticBackdropLabel" data-i18n="usage_title">
                                     使い方
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <div class="alert alert-danger" role="alert">
+                                <div class="alert alert-danger" role="alert" data-i18n="bug_notice">
                                     スマートフォン上にて，音声読み上げボタンを一旦ONにした後，もう一度ボタンを押しても表示が切り替わらないバグがあります．この場合，画面のいずれかをタップすることで表示が更新されます．
                                 </div>
-                                <h5>絵文字リアクションボタン</h5>
-                                <p>絵文字リアクションには緑と赤の2種類のボタンがあります。
+                                <h5 data-i18n="emoji_reaction_title">絵文字リアクションボタン</h5>
+                                <p data-i18n="emoji_reaction_description">絵文字リアクションには緑と赤の2種類のボタンがあります。
                                     緑色はサイレントリアクションで、絵文字が配信画面に表示されるだけです。赤色はサウンドリアクションで、押すと音がなります。実際にどのような音がなるかは以下の一覧を参考にしてください。
                                 </p>
                                 <ul>
-                                    <li>&#x1f4f8;：カシャ、パシャ（カメラの効果音）</li>
-                                    <li>👏：パチン（手を一回叩く音）</li>
-                                    <li>🎉：パーン（クラッカーを鳴らす音）</li>
-                                    <li>🥳：ヒュー！（歓声） </li>
-                                    <li>😮：へ〜</li>
-                                    <li>🤔：ちょっとまって</li>
-                                    <li>👌：オーケー </li>
-                                    <li>👊：バシ！（パンチの音）</li>
-                                    <li>🤣：大笑い</li>
-                                    <li>😏：くすくす笑い</li>
+                                    <li data-i18n="camera_shutter_sound">&#x1f4f8;：カシャ、パシャ（カメラの効果音）</li>
+                                    <li data-i18n="clap">👏：パチン（手を一回叩く音）</li>
+                                    <li data-i18n="pop">🎉：パーン（クラッカーを鳴らす音）</li>
+                                    <li data-i18n="woo-hoo">🥳：ヒュー！（歓声） </li>
+                                    <li data-i18n="wow">😮：へ〜</li>
+                                    <li data-i18n="wait">🤔：ちょっとまって</li>
+                                    <li data-i18n="ok">👌：オーケー </li>
+                                    <li data-i18n="pow">👊：バシ！（パンチの音）</li>
+                                    <li data-i18n="hahaha">🤣：大笑い</li>
+                                    <li data-i18n="hehe">😏：くすくす笑い</li>
                                 </ul>
 
-                                <h5>コメント送信</h5>
+                                <h5 data-i18n="comment_send_title">コメント送信</h5>
                                 <p>
-                                    配信者の画面に任意のテキストを表示することができます。ボタン横のドロップダウンメニューを開くとテキストの色や輪郭色、音声読み上げ機能（<i
-                                        class="fas fa-volume-up"></i>ボタン）のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。
+                                    <span data-i18n="comment_send_description_1">配信者の画面に任意のテキストを表示することができます。ボタン横のドロップダウンメニューを開くとテキストの色や輪郭色、音声読み上げ機能</span>（<i
+                                        class="fas fa-volume-up"></i><span data-i18n="comment_send_description_2">ボタン）のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。</span>
                                 </p>
-                                <h5>コメントの連投</h5>
+                                <h5 data-i18n="continuous_comment_send_title">コメントの連投</h5>
                                 <p>
-                                    大規模人数におけるコメント荒れを防ぐため、通常はコメントの連続投稿には制約（5秒開けないといけない）があります。しかし
+                                    <span data-i18n="continuous_comment_send_description_1">大規模人数におけるコメント荒れを防ぐため、通常はコメントの連続投稿には制約（5秒開けないといけない）があります。しかし</span>
                                     <input type="checkbox" class="btn-check"
                                         id="dummy_checkbox_deactivate_comment_control" autocomplete="off" value=true
                                         disabled checked>
@@ -120,7 +125,7 @@
                                         for="dummy_checkbox_deactivate_comment_control"
                                         id="dummy_label_comment_control"><i class="fas fa-redo-alt"></i></label>
 
-                                    このように黄色で点灯しているときはコメントの連投が可能です。
+                                        <span data-i18n="continuous_comment_send_description_2">このように黄色で点灯しているときはコメントの連投が可能です。</span>
                                 </p>
                                 <!-- <h5>はがき送信</h5>
                             <p>
@@ -166,7 +171,7 @@
 
 
                 <div class="input-group mb-3">
-                    <button id="button_send" class="btn btn-outline-primary"><i class="bi bi-send"></i>
+                    <button id="button_send" class="btn btn-outline-primary" data-i18n="button_send"><i class="bi bi-send"></i>
                         送信</button>
                     <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
                         data-bs-toggle="dropdown" aria-expanded="false">
@@ -179,9 +184,9 @@
                         <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">
                             Outline
                             Color</input></li>
-                        <li class="dropdown-item">
+                        <li class="dropdown-item" data-i18n="text_movement_direction">
                             <select id="select_text_direction">
-                                <option value="still" selected>静止</option>
+                                <option value="still" selected data-i18n="stop">静止</option>
                                 <option value="up">↑</option>
                                 <option value="down">↓</option>
                                 <option value="left">←</option>
@@ -191,8 +196,8 @@
                         </li>
                     </ul>
 
-                    <textarea style="resize:none" rows="1" type="text" class="form-control" placeholder="コメント（最大80字）"
-                        id="text_comment"></textarea>
+                    <textarea style="resize:none" rows="1" type="text" class="form-control" data-i18n="[placeholder]comment_placeholder" placeholder="コメント（最大80字）" id="text_comment"></textarea>
+
 
                     <input type="checkbox" class="btn-check" id="checkbox_speech" autocomplete="off" value=true>
                     <label class="btn btn-outline-danger" for="checkbox_speech"><i class="fas fa-volume-up"></i></label>
@@ -211,10 +216,10 @@
             <div class="col-lg-12 col-xl-6">
                 <div class="alert alert-light alert-dismissible fade show" role="alert">
 
-                    <li>
+                    <li data-i18n="note_1">
                         PCで画面を横に伸ばすと2行に並べて表示できます
                     </li>
-                    <li>
+                    <li data-i18n="note_2">
                         コードや長文が送られるとこの下に表示されます
                     </li>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -246,6 +251,8 @@
     <script src="utils.js"></script>
     <script src="sketch.js"></script>
     <script src="clipboard.min.js"></script>
+    <!-- 新しい外部 i18n 設定ファイルの読み込み -->
+    <script src="i18n-config.js"></script>
 
 </body>
 
