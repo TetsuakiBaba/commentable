@@ -1,22 +1,28 @@
 // i18next の初期化
-i18next
-    .use(i18nextHttpBackend)
-    .use(i18nextBrowserLanguageDetector)
-    .init({
-        fallbackLng: 'ja',
-        load: 'languageOnly',  // 言語コードのみを使用（例：'en'は使用するが'en-US'は使用しない）
-        debug: true,
-        backend: {
-            loadPath: '/locales/{{lng}}/translation.json',
-        },
-        detection: {
-            order: [ 'navigator', 'htmlTag', 'path', 'subdomain'],
-            caches: ['localStorage', 'cookie'],
-        }
-    }, function(err, t) {
-        if (err) return console.error(err);
-        updateContent();
-    });
+
+document.addEventListener('DOMContentLoaded', function () {
+    i18next
+        .use(i18nextHttpBackend)
+        .use(i18nextBrowserLanguageDetector)
+        .init({
+            fallbackLng: 'ja',
+            load: 'languageOnly',  // 言語コードのみを使用（例：'en'は使用するが'en-US'は使用しない）
+            debug: false,
+            backend: {
+                loadPath: '/locales/{{lng}}/translation.json',
+            },
+            detection: {
+                order: ['navigator', 'htmlTag', 'path', 'subdomain'],
+                caches: ['localStorage', 'cookie'],
+            }
+
+        }, function (err, t) {
+            if (err) return console.error(err);
+            updateContent();
+            console.log('i18next is ready', t);
+        });
+
+});
 
 // 翻訳可能な要素を更新する関数
 function updateContent() {
