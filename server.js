@@ -75,17 +75,15 @@ io.on('connection', (socket) => {
             // fs.writeFileSync(filepath, '');
             // console.log('create: ', filepath);
         }
-
-        //var room_sockets = io.in(room)
-        number_of_users = io.sockets.adapter.rooms[room].length;
-        //console.log("current Room: ", io.sockets.adapter.rooms);
-        //var room_object = io.sockets.adapter.rooms[room];
+        // number_of_users = io.sockets.adapter.rooms[room].length;
+        number_of_users = io.sockets.adapter.rooms.get(room).size;
+        console.log(number_of_users)
 
         // we store the username in the socket session for this client
         socket.username = socket.id; //username;
         socket.emit('login', {
             numUsers: number_of_users,
-            deactivate_comment_control: io.sockets.adapter.rooms[room].flg_deactivate_comment_control
+            deactivate_comment_control: io.sockets.adapter.rooms.get(room).flg_deactivate_comment_control
         });
         // echo globally (all clients) that a person has connected
         socket.to(room).emit('user joined', {
@@ -191,7 +189,7 @@ io.on('connection', (socket) => {
         else {
             flg_deactivate_comment_control = data.control;
             socket.to(room).emit('deactivate_comment_control', data);
-            io.sockets.adapter.rooms[room].flg_deactivate_comment_control = flg_deactivate_comment_control;
+            io.sockets.adapter.rooms.get(room).flg_deactivate_comment_control = flg_deactivate_comment_control;
         }
 
     });
