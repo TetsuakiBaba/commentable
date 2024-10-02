@@ -77,7 +77,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": `https://commentable.fun/?room=${encodeURI(room)}&v=${version}`,
+        "data": `https://bbcommentable.herokuapp.com/?room=${encodeURI(room)}&v=${version}`,
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
