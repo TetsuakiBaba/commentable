@@ -730,6 +730,23 @@
             };
 
             speechRecognition.onerror = function (event) {
+                // no-speechエラーの場合は特別な処理
+                if (event.error === 'no-speech') {
+                    addLog('無音のため音声認識が終了しました', 'info');
+                    resetSpeechRecognition();
+                    
+                    // 連続認識モードの場合は自動再開（no-speechは正常な動作として扱う）
+                    if (isContinuous) {
+                        setTimeout(() => {
+                            if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                                addLog('音声入力を再開しています...', 'info');
+                                startSpeechRecognition();
+                            }
+                        }, 1000); // 1秒待ってから再開
+                    }
+                    return;
+                }
+
                 addLog(`音声認識エラー: ${event.error}`, 'error');
 
                 // 回復可能なエラーかどうかを判定
