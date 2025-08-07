@@ -734,7 +734,7 @@
                 if (event.error === 'no-speech') {
                     addLog('無音のため音声認識が終了しました', 'info');
                     resetSpeechRecognition();
-                    
+
                     // 連続認識モードの場合は自動再開（no-speechは正常な動作として扱う）
                     if (isContinuous) {
                         setTimeout(() => {
@@ -773,12 +773,18 @@
             };
 
             speechRecognition.onend = function () {
+                // 連続モードかどうかを先に確認（resetSpeechRecognition前に）
+                const shouldContinue = isContinuous;
+
                 resetSpeechRecognition();
 
                 // 連続モードの場合は自動的に再開
-                if (isContinuous && isRecognizing) {
+                if (shouldContinue) {
                     setTimeout(() => {
-                        startSpeechRecognition();
+                        if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                            addLog('音声認識を継続しています...', 'info');
+                            startSpeechRecognition();
+                        }
                     }, 500);
                 }
             };
@@ -796,6 +802,12 @@
 
         // 音声認識開始
         function startSpeechRecognition() {
+            // 既に認識中の場合は何もしない
+            if (isRecognizing) {
+                addLog('音声認識は既に開始されています', 'info');
+                return;
+            }
+
             if (!speechRecognition) {
                 if (!initializeSpeechRecognition()) {
                     return;
@@ -818,6 +830,10 @@
 
         // 音声認識停止
         function stopSpeechRecognition() {
+            // 連続認識モードを無効化（自動再開を防ぐ）
+            isContinuous = false;
+            checkboxContinuousSpeech.checked = false;
+
             if (speechRecognition && isRecognizing) {
                 speechRecognition.stop();
                 addLog('音声認識を停止しました', 'info');
