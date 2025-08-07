@@ -94,8 +94,9 @@
 
 <body>
     <div class="container-sm">
-        <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"></p>
-        <h5>米太郎 AI アシスタント</h5>
+        <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"><span class="badge bg-secondary">AI
+                Assistant</span></p>
+
 
         <div class="row">
             <div class="col-12">
@@ -121,44 +122,47 @@
                             <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
                         </div>
 
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">AI 名前</span>
-                            <input class="form-control" type="text" id="text_ai_name" value="米太郎">
-                        </div>
+                        <div class="card border-info mb-3">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h6 class="mb-0">AI設定</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">AI 名前</span>
+                                    <input class="form-control" type="text" id="text_ai_name" value="米太郎">
+                                </div>
 
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label for="select_text_direction" class="form-label">文字移動方向</label>
-                                <select class="form-select form-select-sm" id="select_text_direction">
-                                    <option value="still" selected>静止</option>
-                                    <option value="up">↑</option>
-                                    <option value="down">↓</option>
-                                    <option value="left">←</option>
-                                    <option value="right">→</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label for="input_text_color" class="form-label">文字色</label>
-                                <input type="color" class="form-control form-control-color" id="input_text_color"
-                                    value="#FFD700" title="文字色を選択">
-                            </div>
-                        </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">文字移動方向</span>
+                                    <select class="form-select" id="select_text_direction">
+                                        <option value="still" selected>静止</option>
+                                        <option value="up">↑</option>
+                                        <option value="down">↓</option>
+                                        <option value="left">←</option>
+                                        <option value="right">→</option>
+                                    </select>
+                                    <span class="input-group-text">文字色</span>
+                                    <input type="color" class="form-control form-control-color" id="input_text_color"
+                                        value="#FFD700" title="文字色を選択">
+                                </div>
 
-                        <div class="mb-3">
-                            <label for="textarea_system_prompt" class="form-label">システムプロンプト（事前知識）</label>
-                            <div class="input-group mb-2">
-                                <select class="form-select" id="select_prompt_preset">
-                                    <option value="">プリセットを選択...</option>
-                                    <option value="friendly">親しみやすいアシスタント</option>
-                                    <option value="teacher">先生役</option>
-                                    <option value="comedian">お笑い芸人</option>
-                                    <option value="expert">専門家</option>
-                                    <option value="supporter">応援者</option>
-                                </select>
-                                <button class="btn btn-outline-secondary" id="button_apply_preset">適用</button>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">キャラクター設定</span>
+                                    <select class="form-select" id="select_prompt_preset">
+                                        <option value="friendly" selected>親しみやすいアシスタント</option>
+                                        <option value="teacher">先生役</option>
+                                        <option value="comedian">お笑い芸人</option>
+                                        <option value="expert">専門家</option>
+                                        <option value="supporter">応援者</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="textarea_system_prompt" class="form-label">事前知識・システムプロンプト</label>
+                                    <textarea class="form-control" id="textarea_system_prompt" rows="3"
+                                        placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
+                                </div>
                             </div>
-                            <textarea class="form-control" id="textarea_system_prompt" rows="3"
-                                placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
                         </div>
 
                         <div class="form-check mb-3">
@@ -270,7 +274,6 @@
         const buttonClearLog = document.getElementById('button_clear_log');
         const buttonTestLMStudio = document.getElementById('button_test_lm_studio');
         const selectPromptPreset = document.getElementById('select_prompt_preset');
-        const buttonApplyPreset = document.getElementById('button_apply_preset');
 
         // 自動投稿関連のDOM要素
         const checkboxAutoPosting = document.getElementById('checkbox_auto_posting');
@@ -309,7 +312,7 @@
 
         // プリセットプロンプト
         const promptPresets = {
-            friendly: "あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。配信のコメント欄でユーザーと楽しく交流してください。絵文字を適度に使い、親近感のある口調で話してください。返答は必ず120文字以内の短い一文でお答えください。",
+            friendly: "あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。",
             teacher: "あなたの名前は{AI_NAME}です。知識豊富で分かりやすく教えることが得意な先生です。質問があれば丁寧に説明し、学習を支援してください。専門用語は分かりやすく解説してください。返答は必ず120文字以内の短い一文でお答えください。",
             comedian: "あなたの名前は{AI_NAME}です。面白いことが大好きなお笑い芸人のAIです。ユーザーを笑わせることを目指し、ユーモアとダジャレを交えながら楽しく会話してください。ただし、人を傷つけるような内容は避けてください。返答は必ず120文字以内の短い一文でお答えください。",
             expert: "あなたの名前は{AI_NAME}です。幅広い分野に精通した専門家です。正確で詳細な情報を提供し、根拠に基づいた回答を心がけてください。不明な点は素直に「分からない」と答えてください。返答は必ず120文字以内の短い一文でお答えください。",
@@ -783,7 +786,7 @@
             testLMStudioConnection();
         });
 
-        buttonApplyPreset.addEventListener('click', () => {
+        selectPromptPreset.addEventListener('change', () => {
             applyPromptPreset();
         });
 
