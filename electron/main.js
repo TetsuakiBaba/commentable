@@ -15,8 +15,8 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 
 // サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
-// const USE_LOCAL_SERVER = false;
-const USE_LOCAL_SERVER = true;
+const USE_LOCAL_SERVER = false;
+// const USE_LOCAL_SERVER = true;
 
 // ベースURL設定
 function getBaseUrl() {
@@ -394,64 +394,6 @@ app.whenReady().then(() => {
                             }
                         },
                         {
-                            label: "サーバー設定",
-                            submenu: [
-                                {
-                                    label: `現在: ${currentBaseUrl.includes('localhost') ? 'ローカル開発' : '本番環境'}`,
-                                    enabled: false
-                                },
-                                {
-                                    type: 'separator'
-                                },
-                                {
-                                    label: "ローカル開発環境 (localhost:3000)",
-                                    type: 'radio',
-                                    checked: currentBaseUrl.includes('localhost'),
-                                    click: () => {
-                                        switchServerUrl('http://localhost:3000');
-                                        // メニューを再構築
-                                        global.updateTrayMenu();
-                                    }
-                                },
-                                {
-                                    label: "本番環境 (Heroku)",
-                                    type: 'radio',
-                                    checked: currentBaseUrl.includes('herokuapp'),
-                                    click: () => {
-                                        switchServerUrl('https://bbcommentable.herokuapp.com');
-                                        // メニューを再構築
-                                        global.updateTrayMenu();
-                                    }
-                                },
-                                {
-                                    type: 'separator'
-                                },
-                                {
-                                    label: "カスタムURL設定...",
-                                    click: async () => {
-                                        try {
-                                            const customUrl = await prompt({
-                                                title: 'カスタムサーバーURL',
-                                                label: 'サーバーURLを入力してください:',
-                                                value: currentBaseUrl,
-                                                inputAttrs: {
-                                                    type: 'url',
-                                                    placeholder: 'https://example.com'
-                                                }
-                                            });
-
-                                            if (customUrl && customUrl.trim()) {
-                                                switchServerUrl(customUrl.trim());
-                                                global.updateTrayMenu();
-                                            }
-                                        } catch (error) {
-                                            console.error('Custom URL input error:', error);
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
                             label: "チャレンジブル", click: async () => {
                                 const { shell } = require('electron')
                                 await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
@@ -591,62 +533,6 @@ app.whenReady().then(() => {
                                     const { shell } = require('electron')
                                     await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
                                 }
-                            },
-                            {
-                                label: "サーバー設定",
-                                submenu: [
-                                    {
-                                        label: `現在: ${currentBaseUrl.includes('localhost') ? 'ローカル開発' : '本番環境'}`,
-                                        enabled: false
-                                    },
-                                    {
-                                        type: 'separator'
-                                    },
-                                    {
-                                        label: "ローカル開発環境 (localhost:3000)",
-                                        type: 'radio',
-                                        checked: currentBaseUrl.includes('localhost'),
-                                        click: () => {
-                                            switchServerUrl('http://localhost:3000');
-                                            global.updateTrayMenu();
-                                        }
-                                    },
-                                    {
-                                        label: "本番環境 (Heroku)",
-                                        type: 'radio',
-                                        checked: currentBaseUrl.includes('herokuapp'),
-                                        click: () => {
-                                            switchServerUrl('https://bbcommentable.herokuapp.com');
-                                            global.updateTrayMenu();
-                                        }
-                                    },
-                                    {
-                                        type: 'separator'
-                                    },
-                                    {
-                                        label: "カスタムURL設定...",
-                                        click: async () => {
-                                            try {
-                                                const customUrl = await prompt({
-                                                    title: 'カスタムサーバーURL',
-                                                    label: 'サーバーURLを入力してください:',
-                                                    value: currentBaseUrl,
-                                                    inputAttrs: {
-                                                        type: 'url',
-                                                        placeholder: 'https://example.com'
-                                                    }
-                                                });
-
-                                                if (customUrl && customUrl.trim()) {
-                                                    switchServerUrl(customUrl.trim());
-                                                    global.updateTrayMenu();
-                                                }
-                                            } catch (error) {
-                                                console.error('Custom URL input error:', error);
-                                            }
-                                        }
-                                    }
-                                ]
                             },
                             {
                                 label: "チャレンジブル", click: async () => {
