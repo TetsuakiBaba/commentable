@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <meta charset="utf-8">
+    <style>
+        .card {
+            animation: fadeIn 1.0s ease 0.0s 1 normal;
+            transition: all 0.5s;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0
+            }
+
+            100% {
+                opacity: 1
+            }
+        }
+
+        .transition_all {
+            transition: all 0.5s;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-connected {
+            background-color: #28a745;
+        }
+
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+
+        .status-processing {
+            background-color: #ffc107;
+        }
+
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+        }
+
+        .log-received {
+            color: #0066cc;
+        }
+
+        .log-sent {
+            color: #28a745;
+        }
+
+        .log-error {
+            color: #dc3545;
+        }
+
+        .log-info {
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-sm">
+        <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"></p>
+        <h5>米太郎 AI アシスタント</h5>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <span id="status-indicator" class="status-indicator status-disconnected"></span>
+                            接続状態: <span id="status-text">接続待機中</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">部屋名</span>
+                            <input class="form-control" type="text" id="text_room_name" placeholder="配信中の部屋名が自動入力されます"
+                                value="">
+                            <button class="btn btn-outline-primary" id="button_connect">接続</button>
+                        </div>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">LM Studio URL</span>
+                            <input class="form-control" type="text" id="text_lm_studio_url"
+                                value="http://127.0.0.1:1234/v1">
+                            <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
+                        </div>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">AI 名前</span>
+                            <input class="form-control" type="text" id="text_ai_name" value="米太郎">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="select_text_direction" class="form-label">文字移動方向</label>
+                                <select class="form-select form-select-sm" id="select_text_direction">
+                                    <option value="still" selected>静止</option>
+                                    <option value="up">↑</option>
+                                    <option value="down">↓</option>
+                                    <option value="left">←</option>
+                                    <option value="right">→</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="input_text_color" class="form-label">文字色</label>
+                                <input type="color" class="form-control form-control-color" id="input_text_color"
+                                    value="#FFD700" title="文字色を選択">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="textarea_system_prompt" class="form-label">システムプロンプト（事前知識）</label>
+                            <div class="input-group mb-2">
+                                <select class="form-select" id="select_prompt_preset">
+                                    <option value="">プリセットを選択...</option>
+                                    <option value="friendly">親しみやすいアシスタント</option>
+                                    <option value="teacher">先生役</option>
+                                    <option value="comedian">お笑い芸人</option>
+                                    <option value="expert">専門家</option>
+                                    <option value="supporter">応援者</option>
+                                </select>
+                                <button class="btn btn-outline-secondary" id="button_apply_preset">適用</button>
+                            </div>
+                            <textarea class="form-control" id="textarea_system_prompt" rows="3"
+                                placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="checkbox_auto_response" checked>
+                            <label class="form-check-label" for="checkbox_auto_response" id="label_auto_response">
+                                「米太郎」を含むメッセージに自動応答
+                            </label>
+                        </div>
+
+                        <div class="card border-warning mb-3">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
+                                    <label class="form-check-label" for="checkbox_auto_posting">
+                                        定期的に自動でコメントを投稿
+                                    </label>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_min" class="form-label">最小間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_min" min="1"
+                                            max="10" value="2">
+                                        <small class="text-muted"><span id="span_interval_min">2</span>分</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_max" class="form-label">最大間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_max" min="5"
+                                            max="20" value="8">
+                                        <small class="text-muted"><span id="span_interval_max">8</span>分</small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label for="select_posting_style" class="form-label">投稿スタイル</label>
+                                    <select class="form-select form-select-sm" id="select_posting_style">
+                                        <option value="mixed">ミックス（授業関連＋雑談）</option>
+                                        <option value="academic">授業関連のみ</option>
+                                        <option value="casual">雑談のみ</option>
+                                        <option value="reaction">リアクションのみ</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
+                                    テスト投稿
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">活動ログ</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="log-container" class="log-container"></div>
+                        <button class="btn btn-sm btn-outline-secondary mt-2" id="button_clear_log">ログクリア</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <footer class="page-footer font-small">
+            <div class="footer-copyright small text-center">
+                Commentable Kometaro AI Assistant<br>
+                &copy; 2025 <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../p5.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        // グローバル変数
+        let socket;
+        let isConnected = false;
+        let isAutoResponse = true;
+        let isAutoPosting = false;
+        let autoPostingTimer = null;
+        let lmStudioUrl = 'http://127.0.0.1:1234/v1';
+        let aiName = '米太郎';
+        let aiTextDirection = 'still';
+        let aiTextColor = '#FFD700';
+        let roomName = '';
+        let postingIntervalMin = 2; // 分
+        let postingIntervalMax = 8; // 分
+        let postingStyle = 'mixed';
+
+        // DOM要素
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const logContainer = document.getElementById('log-container');
+        const textRoomName = document.getElementById('text_room_name');
+        const textLmStudioUrl = document.getElementById('text_lm_studio_url');
+        const textAiName = document.getElementById('text_ai_name');
+        const selectTextDirection = document.getElementById('select_text_direction');
+        const inputTextColor = document.getElementById('input_text_color');
+        const textareaSystemPrompt = document.getElementById('textarea_system_prompt');
+        const checkboxAutoResponse = document.getElementById('checkbox_auto_response');
+        const buttonConnect = document.getElementById('button_connect');
+        const buttonClearLog = document.getElementById('button_clear_log');
+        const buttonTestLMStudio = document.getElementById('button_test_lm_studio');
+        const selectPromptPreset = document.getElementById('select_prompt_preset');
+        const buttonApplyPreset = document.getElementById('button_apply_preset');
+
+        // 自動投稿関連のDOM要素
+        const checkboxAutoPosting = document.getElementById('checkbox_auto_posting');
+        const rangePostingIntervalMin = document.getElementById('range_posting_interval_min');
+        const rangePostingIntervalMax = document.getElementById('range_posting_interval_max');
+        const spanIntervalMin = document.getElementById('span_interval_min');
+        const spanIntervalMax = document.getElementById('span_interval_max');
+        const selectPostingStyle = document.getElementById('select_posting_style');
+        const buttonTestAutoPosting = document.getElementById('button_test_auto_posting');
+
+        // URL パラメータを取得してルーム名を設定
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const result = {};
+            for (const [key, value] of params) {
+                result[key] = value;
+            }
+            return result;
+        }
+
+        // ログ出力関数
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // ステータス更新
+        function updateStatus(status, text) {
+            statusIndicator.className = `status-indicator status-${status}`;
+            statusText.textContent = text;
+        }
+
+        // プリセットプロンプト
+        const promptPresets = {
+            friendly: "あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。配信のコメント欄でユーザーと楽しく交流してください。絵文字を適度に使い、親近感のある口調で話してください。返答は必ず120文字以内の短い一文でお答えください。",
+            teacher: "あなたの名前は{AI_NAME}です。知識豊富で分かりやすく教えることが得意な先生です。質問があれば丁寧に説明し、学習を支援してください。専門用語は分かりやすく解説してください。返答は必ず120文字以内の短い一文でお答えください。",
+            comedian: "あなたの名前は{AI_NAME}です。面白いことが大好きなお笑い芸人のAIです。ユーザーを笑わせることを目指し、ユーモアとダジャレを交えながら楽しく会話してください。ただし、人を傷つけるような内容は避けてください。返答は必ず120文字以内の短い一文でお答えください。",
+            expert: "あなたの名前は{AI_NAME}です。幅広い分野に精通した専門家です。正確で詳細な情報を提供し、根拠に基づいた回答を心がけてください。不明な点は素直に「分からない」と答えてください。返答は必ず120文字以内の短い一文でお答えください。",
+            supporter: "あなたの名前は{AI_NAME}です。配信者とコメント欄を盛り上げる応援者です。ポジティブなエネルギーで配信を応援し、他の視聴者も楽しい気持ちになるようなコメントをしてください。返答は必ず120文字以内の短い一文でお答えください。"
+        };
+
+        // プリセット適用機能
+        function applyPromptPreset() {
+            const selectedPreset = selectPromptPreset.value;
+            if (selectedPreset && promptPresets[selectedPreset]) {
+                const currentAiName = textAiName.value.trim() || '米太郎';
+                const promptText = promptPresets[selectedPreset].replace(/{AI_NAME}/g, currentAiName);
+                textareaSystemPrompt.value = promptText;
+                addLog(`プリセット「${selectPromptPreset.options[selectPromptPreset.selectedIndex].text}」を適用しました`, 'info');
+            }
+        }
+
+        // 自動投稿用のプロンプト生成
+        function generateAutoPostPrompt(style) {
+            const prompts = {
+                mixed: [
+                    "授業の雰囲気を盛り上げるような短いコメントをしてください。",
+                    "学生が興味を持ちそうな雑談を120文字以内でしてください。",
+                    "授業に関連する面白い豆知識を短く教えてください。",
+                    "今日の気分や天気について軽くコメントしてください。",
+                    "勉強のモチベーションが上がるような応援コメントをしてください。"
+                ],
+                academic: [
+                    "授業に関連する興味深い話題を120文字以内で提供してください。",
+                    "学習に役立つ豆知識を短く教えてください。",
+                    "授業の内容に関連する質問を投げかけてください。",
+                    "学習のコツを短くアドバイスしてください。"
+                ],
+                casual: [
+                    "今日の気分について軽くコメントしてください。",
+                    "季節や天気について短く話してください。",
+                    "面白い雑談を120文字以内でしてください。",
+                    "学生生活の話題で軽く盛り上げてください。"
+                ],
+                reaction: "REACTION_MODE" // 特別なマーカー
+            };
+
+            if (style === 'reaction') {
+                return prompts.reaction;
+            }
+
+            const stylePrompts = prompts[style] || prompts.mixed;
+            const randomPrompt = stylePrompts[Math.floor(Math.random() * stylePrompts.length)];
+            return randomPrompt;
+        }
+
+        // リアクション専用の送信関数
+        function sendRandomReaction() {
+            // 絵文字リアクション（サイレント）
+            const emojiReactions = ['👍', '🙏', '🙋', '🥺', '🤫'];
+
+            // サウンドリアクション（音付き）
+            const soundReactions = [
+                { emoji: '📸', id: 0 },  // カメラ
+                { emoji: '👏', id: 1 },  // 拍手
+                { emoji: '🎉', id: 2 },  // クラッカー
+                { emoji: '🥳', id: 3 },  // 大歓声
+                { emoji: '😮', id: 4 },  // へぇ〜
+                { emoji: '🤔', id: 5 },  // ちょっとまって
+                { emoji: '👌', id: 6 },  // OK
+                { emoji: '👊', id: 7 },  // パンチ
+                { emoji: '🤣', id: 8 },  // 大笑い
+                { emoji: '😏', id: 9 }   // w
+            ];
+
+            // 70%の確率で絵文字リアクション、30%の確率でサウンドリアクション
+            const useSound = Math.random() < 0.3;
+
+            let data;
+            if (useSound) {
+                // サウンドリアクション
+                const reaction = soundReactions[Math.floor(Math.random() * soundReactions.length)];
+                data = {
+                    my_name: aiName,
+                    comment: reaction.emoji,
+                    flg_emoji: true,
+                    flg_sound: true,
+                    id_sound: reaction.id,
+                    color_text: aiTextColor,
+                    color_text_stroke: '#111111',
+                    text_direction: aiTextDirection,
+                    flg_speech: false,
+                    hidden: -1
+                };
+                addLog(`サウンドリアクション送信: ${reaction.emoji} (ID: ${reaction.id})`, 'sent');
+            } else {
+                // 絵文字リアクション
+                const emoji = emojiReactions[Math.floor(Math.random() * emojiReactions.length)];
+                data = {
+                    my_name: aiName,
+                    comment: emoji,
+                    flg_emoji: true,
+                    flg_sound: false,
+                    id_sound: 0,
+                    color_text: aiTextColor,
+                    color_text_stroke: '#111111',
+                    text_direction: aiTextDirection,
+                    flg_speech: false,
+                    hidden: -1
+                };
+                addLog(`絵文字リアクション送信: ${emoji}`, 'sent');
+            }
+
+            if (socket && isConnected) {
+                socket.emit('comment', data);
+            }
+        }
+
+        // 自動投稿を実行
+        async function executeAutoPosting() {
+            if (!isConnected || !isAutoPosting) {
+                return;
+            }
+
+            try {
+                addLog('自動投稿を実行中...', 'info');
+
+                if (postingStyle === 'reaction') {
+                    // リアクションモードの場合は絵文字/サウンドリアクションを送信
+                    sendRandomReaction();
+                } else {
+                    // その他のモードの場合はテキストコメントを生成
+                    const prompt = generateAutoPostPrompt(postingStyle);
+                    const aiResponse = await sendToLMStudio(prompt);
+
+                    // 投稿
+                    setTimeout(() => {
+                        sendComment(aiResponse);
+                        addLog(`自動投稿完了: ${aiResponse}`, 'info');
+                    }, 500);
+                }
+
+            } catch (error) {
+                addLog(`自動投稿エラー: ${error.message}`, 'error');
+            }
+
+            // 次の投稿をスケジュール
+            scheduleNextAutoPosting();
+        }        // 次の自動投稿をスケジュール
+        function scheduleNextAutoPosting() {
+            if (!isAutoPosting) {
+                return;
+            }
+
+            // ランダムな間隔を計算（分単位をミリ秒に変換）
+            const minMs = postingIntervalMin * 60 * 1000;
+            const maxMs = postingIntervalMax * 60 * 1000;
+            const randomInterval = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+
+            const nextPostTime = new Date(Date.now() + randomInterval);
+            addLog(`次の自動投稿予定: ${nextPostTime.toLocaleTimeString()} (${Math.floor(randomInterval / 60000)}分後)`, 'info');
+
+            autoPostingTimer = setTimeout(executeAutoPosting, randomInterval);
+        }
+
+        // 自動投稿を開始
+        function startAutoPosting() {
+            if (!isConnected) {
+                addLog('サーバに接続してから自動投稿を開始してください', 'error');
+                checkboxAutoPosting.checked = false;
+                return;
+            }
+
+            isAutoPosting = true;
+            addLog('自動投稿を開始しました', 'info');
+            scheduleNextAutoPosting();
+        }
+
+        // 自動投稿を停止
+        function stopAutoPosting() {
+            isAutoPosting = false;
+            if (autoPostingTimer) {
+                clearTimeout(autoPostingTimer);
+                autoPostingTimer = null;
+            }
+            addLog('自動投稿を停止しました', 'info');
+        }
+
+        // テスト投稿
+        async function testAutoPosting() {
+            if (!isConnected) {
+                alert('サーバに接続してからテストしてください');
+                return;
+            }
+
+            try {
+                addLog('テスト投稿を実行中...', 'info');
+
+                if (postingStyle === 'reaction') {
+                    // リアクションモードの場合は絵文字/サウンドリアクションを送信
+                    sendRandomReaction();
+                } else {
+                    // その他のモードの場合はテキストコメントを生成
+                    const prompt = generateAutoPostPrompt(postingStyle);
+                    const aiResponse = await sendToLMStudio(prompt);
+
+                    setTimeout(() => {
+                        sendComment(aiResponse);
+                        addLog(`テスト投稿完了: ${aiResponse}`, 'info');
+                    }, 500);
+                }
+
+            } catch (error) {
+                addLog(`テスト投稿エラー: ${error.message}`, 'error');
+            }
+        }        // LM Studio 接続テスト
+        async function testLMStudioConnection() {
+            const testUrl = textLmStudioUrl.value.trim();
+            addLog(`LM Studio 接続テストを開始: ${testUrl}`, 'info');
+
+            try {
+                const response = await sendToLMStudio('テスト接続です。120文字以内で簡単に挨拶してください。');
+                addLog('LM Studio 接続テスト成功！', 'info');
+                alert('LM Studio への接続に成功しました！');
+            } catch (error) {
+                addLog(`LM Studio 接続テスト失敗: ${error.message}`, 'error');
+                alert(`LM Studio への接続に失敗しました: ${error.message}`);
+            }
+        }
+
+        // LM Studio に API リクエストを送信
+        async function sendToLMStudio(message) {
+            try {
+                addLog(`LM Studio にメッセージ送信: ${message}`, 'info');
+                updateStatus('processing', 'AI処理中...');
+
+                // LM Studio の接続テスト
+                addLog(`接続先: ${lmStudioUrl}`, 'info');
+
+                // システムプロンプトを取得し、AI名前のプレースホルダーを置換
+                let systemPrompt = textareaSystemPrompt.value.trim();
+                if (systemPrompt) {
+                    systemPrompt = systemPrompt.replace(/{AI_NAME}/g, aiName);
+                }
+
+                // メッセージ配列を構築
+                const messages = [];
+
+                // システムプロンプトがある場合は追加
+                if (systemPrompt) {
+                    messages.push({
+                        role: 'system',
+                        content: systemPrompt
+                    });
+                }
+
+                // ユーザーメッセージを追加
+                messages.push({
+                    role: 'user',
+                    content: message
+                });
+
+                addLog(`送信メッセージ数: ${messages.length}`, 'info');
+                if (systemPrompt) {
+                    addLog(`システムプロンプト: ${systemPrompt.substring(0, 50)}...`, 'info');
+                }
+
+                const response = await fetch(`${lmStudioUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer lm-studio'
+                    },
+                    body: JSON.stringify({
+                        model: 'local-model',
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 2048
+                    })
+                });
+
+                addLog(`HTTP レスポンス状態: ${response.status}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addLog(`HTTP エラー詳細: ${errorText}`, 'error');
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const data = await response.json();
+                addLog(`レスポンスデータ: ${JSON.stringify(data)}`, 'info');
+
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    throw new Error('Invalid response format from LM Studio');
+                }
+
+                const aiResponse = data.choices[0].message.content;
+
+                addLog(`LM Studio からの応答: ${aiResponse}`, 'info');
+
+                // 文字数制限を適用（120文字以内に切り詰め）
+                let finalResponse = aiResponse.trim();
+                if (finalResponse.length > 120) {
+                    // 120文字で切り詰めて、句読点で自然に切れる位置を探す
+                    let truncated = finalResponse.substring(0, 120);
+                    const lastPunctuation = Math.max(
+                        truncated.lastIndexOf('。'),
+                        truncated.lastIndexOf('！'),
+                        truncated.lastIndexOf('？'),
+                        truncated.lastIndexOf('♪'),
+                        truncated.lastIndexOf('✨')
+                    );
+
+                    if (lastPunctuation > 60) { // 60文字以上の位置に句読点があれば、そこで切る
+                        finalResponse = truncated.substring(0, lastPunctuation + 1);
+                    } else {
+                        // 句読点がない場合は117文字で切って「...」を追加
+                        finalResponse = truncated.substring(0, 117) + '...';
+                    }
+
+                    addLog(`文字数制限により応答を短縮: ${finalResponse.length}文字`, 'info');
+                }
+
+                updateStatus('connected', '接続中');
+
+                return finalResponse;
+            } catch (error) {
+                addLog(`LM Studio エラー: ${error.message}`, 'error');
+
+                // CORS エラーの場合の特別なメッセージ
+                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+                    addLog('CORS エラーの可能性があります。LM Studio の設定を確認してください。', 'error');
+                    addLog('LM Studio で CORS を有効にするか、プロキシサーバを使用してください。', 'info');
+                }
+
+                updateStatus('connected', '接続中 (AI エラー)');
+                return `申し訳ございません。現在AIが応答できません。(エラー: ${error.message})`;
+            }
+        }
+
+        // コメントをサーバに送信
+        function sendComment(comment) {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていません', 'error');
+                return;
+            }
+
+            const data = {
+                my_name: aiName,
+                comment: comment,
+                flg_speech: false,
+                color_text: aiTextColor,
+                color_text_stroke: '#111111',
+                text_direction: aiTextDirection,
+                flg_emoji: false,
+                flg_sound: false,
+                id_sound: 0,
+                hidden: -1
+            };
+
+            socket.emit('comment', data);
+            addLog(`コメント送信: ${comment}`, 'sent');
+        }
+
+        // 新しいコメントを受信したときの処理
+        async function onNewComment(data) {
+            addLog(`受信: [${data.my_name}] ${data.comment}`, 'received');
+
+            // AI名前が含まれているかチェック
+            if (isAutoResponse && data.comment.includes(aiName)) {
+                addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
+
+                try {
+                    const aiResponse = await sendToLMStudio(data.comment);
+
+                    // AI の応答をサーバに送信
+                    setTimeout(() => {
+                        sendComment(aiResponse);
+                    }, 1000); // 1秒遅延
+
+                } catch (error) {
+                    addLog(`処理エラー: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Socket.IO 接続
+        function connectToServer() {
+            roomName = textRoomName.value.trim();
+            lmStudioUrl = textLmStudioUrl.value.trim();
+            aiName = textAiName.value.trim();
+            aiTextDirection = selectTextDirection.value;
+            aiTextColor = inputTextColor.value;
+            isAutoResponse = checkboxAutoResponse.checked;
+
+            if (!roomName) {
+                alert('部屋名を入力してください');
+                return;
+            }
+
+            addLog('サーバに接続しています...', 'info');
+            updateStatus('processing', '接続中...');
+
+            // Socket.IO 接続
+            socket = io.connect(window.location.origin);
+
+            // イベントリスナー設定
+            socket.on('connect', () => {
+                addLog('サーバに接続しました', 'info');
+                socket.emit('watcher', socket.id);
+            });
+
+            socket.on('you_are_connected', () => {
+                addLog(`部屋 "${roomName}" に参加しています...`, 'info');
+                socket.emit('join', roomName);
+            });
+
+            socket.on('login', (data) => {
+                isConnected = true;
+                updateStatus('connected', '接続中');
+                addLog(`部屋 "${roomName}" に参加しました (参加者数: ${data.numUsers})`, 'info');
+                buttonConnect.textContent = '切断';
+            });
+
+            socket.on('comment', onNewComment);
+
+            socket.on('user joined', (data) => {
+                addLog(`${data.username} が参加しました (参加者数: ${data.numUsers})`, 'info');
+            });
+
+            socket.on('user left', (data) => {
+                addLog(`${data.username} が退出しました (参加者数: ${data.numUsers})`, 'info');
+            });
+
+            socket.on('disconnect', () => {
+                isConnected = false;
+                stopAutoPosting(); // 自動投稿を停止
+                updateStatus('disconnected', '切断されました');
+                addLog('サーバから切断されました', 'error');
+                buttonConnect.textContent = '接続';
+            });
+
+            socket.on('reconnect', () => {
+                addLog('サーバに再接続しました', 'info');
+                socket.emit('join', roomName);
+            });
+        }
+
+        // サーバから切断
+        function disconnectFromServer() {
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+            isConnected = false;
+            stopAutoPosting(); // 自動投稿を停止
+            updateStatus('disconnected', '切断されました');
+            addLog('サーバから切断しました', 'info');
+            buttonConnect.textContent = '接続';
+        }
+
+        // イベントリスナー設定
+        buttonConnect.addEventListener('click', () => {
+            if (isConnected) {
+                disconnectFromServer();
+            } else {
+                connectToServer();
+            }
+        });
+
+        buttonClearLog.addEventListener('click', () => {
+            logContainer.innerHTML = '';
+        });
+
+        buttonTestLMStudio.addEventListener('click', () => {
+            testLMStudioConnection();
+        });
+
+        buttonApplyPreset.addEventListener('click', () => {
+            applyPromptPreset();
+        });
+
+        // AI名前の変更監視
+        textAiName.addEventListener('input', () => {
+            aiName = textAiName.value.trim() || '米太郎';
+            updateAutoResponseLabel();
+            addLog(`AI名前を「${aiName}」に変更しました`, 'info');
+        });
+
+        // 文字の流れる方向の変更監視
+        selectTextDirection.addEventListener('change', () => {
+            aiTextDirection = selectTextDirection.value;
+            const directionText = selectTextDirection.options[selectTextDirection.selectedIndex].text;
+            addLog(`文字の流れる方向を「${directionText}」に変更しました`, 'info');
+        });
+
+        // 文字色の変更監視
+        inputTextColor.addEventListener('change', () => {
+            aiTextColor = inputTextColor.value;
+            addLog(`文字色を「${aiTextColor}」に変更しました`, 'info');
+        });
+
+        // 自動応答ラベルを更新する関数
+        function updateAutoResponseLabel() {
+            const labelAutoResponse = document.getElementById('label_auto_response');
+            labelAutoResponse.textContent = `「${aiName}」を含むメッセージに自動応答`;
+        }
+
+        // 自動投稿関連のイベントリスナー
+        checkboxAutoPosting.addEventListener('change', () => {
+            if (checkboxAutoPosting.checked) {
+                startAutoPosting();
+            } else {
+                stopAutoPosting();
+            }
+        });
+
+        rangePostingIntervalMin.addEventListener('input', () => {
+            postingIntervalMin = parseInt(rangePostingIntervalMin.value);
+            spanIntervalMin.textContent = postingIntervalMin;
+
+            // 最小値が最大値を超えないようにする
+            if (postingIntervalMin >= postingIntervalMax) {
+                postingIntervalMax = postingIntervalMin + 1;
+                rangePostingIntervalMax.value = postingIntervalMax;
+                spanIntervalMax.textContent = postingIntervalMax;
+            }
+        });
+
+        rangePostingIntervalMax.addEventListener('input', () => {
+            postingIntervalMax = parseInt(rangePostingIntervalMax.value);
+            spanIntervalMax.textContent = postingIntervalMax;
+
+            // 最大値が最小値を下回らないようにする
+            if (postingIntervalMax <= postingIntervalMin) {
+                postingIntervalMin = postingIntervalMax - 1;
+                rangePostingIntervalMin.value = postingIntervalMin;
+                spanIntervalMin.textContent = postingIntervalMin;
+            }
+        });
+
+        selectPostingStyle.addEventListener('change', () => {
+            postingStyle = selectPostingStyle.value;
+            addLog(`投稿スタイルを「${selectPostingStyle.options[selectPostingStyle.selectedIndex].text}」に変更`, 'info');
+        });
+
+        buttonTestAutoPosting.addEventListener('click', () => {
+            testAutoPosting();
+        });
+
+        // 設定の変更を監視
+        checkboxAutoResponse.addEventListener('change', () => {
+            isAutoResponse = checkboxAutoResponse.checked;
+            addLog(`自動応答: ${isAutoResponse ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        // 初期化処理
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL パラメータからルーム名を取得
+            const params = getURLParams();
+            if (params.room) {
+                const roomFromUrl = decodeURIComponent(params.room);
+                textRoomName.value = roomFromUrl;
+                addLog(`部屋名「${roomFromUrl}」が自動設定されました`, 'info');
+            }
+
+            // 初期値の設定
+            spanIntervalMin.textContent = postingIntervalMin;
+            spanIntervalMax.textContent = postingIntervalMax;
+
+            // 表示設定の初期値を設定
+            selectTextDirection.value = aiTextDirection;
+            inputTextColor.value = aiTextColor;
+
+            // 自動応答ラベルを初期設定
+            updateAutoResponseLabel();
+
+            addLog(`${aiName} AI アシスタントが起動しました`, 'info');
+            addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
+            addLog(`表示設定: ${selectTextDirection.options[selectTextDirection.selectedIndex].text}、色: ${aiTextColor}`, 'info');
+            addLog('自動投稿機能で授業を盛り上げることができます', 'info');
+        });
+
+        // ページが閉じられる前にソケットを閉じる
+        window.addEventListener('beforeunload', () => {
+            stopAutoPosting(); // 自動投稿を停止
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+
+</body>
+
+</html>

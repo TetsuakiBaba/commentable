@@ -5,7 +5,6 @@
 /electron/dist
 out/
 forge.config.js
-kometaro/
 /public/textable
 /public/master
 .DS_Store

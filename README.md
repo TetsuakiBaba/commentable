@@ -30,15 +30,14 @@ $ git clone https://github.com/TetsuakiBaba/commentable.git
 $ cd commentable
 $ npm install
 $ node server.js
-open http://localhost on Chrome/Firefox browser for viewer mode
-open http://localhost/broadcast.html on Chrome/Firefox browser for broadcasting mode
+open http://localhost on Chrome/Firefox browser for student mode
 ```
 
 ## Desktop Application
 配信者はデスクトップアプリケーションである commentable-desktop を利用することで、コメントを自身のデスクトップ上に表示することができます。ビルドしたアプリケーションは以下からダウンロードできます。
   * https://github.com/TetsuakiBaba/commentable/releases
 
-公式ページ (https://commentable.carrd.co/) には最新版のダウンロードリンクが貼られています。
+公式ページ (https://commentable.carrd.co/) には最新版のダウンロードリンクが貼られています。ビルドずみアプリケーションではcommentableのデプロイ先が固定されているため，自身のサーバ環境で実行する場合は、以下の手順でビルドを行ってください。
 
 ### Build
 以下の手順で自身でビルドすることもできます。また別のサーバにデプロイしている場合は、electron/sketch.js の url を変更してください。デフォルトでは、サービスを提供している herokuサーバに接続するようになっています。

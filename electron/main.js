@@ -14,6 +14,30 @@ const is_linux = process.platform === 'linux'
 
 const path = require('path');
 
+// サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
+const USE_LOCAL_SERVER = true;
+
+// ベースURL設定
+function getBaseUrl() {
+    if (USE_LOCAL_SERVER) {
+        console.log('Using local development server');
+        return 'http://localhost:3000';
+    } else {
+        console.log('Using production server');
+        return 'https://bbcommentable.herokuapp.com';
+    }
+}
+
+// 現在のベースURL（手動切り替え可能）
+let currentBaseUrl = getBaseUrl();
+console.log(`Commentable will use server: ${currentBaseUrl}`);
+
+// サーバーURL切り替え関数
+function switchServerUrl(newUrl) {
+    currentBaseUrl = newUrl;
+    console.log(`Server URL switched to: ${currentBaseUrl}`);
+}
+
 var admin_message = "15:00から再開します";
 var win;
 function createWindow() {
@@ -46,7 +70,8 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
-            sandbox: true
+            sandbox: true,
+            webSecurity: process.env.NODE_ENV === 'production' // 開発環境ではwebSecurityを無効化
         }
     })
 
@@ -78,6 +103,16 @@ function generateName() {
 let tray = null
 var g_room;
 app.whenReady().then(() => {
+
+    // 開発環境では証明書エラーを無視（SSL/TLSエラー回避）
+    if (process.defaultApp ||
+        /[\\/]electron[\\/]/.test(process.execPath) ||
+        process.env.NODE_ENV === 'development') {
+        console.log('Development mode: Ignoring certificate errors');
+        app.commandLine.appendSwitch('--ignore-certificate-errors');
+        app.commandLine.appendSwitch('--ignore-ssl-errors');
+        app.commandLine.appendSwitch('--allow-running-insecure-content');
+    }
 
     if (process.platform === 'darwin') {
         app.dock.hide();
@@ -157,22 +192,34 @@ app.whenReady().then(() => {
 
                 }).catch(console.error)
 
+            // サーバーURLをレンダラープロセスに渡す
+            win.webContents.executeJavaScript(`window.SOCKET_SERVER_URL = "${currentBaseUrl}";`, true)
+                .then(result => {
+                    console.log('Server URL set in renderer process:', currentBaseUrl);
+                }).catch(console.error)
+
             var contextMenu = Menu.buildFromTemplate([
                 {
                     label: "投稿ページを開く", click: async () => {
                         const { shell } = require('electron')
-                        await shell.openExternal(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
+                        await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
                     }
                 },
                 {
                     label: '投稿ページURLをコピー',
                     click(item, focusedWindows) {
-                        clipboard.writeText(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
-                        console.log(`https://bbcommentable.herokuapp.com/?room=${g_room}&v=${version}`);
+                        clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                        console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
                     }
                 },
 
-
+                {
+                    type: 'separator',
+                },
+                {
+                    label: `サーバー: ${currentBaseUrl}`,
+                    enabled: false, // 表示のみ、クリック不可
+                },
                 {
                     type: 'separator',
                 },
@@ -340,6 +387,70 @@ app.whenReady().then(() => {
                             }
                         },
                         {
+                            label: "米太郎AIアシスタント", click: async () => {
+                                const { shell } = require('electron')
+                                await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
+                            }
+                        },
+                        {
+                            label: "サーバー設定",
+                            submenu: [
+                                {
+                                    label: `現在: ${currentBaseUrl.includes('localhost') ? 'ローカル開発' : '本番環境'}`,
+                                    enabled: false
+                                },
+                                {
+                                    type: 'separator'
+                                },
+                                {
+                                    label: "ローカル開発環境 (localhost:3000)",
+                                    type: 'radio',
+                                    checked: currentBaseUrl.includes('localhost'),
+                                    click: () => {
+                                        switchServerUrl('http://localhost:3000');
+                                        // メニューを再構築
+                                        global.updateTrayMenu();
+                                    }
+                                },
+                                {
+                                    label: "本番環境 (Heroku)",
+                                    type: 'radio',
+                                    checked: currentBaseUrl.includes('herokuapp'),
+                                    click: () => {
+                                        switchServerUrl('https://bbcommentable.herokuapp.com');
+                                        // メニューを再構築
+                                        global.updateTrayMenu();
+                                    }
+                                },
+                                {
+                                    type: 'separator'
+                                },
+                                {
+                                    label: "カスタムURL設定...",
+                                    click: async () => {
+                                        try {
+                                            const customUrl = await prompt({
+                                                title: 'カスタムサーバーURL',
+                                                label: 'サーバーURLを入力してください:',
+                                                value: currentBaseUrl,
+                                                inputAttrs: {
+                                                    type: 'url',
+                                                    placeholder: 'https://example.com'
+                                                }
+                                            });
+
+                                            if (customUrl && customUrl.trim()) {
+                                                switchServerUrl(customUrl.trim());
+                                                global.updateTrayMenu();
+                                            }
+                                        } catch (error) {
+                                            console.error('Custom URL input error:', error);
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
                             label: "チャレンジブル", click: async () => {
                                 const { shell } = require('electron')
                                 await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
@@ -440,6 +551,130 @@ app.whenReady().then(() => {
                 // メニューを表示
                 tray.popUpContextMenu(contextMenu)
             })
+
+            // メニューを更新する関数をグローバルに定義
+            global.updateTrayMenu = function () {
+                if (!tray) return;
+
+                // 現在のメニューと同じ構造でcontextMenuを再構築
+                var newContextMenu = Menu.buildFromTemplate([
+                    {
+                        label: "投稿ページを開く", click: async () => {
+                            const { shell } = require('electron')
+                            await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                        }
+                    },
+                    {
+                        label: '投稿ページURLをコピー',
+                        click(item, focusedWindows) {
+                            clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                            console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                        }
+                    },
+                    {
+                        type: 'separator',
+                    },
+                    {
+                        label: `サーバー: ${currentBaseUrl}`,
+                        enabled: false, // 表示のみ、クリック不可
+                    },
+                    {
+                        type: 'separator',
+                    },
+                    // QRコード設定部分は省略して、重要な部分のみ再作成
+                    {
+                        label: "ユーティリティ",
+                        submenu: [
+                            {
+                                label: "米太郎AIアシスタント", click: async () => {
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
+                                }
+                            },
+                            {
+                                label: "サーバー設定",
+                                submenu: [
+                                    {
+                                        label: `現在: ${currentBaseUrl.includes('localhost') ? 'ローカル開発' : '本番環境'}`,
+                                        enabled: false
+                                    },
+                                    {
+                                        type: 'separator'
+                                    },
+                                    {
+                                        label: "ローカル開発環境 (localhost:3000)",
+                                        type: 'radio',
+                                        checked: currentBaseUrl.includes('localhost'),
+                                        click: () => {
+                                            switchServerUrl('http://localhost:3000');
+                                            global.updateTrayMenu();
+                                        }
+                                    },
+                                    {
+                                        label: "本番環境 (Heroku)",
+                                        type: 'radio',
+                                        checked: currentBaseUrl.includes('herokuapp'),
+                                        click: () => {
+                                            switchServerUrl('https://bbcommentable.herokuapp.com');
+                                            global.updateTrayMenu();
+                                        }
+                                    },
+                                    {
+                                        type: 'separator'
+                                    },
+                                    {
+                                        label: "カスタムURL設定...",
+                                        click: async () => {
+                                            try {
+                                                const customUrl = await prompt({
+                                                    title: 'カスタムサーバーURL',
+                                                    label: 'サーバーURLを入力してください:',
+                                                    value: currentBaseUrl,
+                                                    inputAttrs: {
+                                                        type: 'url',
+                                                        placeholder: 'https://example.com'
+                                                    }
+                                                });
+
+                                                if (customUrl && customUrl.trim()) {
+                                                    switchServerUrl(customUrl.trim());
+                                                    global.updateTrayMenu();
+                                                }
+                                            } catch (error) {
+                                                console.error('Custom URL input error:', error);
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                label: "チャレンジブル", click: async () => {
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                }
+                            },
+                            {
+                                label: "アクセシブルスピーチトレーニング", click: async () => {
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        type: 'separator',
+                    },
+                    {
+                        label: 'Quit',
+                        click: () => {
+                            app.quit()
+                        }
+                    }
+                ]);
+
+                tray.setContextMenu(newContextMenu);
+                console.log(`Tray menu updated with server: ${currentBaseUrl}`);
+            }
 
             win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
                 .then(result => {
