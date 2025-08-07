@@ -3,15 +3,34 @@ const fs = require('fs');
 
 var use_require_json = require('./api_key.json');
 var key = use_require_json.key;
-var port = process.env.PORT || 80;
+// ローカル開発環境では3000番ポート、本番環境では80番ポート
+var port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3000);
 var express = require('express');
 var app = express();
+
+// CORS設定
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
+
 var server = app.listen(port);
 app.use(express.static('./public'));
 let broadcaster;
 var socket = require('socket.io');
 const options = {
-    serveClient: true
+    serveClient: true,
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: false
+    }
     //pingTimeout: 25000,
     //pingInterval: 5000,
     //transports: ['polling']

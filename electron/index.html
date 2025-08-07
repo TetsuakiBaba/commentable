@@ -154,7 +154,27 @@
     <script src="p5.min.js"></script>
     <script src="p5.sound.js"></script>
     <script src="p5.speech.js"></script>
-    <script src="http://bbcommentable.herokuapp.com/socket.io/socket.io.js"></script>
+    <script>
+        // デフォルトのサーバーURL（main.jsから上書きされる）
+        window.SOCKET_SERVER_URL = window.SOCKET_SERVER_URL || 'https://bbcommentable.herokuapp.com';
+
+        // Socket.IOを動的に読み込み
+        const socketScript = document.createElement('script');
+        const serverUrl = window.SOCKET_SERVER_URL;
+
+        socketScript.src = serverUrl + '/socket.io/socket.io.js';
+
+        socketScript.onload = () => {
+            console.log('Socket.IO loaded from:', serverUrl);
+        };
+
+        socketScript.onerror = (error) => {
+            console.error('Socket.IO loading failed:', error);
+            console.error('Attempted URL:', serverUrl + '/socket.io/socket.io.js');
+        };
+
+        document.head.appendChild(socketScript);
+    </script>
     <script src="qr-code-styling.js"></script>
 
     <script src="utils.js"></script>

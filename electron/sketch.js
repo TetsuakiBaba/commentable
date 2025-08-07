@@ -389,45 +389,89 @@ function preload() {
 function startSocketConnection(room) {
     g_room_name = room;
 
-    //socket = io.connect('http://localhost');
-    //socket = io.connect('https://commentable.lolipop.io')
-    //socket = io.connect(window.location.origin);
-    socket = io.connect('https://bbcommentable.herokuapp.com/');
+    // 環境に応じたSocket.IO接続
+    let serverUrl = window.SOCKET_SERVER_URL || 'https://bbcommentable.herokuapp.com';
+    console.log('Connecting to socket server:', serverUrl);
 
+    // Socket.IOが読み込まれるまで待機
+    function connectSocket() {
+        if (typeof io !== 'undefined') {
+            socket = io.connect(serverUrl);
+            console.log('Socket.IO connection established with:', serverUrl);
 
-    socket.on('you_are_connected', function () {
-        // 部屋名を指定してジョインする．
-        socket.emit('join', room);
-    });
+            // Socket.IOイベントリスナーの設定
+            setupSocketListeners();
+        } else {
+            console.log('Waiting for Socket.IO to load...');
+            setTimeout(connectSocket, 100);
+        }
+    }
 
-    socket.on('comment', newComment);
-    socket.on('disconnect', () => {
-        log('you have been disconnected');
-    });
+    // Socket.IOイベントリスナーを設定する関数
+    function setupSocketListeners() {
+        socket.on('connect', () => {
+            console.log('Successfully connected to server:', serverUrl);
+        });
 
-    // Whenever the server emits 'user joined', log it in the chat body
-    socket.on('user joined', (data) => {
-        log(data.username + ' joined');
-    });
-    // Whenever the server emits 'user left', log it in the chat body
-    socket.on('user left', (data) => {
-        log(data.username + ' left');
-    });
-    socket.on('reconnect', () => {
-        log('you have been reconnected');
-        socket.emit('join', room);
-    });
-    socket.on('login', (data) => {
-    });
-    socket.on('deactivate_comment_control', (data) => {
-    });
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            console.error('Failed to connect to:', serverUrl);
+        });
 
-    socket.on("disconnectPeer", () => {
-        peerConnection.close();
-    });
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from server:', reason);
+            log('you have been disconnected: ' + reason);
+        });
+
+        socket.on('you_are_connected', function () {
+            // 部屋名を指定してジョインする．
+            socket.emit('join', room);
+        });
+
+        socket.on('comment', newComment);
+
+        // Whenever the server emits 'user joined', log it in the chat body
+        socket.on('user joined', (data) => {
+            log(data.username + ' joined');
+            // addParticipantsMessage(data);
+        });
+
+        // Whenever the server emits 'user left', log it in the chat body
+        socket.on('user left', (data) => {
+            log(data.username + ' left');
+            // removeChatTyping(data);
+            // addParticipantsMessage(data);
+        });
+
+        socket.on('reconnect', () => {
+            log('you have been reconnected');
+            socket.emit('join', room);
+        });
+
+        socket.on('login', (data) => {
+            console.log("you have been connected to " + room);
+            //isConnected = true;
+            // Display the welcome message
+            // addParticipantsMessage(data);
+        });
+
+        socket.on("deactivate_comment_control", (data) => {
+            g_flg_deactivate_comment_control = data.control;
+        });
+
+        socket.on("disconnectPeer", () => {
+            if (typeof peerConnection !== 'undefined') {
+                peerConnection.close();
+            }
+        });
+    }
+
+    connectSocket();
 
     window.onunload = window.onbeforeunload = () => {
-        socket.close();
+        if (socket) {
+            socket.close();
+        }
     };
 
 
