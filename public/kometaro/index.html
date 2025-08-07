@@ -98,6 +98,7 @@
                 Assistant</span></p>
 
 
+
         <div class="row">
             <div class="col-12">
                 <div class="card mb-3">
@@ -124,21 +125,31 @@
 
                         <div class="card border-info mb-3">
                             <div class="card-header bg-info bg-opacity-10">
-                                <h6 class="mb-0">AI設定</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">AI設定</h6>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                            id="checkbox_auto_response" checked>
+                                        <label class="form-check-label" for="checkbox_auto_response"
+                                            id="label_auto_response">
+                                            「米太郎」を含むメッセージに自動応答
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="input-group mb-3">
-                                    <span class="input-group-text">AI 名前</span>
+                                    <span class="input-group-text">AIアシスタント名</span>
                                     <input class="form-control" type="text" id="text_ai_name" value="米太郎">
                                 </div>
 
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">文字移動方向</span>
                                     <select class="form-select" id="select_text_direction">
-                                        <option value="still" selected>静止</option>
+                                        <option value="still">静止</option>
                                         <option value="up">↑</option>
                                         <option value="down">↓</option>
-                                        <option value="left">←</option>
+                                        <option value="left" selected>←</option>
                                         <option value="right">→</option>
                                     </select>
                                     <span class="input-group-text">文字色</span>
@@ -165,11 +176,76 @@
                             </div>
                         </div>
 
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="checkbox_auto_response" checked>
-                            <label class="form-check-label" for="checkbox_auto_response" id="label_auto_response">
-                                「米太郎」を含むメッセージに自動応答
-                            </label>
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h6 class="mb-0">音声認識</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">マイク選択</span>
+                                    <select class="form-select" id="select_microphone">
+                                        <option value="">マイクを選択してください</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" id="button_refresh_mics">更新</button>
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">言語</span>
+                                    <select class="form-select" id="select_speech_language">
+                                        <option value="ja-JP">日本語</option>
+                                        <option value="en-US">English (US)</option>
+                                        <option value="en-GB">English (UK)</option>
+                                        <option value="zh-CN">中文 (简体)</option>
+                                        <option value="ko-KR">한국어</option>
+                                    </select>
+                                </div>
+
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-success" id="button_start_speech">
+                                        <i class="bi bi-mic"></i> 音声認識開始
+                                    </button>
+                                    <button class="btn btn-danger" id="button_stop_speech" disabled>
+                                        <i class="bi bi-mic-mute"></i> 停止
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="button_clear_speech">
+                                        <i class="bi bi-trash"></i> クリア
+                                    </button>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="textarea_speech_result" class="form-label">認識結果</label>
+                                    <textarea class="form-control" id="textarea_speech_result" rows="4"
+                                        placeholder="音声認識の結果がここに表示されます" readonly></textarea>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_continuous_speech">
+                                    <label class="form-check-label" for="checkbox_continuous_speech">
+                                        連続認識モード
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_send_speech">
+                                    <label class="form-check-label" for="checkbox_auto_send_speech">
+                                        認識結果を自動でAIに送信
+                                    </label>
+                                </div>
+
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">会話履歴保存数</span>
+                                    <input type="number" class="form-control" id="input_conversation_history_limit"
+                                        value="50" min="0" max="200" style="max-width: 100px;">
+                                    <span class="input-group-text">件</span>
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                        id="button_clear_history">履歴クリア</button>
+                                </div>
+
+                                <div class="text-muted small">
+                                    <i class="bi bi-info-circle"></i>
+                                    音声認識にはHTTPS接続またはlocalhost環境が必要です
+                                </div>
+                            </div>
                         </div>
 
                         <div class="card border-warning mb-3">
@@ -252,12 +328,22 @@
         let autoPostingTimer = null;
         let lmStudioUrl = 'http://127.0.0.1:1234/v1';
         let aiName = '米太郎';
-        let aiTextDirection = 'still';
+        let aiTextDirection = 'left';
         let aiTextColor = '#FFD700';
         let roomName = '';
         let postingIntervalMin = 2; // 分
         let postingIntervalMax = 8; // 分
         let postingStyle = 'mixed';
+
+        // 音声認識関連の変数
+        let speechRecognition = null;
+        let isRecognizing = false;
+        let recognitionLanguage = 'ja-JP';
+        let isContinuous = false;
+        let isAutoSendSpeech = false;
+        let selectedMicrophoneId = null;
+        let conversationHistory = []; // 会話履歴を保存
+        let conversationHistoryLimit = 50; // 履歴保存数の上限
 
         // DOM要素
         const statusIndicator = document.getElementById('status-indicator');
@@ -283,6 +369,19 @@
         const spanIntervalMax = document.getElementById('span_interval_max');
         const selectPostingStyle = document.getElementById('select_posting_style');
         const buttonTestAutoPosting = document.getElementById('button_test_auto_posting');
+
+        // 音声認識関連のDOM要素
+        const selectMicrophone = document.getElementById('select_microphone');
+        const buttonRefreshMics = document.getElementById('button_refresh_mics');
+        const selectSpeechLanguage = document.getElementById('select_speech_language');
+        const buttonStartSpeech = document.getElementById('button_start_speech');
+        const buttonStopSpeech = document.getElementById('button_stop_speech');
+        const buttonClearSpeech = document.getElementById('button_clear_speech');
+        const textareaSpeechResult = document.getElementById('textarea_speech_result');
+        const checkboxContinuousSpeech = document.getElementById('checkbox_continuous_speech');
+        const checkboxAutoSendSpeech = document.getElementById('checkbox_auto_send_speech');
+        const inputConversationHistoryLimit = document.getElementById('input_conversation_history_limit');
+        const buttonClearHistory = document.getElementById('button_clear_history');
 
         // URL パラメータを取得してルーム名を設定
         function getURLParams() {
@@ -523,7 +622,244 @@
             } catch (error) {
                 addLog(`テスト投稿エラー: ${error.message}`, 'error');
             }
-        }        // LM Studio 接続テスト
+        }
+
+        // マイクデバイス一覧を取得
+        async function refreshMicrophones() {
+            try {
+                // マイクへのアクセス許可を要求
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop()); // ストリームを停止
+
+                // デバイス一覧を取得
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+                // セレクトボックスをクリア
+                selectMicrophone.innerHTML = '<option value="">デフォルトマイク</option>';
+
+                // マイクデバイスを追加
+                audioInputs.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `マイク ${device.deviceId.substring(0, 8)}`;
+                    selectMicrophone.appendChild(option);
+                });
+
+                addLog(`${audioInputs.length}個のマイクデバイスを検出しました`, 'info');
+
+            } catch (error) {
+                addLog(`マイクアクセスエラー: ${error.message}`, 'error');
+                alert('マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。');
+            }
+        }
+
+        // Web Speech APIの初期化
+        function initializeSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                addLog('このブラウザは音声認識をサポートしていません', 'error');
+                buttonStartSpeech.disabled = true;
+                return false;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            speechRecognition = new SpeechRecognition();
+
+            // 基本設定
+            speechRecognition.continuous = false; // 初期は単発モード
+            speechRecognition.interimResults = true; // 途中結果も表示
+            speechRecognition.maxAlternatives = 1;
+            speechRecognition.lang = recognitionLanguage;
+
+            // イベントリスナー設定
+            speechRecognition.onstart = function () {
+                isRecognizing = true;
+                buttonStartSpeech.disabled = true;
+                buttonStopSpeech.disabled = false;
+                addLog('音声認識を開始しました', 'info');
+            };
+
+            speechRecognition.onresult = function (event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // テキストエリアに結果を表示
+                if (finalTranscript) {
+                    const currentText = textareaSpeechResult.value;
+                    const newText = currentText ? currentText + '\n' + finalTranscript : finalTranscript;
+                    textareaSpeechResult.value = newText;
+                    textareaSpeechResult.scrollTop = textareaSpeechResult.scrollHeight;
+
+                    addLog(`音声認識結果: ${finalTranscript}`, 'info');
+
+                    // 会話履歴にユーザー発言を追加
+                    addToConversationHistory('user', finalTranscript);
+
+                    // 自動送信が有効な場合はAIに送信
+                    if (isAutoSendSpeech && finalTranscript.trim()) {
+                        setTimeout(async () => {
+                            try {
+                                const aiResponse = await sendToLMStudio(finalTranscript);
+                                setTimeout(() => {
+                                    sendComment(aiResponse);
+                                    // AIの応答も会話履歴に追加
+                                    addToConversationHistory('assistant', aiResponse);
+                                }, 500);
+                            } catch (error) {
+                                addLog(`音声認識結果の自動送信エラー: ${error.message}`, 'error');
+                            }
+                        }, 1000);
+                    }
+                }
+
+                // 途中結果をプレースホルダーに表示
+                if (interimTranscript) {
+                    textareaSpeechResult.placeholder = `認識中: ${interimTranscript}`;
+                } else {
+                    textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
+                }
+            };
+
+            speechRecognition.onerror = function (event) {
+                addLog(`音声認識エラー: ${event.error}`, 'error');
+
+                // 回復可能なエラーかどうかを判定
+                const recoverableErrors = ['network', 'audio-capture', 'service-not-allowed'];
+                const isRecoverable = recoverableErrors.includes(event.error);
+
+                resetSpeechRecognition();
+
+                // 連続認識モードで回復可能なエラーの場合は自動再開
+                if (isContinuous && isRecoverable) {
+                    addLog('ネットワークエラーまたは音声取得エラーのため、3秒後に音声認識を再開します...', 'info');
+                    setTimeout(() => {
+                        if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                            addLog('音声認識を自動再開しています...', 'info');
+                            startSpeechRecognition();
+                        }
+                    }, 3000); // 3秒待ってから再開
+                } else if (!isRecoverable) {
+                    // 回復不可能なエラーの場合は連続モードを停止
+                    addLog('回復不可能なエラーのため、連続認識モードを停止します', 'error');
+                    isContinuous = false;
+                    checkboxContinuousSpeech.checked = false;
+                }
+            };
+
+            speechRecognition.onend = function () {
+                resetSpeechRecognition();
+
+                // 連続モードの場合は自動的に再開
+                if (isContinuous && isRecognizing) {
+                    setTimeout(() => {
+                        startSpeechRecognition();
+                    }, 500);
+                }
+            };
+
+            return true;
+        }
+
+        // 音声認識のリセット
+        function resetSpeechRecognition() {
+            isRecognizing = false;
+            buttonStartSpeech.disabled = false;
+            buttonStopSpeech.disabled = true;
+            textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
+        }
+
+        // 音声認識開始
+        function startSpeechRecognition() {
+            if (!speechRecognition) {
+                if (!initializeSpeechRecognition()) {
+                    return;
+                }
+            }
+
+            // 設定を更新
+            speechRecognition.lang = recognitionLanguage;
+            speechRecognition.continuous = isContinuous;
+            speechRecognition.interimResults = true; // 途中結果の表示を確実に有効化
+            speechRecognition.maxAlternatives = 1;
+
+            try {
+                speechRecognition.start();
+            } catch (error) {
+                addLog(`音声認識開始エラー: ${error.message}`, 'error');
+                resetSpeechRecognition();
+            }
+        }
+
+        // 音声認識停止
+        function stopSpeechRecognition() {
+            if (speechRecognition && isRecognizing) {
+                speechRecognition.stop();
+                addLog('音声認識を停止しました', 'info');
+            }
+            resetSpeechRecognition();
+        }
+
+        // 音声認識結果クリア
+        function clearSpeechResult() {
+            textareaSpeechResult.value = '';
+            textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
+            addLog('音声認識結果をクリアしました', 'info');
+        }
+
+        // 会話履歴に追加
+        function addToConversationHistory(type, content) {
+            const timestamp = new Date().toISOString();
+            conversationHistory.push({
+                type: type, // 'user' または 'assistant'
+                content: content,
+                timestamp: timestamp
+            });
+
+            // 履歴数の上限を超えた場合、古いものから削除
+            if (conversationHistory.length > conversationHistoryLimit) {
+                conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+            }
+
+            addLog(`会話履歴に追加: [${type}] ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`, 'info');
+        }
+
+        // 会話履歴をクリア
+        function clearConversationHistory() {
+            conversationHistory = [];
+            addLog('会話履歴をクリアしました', 'info');
+        }
+
+        // 会話履歴をシステムプロンプトに組み込む
+        function buildSystemPromptWithHistory() {
+            let basePrompt = textareaSystemPrompt.value.trim();
+            if (basePrompt) {
+                basePrompt = basePrompt.replace(/{AI_NAME}/g, aiName);
+            }
+
+            // 会話履歴がある場合は追加
+            if (conversationHistory.length > 0) {
+                const historyText = conversationHistory.map(entry => {
+                    const role = entry.type === 'user' ? 'ユーザー' : 'アシスタント';
+                    return `${role}: ${entry.content}`;
+                }).join('\n');
+
+                const historyPrompt = `\n\n【過去の会話履歴】\n${historyText}\n\n上記の会話履歴を参考にして、文脈に沿った自然な返答をしてください。`;
+                return basePrompt + historyPrompt;
+            }
+
+            return basePrompt;
+        }
+
+        // LM Studio 接続テスト
         async function testLMStudioConnection() {
             const testUrl = textLmStudioUrl.value.trim();
             addLog(`LM Studio 接続テストを開始: ${testUrl}`, 'info');
@@ -548,10 +884,7 @@
                 addLog(`接続先: ${lmStudioUrl}`, 'info');
 
                 // システムプロンプトを取得し、AI名前のプレースホルダーを置換
-                let systemPrompt = textareaSystemPrompt.value.trim();
-                if (systemPrompt) {
-                    systemPrompt = systemPrompt.replace(/{AI_NAME}/g, aiName);
-                }
+                let systemPrompt = buildSystemPromptWithHistory();
 
                 // メッセージ配列を構築
                 const messages = [];
@@ -681,11 +1014,16 @@
                 addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
 
                 try {
+                    // 受信したコメントを会話履歴に追加
+                    addToConversationHistory('user', data.comment);
+
                     const aiResponse = await sendToLMStudio(data.comment);
 
                     // AI の応答をサーバに送信
                     setTimeout(() => {
                         sendComment(aiResponse);
+                        // AIの応答も会話履歴に追加
+                        addToConversationHistory('assistant', aiResponse);
                     }, 1000); // 1秒遅延
 
                 } catch (error) {
@@ -858,6 +1196,58 @@
             testAutoPosting();
         });
 
+        // 音声認識関連のイベントリスナー
+        buttonRefreshMics.addEventListener('click', () => {
+            refreshMicrophones();
+        });
+
+        selectMicrophone.addEventListener('change', () => {
+            selectedMicrophoneId = selectMicrophone.value;
+            addLog(`マイクを変更しました: ${selectMicrophone.options[selectMicrophone.selectedIndex].text}`, 'info');
+        });
+
+        selectSpeechLanguage.addEventListener('change', () => {
+            recognitionLanguage = selectSpeechLanguage.value;
+            addLog(`音声認識言語を変更しました: ${selectSpeechLanguage.options[selectSpeechLanguage.selectedIndex].text}`, 'info');
+        });
+
+        buttonStartSpeech.addEventListener('click', () => {
+            startSpeechRecognition();
+        });
+
+        buttonStopSpeech.addEventListener('click', () => {
+            stopSpeechRecognition();
+        });
+
+        buttonClearSpeech.addEventListener('click', () => {
+            clearSpeechResult();
+        });
+
+        checkboxContinuousSpeech.addEventListener('change', () => {
+            isContinuous = checkboxContinuousSpeech.checked;
+            addLog(`連続認識モード: ${isContinuous ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        checkboxAutoSendSpeech.addEventListener('change', () => {
+            isAutoSendSpeech = checkboxAutoSendSpeech.checked;
+            addLog(`自動送信モード: ${isAutoSendSpeech ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        inputConversationHistoryLimit.addEventListener('change', () => {
+            conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
+            addLog(`会話履歴保存数を${conversationHistoryLimit}件に変更しました`, 'info');
+
+            // 現在の履歴数が上限を超えている場合は削除
+            if (conversationHistory.length > conversationHistoryLimit) {
+                conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+                addLog(`履歴を${conversationHistoryLimit}件に調整しました`, 'info');
+            }
+        });
+
+        buttonClearHistory.addEventListener('click', () => {
+            clearConversationHistory();
+        });
+
         // 設定の変更を監視
         checkboxAutoResponse.addEventListener('change', () => {
             isAutoResponse = checkboxAutoResponse.checked;
@@ -885,10 +1275,19 @@
             // 自動応答ラベルを初期設定
             updateAutoResponseLabel();
 
+            // 音声認識の初期化
+            initializeSpeechRecognition();
+            refreshMicrophones();
+
+            // 会話履歴設定の初期化
+            conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
+
             addLog(`${aiName} AI アシスタントが起動しました`, 'info');
             addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
             addLog(`表示設定: ${selectTextDirection.options[selectTextDirection.selectedIndex].text}、色: ${aiTextColor}`, 'info');
             addLog('自動投稿機能で授業を盛り上げることができます', 'info');
+            addLog('音声認識機能が利用可能です', 'info');
+            addLog(`会話履歴機能が有効です（保存数: ${conversationHistoryLimit}件）`, 'info');
         });
 
         // ページが閉じられる前にソケットを閉じる
