@@ -35,22 +35,6 @@ const options = {
 }
 var io = socket(server, options);
 
-function isExistFile(file) {
-    try {
-        fs.statSync(file);
-        return true
-    } catch (err) {
-        if (err.code === 'ENOENT') return false
-    }
-}
-
-function escapeForCSV(input) {
-    if (/[",\n\t]/.test(input)) { // タブもエスケープの対象に追加
-        input = '"' + input.replace(/"/g, '""') + '"';
-    }
-    return input;
-}
-
 
 io.on('connection', (socket) => {
     console.log('connection', socket.id);
@@ -68,29 +52,6 @@ io.on('connection', (socket) => {
         console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
 
-        const filepath = "public/chatlogs/" + room + ".csv";
-        let timestamp;
-        let today = new Date();
-        if (isExistFile(filepath)) {
-            const stats = fs.statSync(filepath);
-
-            let d = new Date(stats.mtime);
-            let past_h = ((today - d) / (1000 * 60 * 60));
-            let past_s = ((today - d) / 1000);
-            // 最終更新から24時間経過してればファイル内容は削除
-            console.log("file timestamp: ", past_h);
-            if (past_h > 24) {
-                fs.unlinkSync(filepath);
-                console.log("24 h over: deleted ", filepath);
-            }
-            //            console.log(past_h, past_s);
-        }
-        // no exit, let's create
-        else {
-            // const fs = require('fs');
-            // fs.writeFileSync(filepath, '');
-            // console.log('create: ', filepath);
-        }
         // number_of_users = io.sockets.adapter.rooms[room].length;
         number_of_users = io.sockets.adapter.rooms.get(room).size;
         console.log(number_of_users)
@@ -133,44 +94,10 @@ io.on('connection', (socket) => {
         data.socketid = socket.id;
         // 全員に送信
         socket.to(room).emit('comment', data);
-
-        // ログを書き込む 現在は textableも使わないので、コメントアウトしちゃう
-        // const filepath = "public/chatlogs/" + room + ".csv";
-        // let timestamp;
-        // let today = new Date();
-        // timestamp = today;
-        // fs.appendFileSync(filepath, `${timestamp},${escapeForCSV(data.my_name)},${escapeForCSV(data.name_to)},${escapeForCSV(data.comment)},${data.id_comment},${data.flg_emoji},${data.flg_sound},${data.flg_speech},${socket.id}\n`);
-        // console.log(data.comment);
     });
 
     socket.on('delete comment', (data) => {
         socket.to(room).emit('delete comment', data);
-        //console.log(data);
-        // data.id の当たるCSVの行を削除する
-        const filepath = "public/chatlogs/" + room + ".csv";
-        let records = [];
-        if (isExistFile(filepath)) {
-            const csvs = fs.readFileSync(filepath, 'utf-8');
-            let rows = csvs.split('\n');
-            for (row of rows) {
-                let cols = row.split(',');
-                if (cols.length == 5) {
-                    if (cols[4] == data.id) {
-
-                    }
-                    else {
-                        records.push(row);
-                    }
-                }
-            }
-            fs.unlinkSync(filepath);
-            for (record of records) {
-                fs.appendFileSync(filepath, `${record}\n`);
-            }
-        }
-        else {
-            console.log("Error: no such file, ", filepath);
-        }
     });
 
     socket.on('stop streaming', () => {
