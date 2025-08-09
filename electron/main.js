@@ -15,8 +15,8 @@ const is_linux = process.platform === 'linux'
 const path = require('path');
 
 // サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
-// const USE_LOCAL_SERVER = false;
-const USE_LOCAL_SERVER = true;
+const USE_LOCAL_SERVER = false;
+// const USE_LOCAL_SERVER = true;
 
 // ベースURL設定
 function getBaseUrl() {
@@ -25,7 +25,8 @@ function getBaseUrl() {
         return 'http://localhost:3000';
     } else {
         console.log('Using production server');
-        return 'https://bbcommentable.herokuapp.com';
+        // return 'https://bbcommentable.herokuapp.com';
+        return 'https://commentable.onrender.com/';
     }
 }
 
