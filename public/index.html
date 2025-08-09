@@ -72,7 +72,7 @@
                     <input type="checkbox" class="btn-check" id="checkbox_deactivate_comment_control" autocomplete="off"
                         disabled>
                     <label class="btn btn-outline-warning" for="checkbox_deactivate_comment_control"
-                        id="label_comment_control"><i class="fas fa-redo-alt"></i></label><br>
+                        id="label_comment_control"><i class="bi bi-arrow-repeat"></i></label><br>
                     <!-- Button trigger modal -->
                     <button type="button" class="btn btn-outline-info" data-bs-toggle="modal"
                         data-bs-target="#staticBackdrop">
@@ -128,7 +128,7 @@
                                         disabled checked>
                                     <label class="btn btn-outline-warning"
                                         for="dummy_checkbox_deactivate_comment_control"
-                                        id="dummy_label_comment_control"><i class="fas fa-redo-alt"></i></label>
+                                        id="dummy_label_comment_control"><i class="bi bi-arrow-repeat"></i></label>
 
                                     <span
                                         data-i18n="continuous_comment_send_description_2">このように黄色で点灯しているときはコメントの連投が可能です。</span>
@@ -254,10 +254,10 @@
     </div>
 
 
-    <script src="p5.min.js"></script>
+    <!-- p5 依存除去済み -->
     <script src="/socket.io/socket.io.js"></script>
-
     <script src="utils.js"></script>
+    <script src="comment_app.js"></script>
     <script src="sketch.js"></script>
     <script src="clipboard.min.js"></script>
     <!-- 新しい外部 i18n 設定ファイルの読み込み -->
