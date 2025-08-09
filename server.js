@@ -1,8 +1,5 @@
 const fs = require('fs');
 
-
-var use_require_json = require('./api_key.json');
-var key = use_require_json.key;
 // ローカル開発環境では3000番ポート、本番環境では80番ポート
 var port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3000);
 var express = require('express');

@@ -7,4 +7,4 @@ out/
 forge.config.js
 /public/textable
 /public/master
-.DS_Store
+.DS_Store.DS_Store
