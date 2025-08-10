@@ -35,13 +35,21 @@ const options = {
 }
 var io = socket(server, options);
 
+// ルームごとの状態を保持するためのメタデータ格納オブジェクト
+// roomState[roomName] = { deactivate_comment_control: boolean }
+const roomState = {};
+
+function getRoomUserCount(roomName) {
+    const roomRef = io.sockets.adapter.rooms.get(roomName);
+    return roomRef ? roomRef.size : 0;
+}
+
 
 io.on('connection', (socket) => {
     console.log('connection', socket.id);
     var room = "";
     var room_master = "-master";
-    var flg_deactivate_comment_control = false;
-    var number_of_users = 0;
+    // ルームの制御フラグは roomState に集約（ソケット毎に保持しない）
 
     // 接続者に対してコネクションを作ったことを知らせるメッセージ
     socket.emit('you_are_connected');
@@ -52,15 +60,19 @@ io.on('connection', (socket) => {
         console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
 
-        // number_of_users = io.sockets.adapter.rooms[room].length;
-        number_of_users = io.sockets.adapter.rooms.get(room).size;
-        console.log(number_of_users)
+        // ルーム状態初期化
+        if (!roomState[room]) {
+            roomState[room] = { deactivate_comment_control: false };
+        }
+
+        const number_of_users = getRoomUserCount(room);
+        console.log('user count (join):', number_of_users);
 
         // we store the username in the socket session for this client
         socket.username = socket.id; //username;
         socket.emit('login', {
             numUsers: number_of_users,
-            deactivate_comment_control: io.sockets.adapter.rooms.get(room).flg_deactivate_comment_control
+            deactivate_comment_control: roomState[room].deactivate_comment_control
         });
         // echo globally (all clients) that a person has connected
         socket.to(room).emit('user joined', {
@@ -125,16 +137,14 @@ io.on('connection', (socket) => {
 
 
     socket.on('deactivate_comment_control', (data) => {
-        if (room == "") {
-            // 部屋名が初期値のままの場合(join接続されていない）は無視
-
+        if (room === "") {
+            return; // join 前は無視
         }
-        else {
-            flg_deactivate_comment_control = data.control;
-            socket.to(room).emit('deactivate_comment_control', data);
-            io.sockets.adapter.rooms.get(room).flg_deactivate_comment_control = flg_deactivate_comment_control;
+        if (!roomState[room]) {
+            roomState[room] = { deactivate_comment_control: false };
         }
-
+        roomState[room].deactivate_comment_control = data.control;
+        socket.to(room).emit('deactivate_comment_control', data);
     });
 
 
@@ -144,6 +154,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on("watcher", () => {
+        const number_of_users = getRoomUserCount(room);
         socket.to(broadcaster).emit("watcher", socket.id, number_of_users);
     });
     socket.on("offer", (id, message) => {
@@ -158,16 +169,13 @@ io.on('connection', (socket) => {
 
     // when the user disconnects.. perform this
     socket.on('disconnect', () => {
-
-        number_of_users--;
-
-        // echo globally that this client has left
+        // disconnect イベント時点ではアダプタから既に除去されているので再計算
+        const number_of_users = getRoomUserCount(room);
         socket.to(room).emit('user left', {
             username: socket.username,
             numUsers: number_of_users
         });
         socket.to(broadcaster).emit("disconnectPeer", socket.id, number_of_users);
-        socket.leave(room);
-        //console.log(socket.id, " has been leaved from ", room);
+        // 明示的 leave は不要（Socket.IO が処理）
     });
 });
