@@ -389,9 +389,9 @@ app.whenReady().then(() => {
                             }
                         },
                         {
-                            label: "米太郎AIアシスタント", click: async () => {
+                            label: "AIアシスタント", click: async () => {
                                 const { shell } = require('electron')
-                                await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
+                                await shell.openExternal(`${currentBaseUrl}assistant/?room=${g_room}&v=${version}`);
                             }
                         },
                         {

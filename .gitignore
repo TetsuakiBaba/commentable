@@ -9,3 +9,5 @@ forge.config.js
 /public/master
 .DS_Store
 */.DS_Store
+*ignore*
+load_test/

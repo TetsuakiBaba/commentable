@@ -40,12 +40,12 @@ function setup() {
     });
     // Whenever the server emits 'user joined', log it in the chat body
     socket.on('user joined', (data) => {
-        log(data.username + ' joined');
+        log(data.username + ' joined: ' + data.numUsers);
         document.getElementById('text_number_of_joined').value = String(data.numUsers);
     });
     // Whenever the server emits 'user left', log it in the chat body
     socket.on('user left', (data) => {
-        log(data.username + ' left');
+        log(data.username + ' left: ' + data.numUsers);
         document.getElementById('text_number_of_joined').value = String(data.numUsers);
     });
     socket.on('reconnect', () => {
@@ -59,12 +59,24 @@ function setup() {
             var room = prompt("部屋名を入力してください", 'test_room');
             socket.emit('join', room);
         }
+        // 再接続後に人数を明示的に問い合わせ
+        setTimeout(() => {
+            socket.emit('get user count');
+        }, 1000);
     });
     socket.on('login', (data) => {
         document.getElementById('text_number_of_joined').value = String(data.numUsers);
         flg_deactivate_comment_control = data.deactivate_comment_control;
         document.getElementById('checkbox_deactivate_comment_control').checked = flg_deactivate_comment_control;
         if (window.CommentApp) CommentApp.state.deactivateControl = flg_deactivate_comment_control;
+    });
+    // サーバからの定期同期イベントを受信
+    socket.on('sync user count', (data) => {
+        document.getElementById('text_number_of_joined').value = String(data.numUsers);
+    });
+    // 明示的な人数問い合わせの応答
+    socket.on('user count', (data) => {
+        document.getElementById('text_number_of_joined').value = String(data.numUsers);
     });
     socket.on('deactivate_comment_control', (data) => {
         document.getElementById('checkbox_deactivate_comment_control').checked = data.control;

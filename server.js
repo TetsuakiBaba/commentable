@@ -17,7 +17,8 @@ app.use((req, res, next) => {
     }
 });
 
-var server = app.listen(port);
+var server = app.listen(port, () => console.log('listening on', port));
+
 app.use(express.static('./public'));
 let broadcaster;
 var socket = require('socket.io');
@@ -27,7 +28,9 @@ const options = {
         origin: "*",
         methods: ["GET", "POST"],
         credentials: false
-    }
+    },
+    pingInterval: 15000, // サーバからのping間隔（ミリ秒）
+    pingTimeout: 10000   // pongが返らなければ切断（ミリ秒）
     //pingTimeout: 25000,
     //pingInterval: 5000,
     //transports: ['polling']
@@ -112,27 +115,8 @@ io.on('connection', (socket) => {
         socket.to(room).emit('delete comment', data);
     });
 
-    socket.on('stop streaming', () => {
-        socket.to(room_master).emit('stop streaming');
-    });
-
-    socket.on('telop', (data) => {
-        socket.to(room_master).emit('telop', data);
-    });
-
     socket.on('letter', (data) => {
         socket.to(room_master).emit('letter', data);
-    });
-
-    socket.on('display_clock', (data) => {
-        socket.to(room_master).emit('display_clock', data);
-    });
-
-    socket.on('glitch_effect', (data) => {
-        socket.to(room_master).emit('glitch_effect', data);
-    });
-    socket.on('toggleQR', (data) => {
-        socket.to(room_master).emit('toggleQR', data);
     });
 
 
@@ -145,26 +129,6 @@ io.on('connection', (socket) => {
         }
         roomState[room].deactivate_comment_control = data.control;
         socket.to(room).emit('deactivate_comment_control', data);
-    });
-
-
-    socket.on("broadcaster", () => {
-        broadcaster = socket.id;
-        socket.broadcast.emit("broadcaster");
-    });
-
-    socket.on("watcher", () => {
-        const number_of_users = getRoomUserCount(room);
-        socket.to(broadcaster).emit("watcher", socket.id, number_of_users);
-    });
-    socket.on("offer", (id, message) => {
-        socket.to(id).emit("offer", socket.id, message);
-    });
-    socket.on("answer", (id, message) => {
-        socket.to(id).emit("answer", socket.id, message);
-    });
-    socket.on("candidate", (id, message) => {
-        socket.to(id).emit("candidate", socket.id, message);
     });
 
     // when the user disconnects.. perform this
