@@ -77,7 +77,7 @@ function toggleQR(checked, position, room) {
     const qrCode = new QRCodeStyling({
         "width": qr_width,
         "height": qr_height,
-        "data": `https://bbcommentable.herokuapp.com/?room=${encodeURI(room)}&v=${version}`,
+        "data": `https://commentable.onrender.com/?room=${encodeURI(room)}&v=${version}`,
         "margin": qr_width / 15,
         "qrOptions": { "typeNumber": "0", "mode": "Byte", "errorCorrectionLevel": "Q" },
         "imageOptions": { "hideBackgroundDots": true, "imageSize": 0.4, "margin": 0 },
@@ -390,7 +390,7 @@ function startSocketConnection(room) {
     g_room_name = room;
 
     // 環境に応じたSocket.IO接続
-    let serverUrl = window.SOCKET_SERVER_URL || 'https://bbcommentable.herokuapp.com';
+    let serverUrl = window.SOCKET_SERVER_URL || 'https://commentable.onrender.com';
     console.log('Connecting to socket server:', serverUrl);
 
     // Socket.IOが読み込まれるまで待機

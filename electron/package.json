@@ -1,6 +1,6 @@
 {
   "name": "commentable-desktop",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {

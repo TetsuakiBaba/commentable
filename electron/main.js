@@ -403,7 +403,7 @@ app.whenReady().then(() => {
                         {
                             label: "アクセシブルスピーチトレーニング", click: async () => {
                                 const { shell } = require('electron')
-                                await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
+                                await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
                             }
                         },
 
