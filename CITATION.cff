@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "このプロジェクトを引用する際は、以下の情報を使用してください。"
+title: "Commentable"
+authors:
+  - given-names: Tetsuaki
+    family-names: Baba
+    email: baba@tmu.ac.jp
+    affiliation: Tokyo Metropolitan University
+    orcid: 'https://orcid.org/0000-0003-1792-881X'
+date-released: "2025-08-10"
+version: "1.5.3"
+repository-code: "https://github.com/TetsuakiBaba/commentable"
+license: "MIT"
