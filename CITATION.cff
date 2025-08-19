@@ -1,13 +1,30 @@
 cff-version: 1.2.0
-message: "このプロジェクトを引用する際は、以下の情報を使用してください。"
+message: "このプロジェクトを引用する際は、以下の論文を引用してください。"
 title: "Commentable"
 authors:
   - given-names: Tetsuaki
     family-names: Baba
     email: baba@tmu.ac.jp
     affiliation: Tokyo Metropolitan University
-    orcid: 'https://orcid.org/0000-0003-1792-881X'
+    orcid: "https://orcid.org/0000-0003-1792-881X"
 date-released: "2025-08-10"
 version: "1.5.3"
 repository-code: "https://github.com/TetsuakiBaba/commentable"
 license: "MIT"
+
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Baba
+      given-names: Tetsuaki
+  title: "音声リアクション・コメント読み上げ共有システムCommentableの開発と授業適用"
+  journal: "情報処理学会論文誌"
+  publisher: "情報処理学会"
+  year: 2022
+  month: 11
+  volume: 63
+  number: 11
+  pages: 1585-1594
+  url: "https://ipsj.ixsq.nii.ac.jp/api/records/222242"
+  abstract: >
+    Covid-19によって，多くの教育機関がオンライン授業への対応を余儀なくされた．対面授業とオンライン授業の比較は多くの研究がなされる一方で，オンライン授業では様々なデジタルツールの活用がなされる等，多様な取り組み方法が継続的に実践・検討されている．本稿では，著者が2020年度から開発を開始した音声リアクション・コメント読み上げ共有システムCommentableに対し，学習者による匿名の音声干渉（本稿では特に音声による学生と教員間のインタラクションを指す）機能を利用することで，一部授業では音声なしよりも音声付き投稿が多用されたことや，投稿ログとアンケート結果から授業への参画度向上が示されたことを報告する．一方で，音声干渉機能は200人規模の授業には不向きであるほか，小規模，中規模授業であっても教師および学習者同士が協調し本機能を活用する必要があることがアンケート結果から示された．
