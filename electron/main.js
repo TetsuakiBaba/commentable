@@ -120,8 +120,6 @@ app.whenReady().then(() => {
         app.dock.hide();
     }
 
-
-
     createWindow()
 
     let menu = Menu.buildFromTemplate(
