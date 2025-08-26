@@ -251,6 +251,18 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
         }
         return;
     }
+
+    // 自分で送信したhidden=100のコメントに対してもDOM作成
+    if (_hidden === 100) {
+        const selfCommentData = {
+            comment: _str_comment,
+            my_name: _str_my_name,
+            hidden: _hidden
+        };
+        // newComment関数を直接呼び出して同じDOM処理を実行
+        newComment(selfCommentData);
+    }
+
     clearTextBox();
 }
 
