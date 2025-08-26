@@ -20,7 +20,7 @@
             https://commentable.carrd.co/
         </a>
     </p>
-    <p class="small text-muted text-center">&copy; 2023 Tetsuaki Baba</p>
+    <p class="small text-muted text-center" id="copyright">&copy; 2025 Tetsuaki Baba</p>
 
     <script>
         window.addEventListener('blur', function () {
@@ -29,6 +29,13 @@
 
         function setVersion(version) {
             document.querySelector('#version').textContent = version;
+        }
+
+        function setCopyrightYear(year) {
+            // package.jsonからの年、または現在の年のうち大きい方を使用
+            const currentYear = new Date().getFullYear();
+            const displayYear = Math.max(parseInt(year), currentYear);
+            document.querySelector('#copyright').innerHTML = `&copy; ${displayYear} Tetsuaki Baba`;
         }
     </script>
 </body>

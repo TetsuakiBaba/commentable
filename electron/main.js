@@ -7,6 +7,7 @@ const prompt = require('electron-prompt');
 
 const packageJson = require('./package.json');
 const version = packageJson.version;
+const copyrightYear = packageJson.year;
 
 const is_windows = process.platform === 'win32'
 const is_mac = process.platform === 'darwin'
@@ -26,7 +27,7 @@ function getBaseUrl() {
     } else {
         console.log('Using production server');
         // return 'https://bbcommentable.herokuapp.com';
-        return 'https://commentable.onrender.com/';
+        return 'https://commentable.onrender.com';
     }
 }
 
@@ -198,11 +199,21 @@ app.whenReady().then(() => {
                     console.log('Server URL set in renderer process:', currentBaseUrl);
                 }).catch(console.error)
 
+            // 部屋名をレンダラープロセスに渡す
+            win.webContents.executeJavaScript(`window.ROOM_NAME = "${room}";`, true)
+                .then(result => {
+                    console.log('Room name set in renderer process:', room);
+                }).catch(console.error)
+
             var contextMenu = Menu.buildFromTemplate([
                 {
                     label: "投稿ページを開く", click: async () => {
-                        const { shell } = require('electron')
-                        await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                        try {
+                            const { shell } = require('electron')
+                            await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                        } catch (error) {
+                            console.error('Error opening post page:', error);
+                        }
                     }
                 },
                 {
@@ -388,20 +399,33 @@ app.whenReady().then(() => {
                         },
                         {
                             label: "AIアシスタント", click: async () => {
-                                const { shell } = require('electron')
-                                await shell.openExternal(`${currentBaseUrl}assistant/?room=${g_room}&v=${version}`);
+                                try {
+                                    console.log(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
+                                } catch (error) {
+                                    console.error('Error opening AI assistant:', error);
+                                }
                             }
                         },
                         {
                             label: "チャレンジブル", click: async () => {
-                                const { shell } = require('electron')
-                                await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                try {
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                } catch (error) {
+                                    console.error('Error opening challengeable:', error);
+                                }
                             }
                         },
                         {
                             label: "アクセシブルスピーチトレーニング", click: async () => {
-                                const { shell } = require('electron')
-                                await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
+                                try {
+                                    const { shell } = require('electron')
+                                    await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
+                                } catch (error) {
+                                    console.error('Error opening speech training:', error);
+                                }
                             }
                         },
 
@@ -446,11 +470,18 @@ app.whenReady().then(() => {
                                 .then(result => {
 
                                 }).catch(console.error);
+
+                            win_about.webContents.executeJavaScript(`setCopyrightYear("${copyrightYear}");`, true)
+                                .then(result => {
+
+                                }).catch(console.error);
                         });
                         // 以下を追加
                         win_about.webContents.setWindowOpenHandler(({ url }) => {
                             if (url.startsWith('http')) {
-                                shell.openExternal(url)
+                                shell.openExternal(url).catch(error => {
+                                    console.error('Error opening external URL:', error);
+                                });
                             }
                             return { action: 'deny' }
                         })
@@ -502,8 +533,12 @@ app.whenReady().then(() => {
                 var newContextMenu = Menu.buildFromTemplate([
                     {
                         label: "投稿ページを開く", click: async () => {
-                            const { shell } = require('electron')
-                            await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                            try {
+                                const { shell } = require('electron')
+                                await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                            } catch (error) {
+                                console.error('Error opening post page:', error);
+                            }
                         }
                     },
                     {
@@ -529,20 +564,32 @@ app.whenReady().then(() => {
                         submenu: [
                             {
                                 label: "米太郎AIアシスタント", click: async () => {
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
+                                    try {
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
+                                    } catch (error) {
+                                        console.error('Error opening Kometaro AI assistant:', error);
+                                    }
                                 }
                             },
                             {
                                 label: "チャレンジブル", click: async () => {
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                    try {
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                    } catch (error) {
+                                        console.error('Error opening challengeable:', error);
+                                    }
                                 }
                             },
                             {
                                 label: "アクセシブルスピーチトレーニング", click: async () => {
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
+                                    try {
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
+                                    } catch (error) {
+                                        console.error('Error opening speech training:', error);
+                                    }
                                 }
                             }
                         ]
