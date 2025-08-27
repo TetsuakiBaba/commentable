@@ -12,6 +12,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"
+        integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous"
+        async></script>
+
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
@@ -116,178 +120,223 @@
                             <button class="btn btn-outline-primary" id="button_connect">接続</button>
                         </div>
 
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">LM Studio URL</span>
-                            <input class="form-control" type="text" id="text_lm_studio_url"
-                                value="http://127.0.0.1:1234/v1">
-                            <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
-                        </div>
 
-                        <div class="card border-info mb-3">
-                            <div class="card-header bg-info bg-opacity-10">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">AI設定</h6>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch"
-                                            id="checkbox_auto_response" checked>
-                                        <label class="form-check-label" for="checkbox_auto_response"
-                                            id="label_auto_response">
-                                            「米太郎」を含むメッセージに自動応答
-                                        </label>
+                        <div class="row" data-masonry='{"percentPosition": true }'>
+                            <div class="col-md-6">
+                                <div class="card border-info mb-3">
+                                    <div class="card-header bg-info bg-opacity-10">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">AI設定</h6>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="checkbox_auto_response" checked>
+                                                <label class="form-check-label" for="checkbox_auto_response"
+                                                    id="label_auto_response">
+                                                    「米太郎」を含むコメントに自動応答
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">LM Studio URL</span>
+                                            <input class="form-control" type="text" id="text_lm_studio_url"
+                                                value="http://127.0.0.1:1234/v1">
+                                            <button class="btn btn-outline-secondary"
+                                                id="button_test_lm_studio">テスト</button>
+                                        </div>
+
+
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">AIアシスタント名</span>
+                                            <input class="form-control" type="text" id="text_ai_name"
+                                                placeholder="AIアシスタント名を入力">
+                                        </div>
+
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">文字移動方向</span>
+                                            <select class="form-select" id="select_text_direction">
+                                                <option value="still">静止</option>
+                                                <option value="up">↑</option>
+                                                <option value="down">↓</option>
+                                                <option value="left" selected>←</option>
+                                                <option value="right">→</option>
+                                            </select>
+                                            <span class="input-group-text">文字色</span>
+                                            <input type="color" class="form-control form-control-color"
+                                                id="input_text_color" value="#FFD700" title="文字色を選択">
+                                        </div>
+
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">キャラクター設定</span>
+                                            <select class="form-select" id="select_prompt_preset">
+                                                <option value="friendly" selected>親しみやすいアシスタント</option>
+                                                <option value="teacher">先生役</option>
+                                                <option value="comedian">お笑い芸人</option>
+                                                <option value="expert">専門家</option>
+                                                <option value="supporter">応援者</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="textarea_system_prompt"
+                                                class="form-label">事前知識・システムプロンプト</label>
+                                            <textarea class="form-control" id="textarea_system_prompt" rows="3"
+                                                placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">AIアシスタント名</span>
-                                    <input class="form-control" type="text" id="text_ai_name" value="米太郎">
-                                </div>
-
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">文字移動方向</span>
-                                    <select class="form-select" id="select_text_direction">
-                                        <option value="still">静止</option>
-                                        <option value="up">↑</option>
-                                        <option value="down">↓</option>
-                                        <option value="left" selected>←</option>
-                                        <option value="right">→</option>
-                                    </select>
-                                    <span class="input-group-text">文字色</span>
-                                    <input type="color" class="form-control form-control-color" id="input_text_color"
-                                        value="#FFD700" title="文字色を選択">
-                                </div>
-
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">キャラクター設定</span>
-                                    <select class="form-select" id="select_prompt_preset">
-                                        <option value="friendly" selected>親しみやすいアシスタント</option>
-                                        <option value="teacher">先生役</option>
-                                        <option value="comedian">お笑い芸人</option>
-                                        <option value="expert">専門家</option>
-                                        <option value="supporter">応援者</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="textarea_system_prompt" class="form-label">事前知識・システムプロンプト</label>
-                                    <textarea class="form-control" id="textarea_system_prompt" rows="3"
-                                        placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card border-success mb-3">
-                            <div class="card-header bg-success bg-opacity-10">
-                                <h6 class="mb-0">音声認識</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">マイク選択</span>
-                                    <select class="form-select" id="select_microphone">
-                                        <option value="">マイクを選択してください</option>
-                                    </select>
-                                    <button class="btn btn-outline-secondary" id="button_refresh_mics">更新</button>
-                                </div>
-
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">言語</span>
-                                    <select class="form-select" id="select_speech_language">
-                                        <option value="ja-JP">日本語</option>
-                                        <option value="en-US">English (US)</option>
-                                        <option value="en-GB">English (UK)</option>
-                                        <option value="zh-CN">中文 (简体)</option>
-                                        <option value="ko-KR">한국어</option>
-                                    </select>
-                                </div>
-
-                                <div class="d-flex gap-2 mb-3">
-                                    <button class="btn btn-success" id="button_start_speech">
-                                        <i class="bi bi-mic"></i> 音声認識開始
-                                    </button>
-                                    <button class="btn btn-danger" id="button_stop_speech" disabled>
-                                        <i class="bi bi-mic-mute"></i> 停止
-                                    </button>
-                                    <button class="btn btn-outline-secondary" id="button_clear_speech">
-                                        <i class="bi bi-trash"></i> クリア
-                                    </button>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="textarea_speech_result" class="form-label">認識結果</label>
-                                    <textarea class="form-control" id="textarea_speech_result" rows="4"
-                                        placeholder="音声認識の結果がここに表示されます" readonly></textarea>
-                                </div>
-
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="checkbox_continuous_speech">
-                                    <label class="form-check-label" for="checkbox_continuous_speech">
-                                        連続認識モード
-                                    </label>
-                                </div>
-
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_send_speech">
-                                    <label class="form-check-label" for="checkbox_auto_send_speech">
-                                        認識結果を自動でAIに送信
-                                    </label>
-                                </div>
-
-                                <div class="input-group mb-2">
-                                    <span class="input-group-text">会話履歴保存数</span>
-                                    <input type="number" class="form-control" id="input_conversation_history_limit"
-                                        value="50" min="0" max="200" style="max-width: 100px;">
-                                    <span class="input-group-text">件</span>
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                        id="button_clear_history">履歴クリア</button>
-                                </div>
-
-                                <div class="text-muted small">
-                                    <i class="bi bi-info-circle"></i>
-                                    音声認識にはHTTPS接続またはlocalhost環境が必要です
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card border-warning mb-3">
-                            <div class="card-header bg-warning bg-opacity-10">
-                                <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
-                                    <label class="form-check-label" for="checkbox_auto_posting">
-                                        定期的に自動でコメントを投稿
-                                    </label>
-                                </div>
-
-                                <div class="row mb-2">
-                                    <div class="col-6">
-                                        <label for="range_posting_interval_min" class="form-label">最小間隔（分）</label>
-                                        <input type="range" class="form-range" id="range_posting_interval_min" min="1"
-                                            max="10" value="2">
-                                        <small class="text-muted"><span id="span_interval_min">2</span>分</small>
+                            <div class="col-md-6">
+                                <div class="card border-success mb-3">
+                                    <div class="card-header bg-success bg-opacity-10">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">音声認識</h6>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox"
+                                                    id="checkbox_ai_name_auto_response" checked>
+                                                <label class="form-check-label small"
+                                                    for="checkbox_ai_name_auto_response"
+                                                    id="label_ai_name_auto_response">
+                                                    「米太郎」を含む音声認識を自動でAIに送信
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <label for="range_posting_interval_max" class="form-label">最大間隔（分）</label>
-                                        <input type="range" class="form-range" id="range_posting_interval_max" min="5"
-                                            max="20" value="8">
-                                        <small class="text-muted"><span id="span_interval_max">8</span>分</small>
+                                    <div class="card-body">
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">マイク選択</span>
+                                            <select class="form-select" id="select_microphone">
+                                                <option value="">マイクを選択してください</option>
+                                            </select>
+                                            <button class="btn btn-outline-secondary"
+                                                id="button_refresh_mics">更新</button>
+                                        </div>
+
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">言語</span>
+                                            <select class="form-select" id="select_speech_language">
+                                                <option value="ja-JP">日本語</option>
+                                                <option value="en-US">English (US)</option>
+                                                <option value="en-GB">English (UK)</option>
+                                                <option value="zh-CN">中文 (简体)</option>
+                                                <option value="ko-KR">한국어</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="d-flex gap-2 mb-3">
+                                            <button class="btn btn-success" id="button_start_speech">
+                                                <i class="bi bi-mic"></i> 音声認識開始
+                                            </button>
+                                            <button class="btn btn-danger" id="button_stop_speech" disabled>
+                                                <i class="bi bi-mic-mute"></i> 停止
+                                            </button>
+                                            <button class="btn btn-outline-secondary" id="button_clear_speech">
+                                                <i class="bi bi-trash"></i> クリア
+                                            </button>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="textarea_speech_result" class="form-label">認識結果</label>
+                                            <textarea class="form-control" id="textarea_speech_result" rows="4"
+                                                placeholder="音声認識の結果がここに表示されます" readonly></textarea>
+                                        </div>
+
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox"
+                                                id="checkbox_continuous_speech" checked>
+                                            <label class="form-check-label" for="checkbox_continuous_speech">
+                                                連続認識モード
+                                            </label>
+                                        </div>
+
+                                        <!-- 自動送信関連のUIは削除されました -->
+
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">会話履歴保存数</span>
+                                            <input type="number" class="form-control"
+                                                id="input_conversation_history_limit" value="50" min="0" max="200"
+                                                style="max-width: 100px;">
+                                            <span class="input-group-text">件</span>
+                                            <span class="input-group-text bg-light">現在: <span
+                                                    id="span_current_history_count">0</span>件</span>
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                id="button_clear_history">履歴クリア</button>
+                                        </div>
+
+                                        <div class="text-muted small">
+                                            <i class="bi bi-info-circle"></i>
+                                            音声認識にはHTTPS接続またはlocalhost環境が必要です
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-warning mb-3">
+                                    <div class="card-header bg-warning bg-opacity-10">
+                                        <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
+                                            <label class="form-check-label" for="checkbox_auto_posting">
+                                                定期的に自動でコメントを投稿
+                                            </label>
+                                        </div>
 
-                                <div class="mb-2">
-                                    <label for="select_posting_style" class="form-label">投稿スタイル</label>
-                                    <select class="form-select form-select-sm" id="select_posting_style">
-                                        <option value="mixed">ミックス（授業関連＋雑談）</option>
-                                        <option value="academic">授業関連のみ</option>
-                                        <option value="casual">雑談のみ</option>
-                                        <option value="reaction">リアクションのみ</option>
-                                    </select>
+                                        <div class="row mb-2">
+                                            <div class="col-6">
+                                                <label for="range_posting_interval_min"
+                                                    class="form-label">最小間隔（分）</label>
+                                                <input type="range" class="form-range" id="range_posting_interval_min"
+                                                    min="1" max="10" value="2">
+                                                <small class="text-muted"><span id="span_interval_min">2</span>分</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="range_posting_interval_max"
+                                                    class="form-label">最大間隔（分）</label>
+                                                <input type="range" class="form-range" id="range_posting_interval_max"
+                                                    min="5" max="20" value="8">
+                                                <small class="text-muted"><span id="span_interval_max">8</span>分</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <label for="select_posting_style" class="form-label">投稿スタイル</label>
+                                            <select class="form-select form-select-sm" id="select_posting_style">
+                                                <option value="mixed">ミックス（授業関連＋雑談）</option>
+                                                <option value="academic">授業関連のみ</option>
+                                                <option value="casual">雑談のみ</option>
+                                                <option value="reaction">リアクションのみ</option>
+                                            </select>
+                                        </div>
+
+                                        <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
+                                            テスト投稿
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
-                                    テスト投稿
-                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- コメントログカード -->
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">コメントログ</h6>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-2"
+                                                id="button_download_comments">
+                                                <i class="bi bi-download"></i> ダウンロード
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments">
+                                                <i class="bi bi-trash"></i> クリア
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <textarea id="textarea_comment_log" readonly class="form-control" rows="6"
+                                            placeholder="受信したコメントがここに表示されます"></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -302,6 +351,8 @@
                         <button class="btn btn-sm btn-outline-secondary mt-2" id="button_clear_log">ログクリア</button>
                     </div>
                 </div>
+
+
             </div>
         </div>
 
@@ -316,7 +367,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="../p5.min.js"></script>
+    <!-- <script src="../p5.min.js"></script> -->
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
@@ -327,7 +378,7 @@
         let isAutoPosting = false;
         let autoPostingTimer = null;
         let lmStudioUrl = 'http://127.0.0.1:1234/v1';
-        let aiName = '米太郎';
+        let aiName = localStorage.getItem('aiAssistantName') || '米太郎';
         let aiTextDirection = 'left';
         let aiTextColor = '#FFD700';
         let roomName = '';
@@ -339,11 +390,14 @@
         let speechRecognition = null;
         let isRecognizing = false;
         let recognitionLanguage = 'ja-JP';
-        let isContinuous = false;
-        let isAutoSendSpeech = false;
+        let isContinuous = true;
+        // isAutoSendSpeech removed per user request
+        let isAiNameAutoResponse = true; // AIアシスタント名を含む音声認識の自動応答
         let selectedMicrophoneId = null;
         let conversationHistory = []; // 会話履歴を保存
         let conversationHistoryLimit = 50; // 履歴保存数の上限
+        let commentLog = []; // コメントログを保存
+        let commentCount = 0; // 投稿されたコメント数をカウント
 
         // DOM要素
         const statusIndicator = document.getElementById('status-indicator');
@@ -379,9 +433,16 @@
         const buttonClearSpeech = document.getElementById('button_clear_speech');
         const textareaSpeechResult = document.getElementById('textarea_speech_result');
         const checkboxContinuousSpeech = document.getElementById('checkbox_continuous_speech');
-        const checkboxAutoSendSpeech = document.getElementById('checkbox_auto_send_speech');
+        const checkboxAiNameAutoResponse = document.getElementById('checkbox_ai_name_auto_response');
+        const labelAiNameAutoResponse = document.getElementById('label_ai_name_auto_response');
         const inputConversationHistoryLimit = document.getElementById('input_conversation_history_limit');
+        const spanCurrentHistoryCount = document.getElementById('span_current_history_count');
         const buttonClearHistory = document.getElementById('button_clear_history');
+
+        // コメントログ関連のDOM要素
+        const textareaCommentLog = document.getElementById('textarea_comment_log');
+        const buttonDownloadComments = document.getElementById('button_download_comments');
+        const buttonClearComments = document.getElementById('button_clear_comments');
 
         // URL パラメータを取得してルーム名を設定
         function getURLParams() {
@@ -391,6 +452,111 @@
                 result[key] = value;
             }
             return result;
+        }
+
+        // AIアシスタント名をlocalStorageに保存
+        function saveAiName(name) {
+            if (name && name.trim() !== '') {
+                localStorage.setItem('aiAssistantName', name.trim());
+                addLog(`AI名「${name.trim()}」を保存しました`, 'info');
+            }
+        }
+
+        // AIアシスタント名をlocalStorageから取得
+        function loadAiName() {
+            const savedName = localStorage.getItem('aiAssistantName');
+            if (savedName) {
+                addLog(`保存されたAI名「${savedName}」を読み込みました`, 'info');
+                return savedName;
+            }
+            return '米太郎'; // デフォルト値
+        }
+
+        // 会話履歴を文字列として整形
+        function formatConversationHistory() {
+            if (conversationHistory.length === 0) {
+                return "これまでの会話履歴はありません。";
+            }
+            const recentHistory = conversationHistory; // 全ての履歴を使用
+            const formattedHistory = recentHistory.map(item => {
+                const time = new Date(item.timestamp).toLocaleTimeString();
+                if (item.type === 'user') {
+                    return `[${time}] ${item.content}`;
+                } else {
+                    return `[${time}] ${aiName}: ${item.content}`;
+                }
+            }).join('\n');
+
+            return `これまでの会話履歴:\n${formattedHistory}`;
+        }
+
+        // コメントログに追加
+        function addToCommentLog(data) {
+            const timestamp = new Date();
+            commentCount++; // コメント数をインクリメント
+
+            // 形式: [2025:08:26:21:06:19-0005] 😮 [sound][匿名]
+            const year = timestamp.getFullYear();
+            const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+            const day = String(timestamp.getDate()).padStart(2, '0');
+            const hour = String(timestamp.getHours()).padStart(2, '0');
+            const minute = String(timestamp.getMinutes()).padStart(2, '0');
+            const second = String(timestamp.getSeconds()).padStart(2, '0');
+            const commentCountStr = String(commentCount).padStart(4, '0');
+            const timeStr = `${year}:${month}:${day}:${hour}:${minute}:${second}-${commentCountStr}`;
+
+            let content = '';
+            let extraInfo = '';
+
+            // コメント内容の処理
+            if (data.flg_emoji && data.comment) {
+                // 絵文字の場合
+                content = data.comment;
+                extraInfo = data.flg_sound ? '[sound]' : '';
+            } else if (data.comment) {
+                // 通常のテキストコメントの場合
+                content = data.comment;
+            }
+
+            const logEntry = `[${timeStr}] ${content} ${extraInfo}[${data.my_name || data.name || '匿名'}]`.trim();
+            commentLog.push(logEntry);
+
+            // textareaを更新
+            textareaCommentLog.value = commentLog.join('\n');
+            textareaCommentLog.scrollTop = textareaCommentLog.scrollHeight;
+        }
+
+        // コメントログをクリア
+        function clearCommentLog() {
+            commentLog = [];
+            commentCount = 0; // コメント数もリセット
+            textareaCommentLog.value = '';
+            addLog('コメントログをクリアしました', 'info');
+        }
+
+        // コメントログをダウンロード
+        function downloadCommentLog() {
+            if (commentLog.length === 0) {
+                addLog('ダウンロードするコメントがありません', 'info');
+                return;
+            }
+
+            const currentTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `comment-log-${currentTime}.txt`;
+            const content = commentLog.join('\n');
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            addLog(`コメントログをダウンロードしました: ${filename}`, 'info');
         }
 
         // ログ出力関数
@@ -460,7 +626,12 @@
 
             const stylePrompts = prompts[style] || prompts.mixed;
             const randomPrompt = stylePrompts[Math.floor(Math.random() * stylePrompts.length)];
-            return randomPrompt;
+
+            // 会話履歴を含めた完全なプロンプトを生成
+            const historyContext = formatConversationHistory();
+            const fullPrompt = `${historyContext}\n\n現在の指示: ${randomPrompt}\n\n※これまでの会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。`;
+            console.log(fullPrompt);
+            return fullPrompt;
         }
 
         // リアクション専用の送信関数
@@ -522,6 +693,8 @@
 
             if (socket && isConnected) {
                 socket.emit('comment', data);
+                // リアクションもコメントログに追加
+                addToCommentLog(data);
             }
         }
 
@@ -545,6 +718,8 @@
                     // 投稿
                     setTimeout(() => {
                         sendComment(aiResponse);
+                        // 自動投稿されたコメントも会話履歴に追加
+                        addToConversationHistory('assistant', aiResponse);
                         addLog(`自動投稿完了: ${aiResponse}`, 'info');
                     }, 500);
                 }
@@ -704,8 +879,10 @@
                     // 会話履歴にユーザー発言を追加
                     addToConversationHistory('user', finalTranscript);
 
-                    // 自動送信が有効な場合はAIに送信
-                    if (isAutoSendSpeech && finalTranscript.trim()) {
+                    // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
+                    if (isAiNameAutoResponse && finalTranscript.includes(aiName)) {
+                        addLog(`音声認識で「${aiName}」を検出しました。AI処理を開始します。`, 'info');
+
                         setTimeout(async () => {
                             try {
                                 const aiResponse = await sendToLMStudio(finalTranscript);
@@ -713,12 +890,15 @@
                                     sendComment(aiResponse);
                                     // AIの応答も会話履歴に追加
                                     addToConversationHistory('assistant', aiResponse);
+                                    addLog(`音声認識からのAI応答: ${aiResponse}`, 'info');
                                 }, 500);
                             } catch (error) {
-                                addLog(`音声認識結果の自動送信エラー: ${error.message}`, 'error');
+                                addLog(`音声認識からのAI応答エラー: ${error.message}`, 'error');
                             }
                         }, 1000);
                     }
+
+                    // 自動送信機能は削除されました
                 }
 
                 // 途中結果をプレースホルダーに表示
@@ -848,6 +1028,13 @@
             addLog('音声認識結果をクリアしました', 'info');
         }
 
+        // 現在の会話履歴数を更新する関数
+        function updateCurrentHistoryCount() {
+            if (spanCurrentHistoryCount) {
+                spanCurrentHistoryCount.textContent = conversationHistory.length;
+            }
+        }
+
         // 会話履歴に追加
         function addToConversationHistory(type, content) {
             const timestamp = new Date().toISOString();
@@ -862,12 +1049,16 @@
                 conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
             }
 
+            // 現在の履歴数を更新
+            updateCurrentHistoryCount();
+
             addLog(`会話履歴に追加: [${type}] ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`, 'info');
         }
 
         // 会話履歴をクリア
         function clearConversationHistory() {
             conversationHistory = [];
+            updateCurrentHistoryCount();
             addLog('会話履歴をクリアしました', 'info');
         }
 
@@ -941,7 +1132,7 @@
                     addLog(`システムプロンプト: ${systemPrompt.substring(0, 50)}...`, 'info');
                 }
 
-                const response = await fetch(`${lmStudioUrl}/chat/completions`, {
+                const response = await fetch(`${textLmStudioUrl.value.trim()}/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1010,7 +1201,9 @@
                 }
 
                 updateStatus('connected', '接続中 (AI エラー)');
-                return `申し訳ございません。現在AIが応答できません。(エラー: ${error.message})`;
+
+                // 重要: 呼び出し元が接続失敗を検知できるよう例外を再スローする
+                throw error;
             }
         }
 
@@ -1036,20 +1229,28 @@
 
             socket.emit('comment', data);
             addLog(`コメント送信: ${comment}`, 'sent');
+
+            // 自分の送信コメントもコメントログに追加
+            addToCommentLog(data);
         }
 
         // 新しいコメントを受信したときの処理
         async function onNewComment(data) {
             addLog(`受信: [${data.my_name}] ${data.comment}`, 'received');
 
+            // コメントログに追加（すべてのコメント）
+            addToCommentLog(data);
+
+            // すべてのコメントを会話履歴に追加（自分のコメント以外）
+            if (data.my_name !== aiName) {
+                addToConversationHistory('user', `${data.my_name}: ${data.comment}`);
+            }
+
             // AI名前が含まれているかチェック
             if (isAutoResponse && data.comment.includes(aiName)) {
                 addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
 
                 try {
-                    // 受信したコメントを会話履歴に追加
-                    addToConversationHistory('user', data.comment);
-
                     const aiResponse = await sendToLMStudio(data.comment);
 
                     // AI の応答をサーバに送信
@@ -1153,6 +1354,14 @@
             logContainer.innerHTML = '';
         });
 
+        buttonDownloadComments.addEventListener('click', () => {
+            downloadCommentLog();
+        });
+
+        buttonClearComments.addEventListener('click', () => {
+            clearCommentLog();
+        });
+
         buttonTestLMStudio.addEventListener('click', () => {
             testLMStudioConnection();
         });
@@ -1165,6 +1374,9 @@
         textAiName.addEventListener('input', () => {
             aiName = textAiName.value.trim() || '米太郎';
             updateAutoResponseLabel();
+            updateAiNameAutoResponseLabel();
+            // localStorageに保存
+            saveAiName(aiName);
             addLog(`AI名前を「${aiName}」に変更しました`, 'info');
         });
 
@@ -1185,6 +1397,13 @@
         function updateAutoResponseLabel() {
             const labelAutoResponse = document.getElementById('label_auto_response');
             labelAutoResponse.textContent = `「${aiName}」を含むメッセージに自動応答`;
+        }
+
+        // 音声認識のAI名前自動応答ラベルを更新する関数
+        function updateAiNameAutoResponseLabel() {
+            if (labelAiNameAutoResponse) {
+                labelAiNameAutoResponse.textContent = `「${aiName}」を含む音声認識を自動でAIに送信`;
+            }
         }
 
         // 自動投稿関連のイベントリスナー
@@ -1261,9 +1480,11 @@
             addLog(`連続認識モード: ${isContinuous ? 'ON' : 'OFF'}`, 'info');
         });
 
-        checkboxAutoSendSpeech.addEventListener('change', () => {
-            isAutoSendSpeech = checkboxAutoSendSpeech.checked;
-            addLog(`自動送信モード: ${isAutoSendSpeech ? 'ON' : 'OFF'}`, 'info');
+        // checkboxAutoSendSpeech listener removed (auto-send feature deleted)
+
+        checkboxAiNameAutoResponse.addEventListener('change', () => {
+            isAiNameAutoResponse = checkboxAiNameAutoResponse.checked;
+            addLog(`AIアシスタント名音声認識自動応答: ${isAiNameAutoResponse ? 'ON' : 'OFF'}`, 'info');
         });
 
         inputConversationHistoryLimit.addEventListener('change', () => {
@@ -1275,6 +1496,8 @@
                 conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
                 addLog(`履歴を${conversationHistoryLimit}件に調整しました`, 'info');
             }
+            // 現在の履歴数を更新
+            updateCurrentHistoryCount();
         });
 
         buttonClearHistory.addEventListener('click', () => {
@@ -1295,11 +1518,22 @@
                 const roomFromUrl = decodeURIComponent(params.room);
                 textRoomName.value = roomFromUrl;
                 addLog(`部屋名「${roomFromUrl}」が自動設定されました`, 'info');
+
+                // 自動で接続を開始
+                setTimeout(() => {
+                    if (!isConnected) {
+                        addLog('自動接続を開始します...', 'info');
+                        connectToServer();
+                    }
+                }, 1000); // 1秒待ってから自動接続
             }
 
             // 初期値の設定
             spanIntervalMin.textContent = postingIntervalMin;
             spanIntervalMax.textContent = postingIntervalMax;
+
+            // AIアシスタント名の初期化（localStorageから読み込み）
+            textAiName.value = aiName;
 
             // 表示設定の初期値を設定
             selectTextDirection.value = aiTextDirection;
@@ -1307,6 +1541,7 @@
 
             // 自動応答ラベルを初期設定
             updateAutoResponseLabel();
+            updateAiNameAutoResponseLabel();
 
             // 音声認識の初期化
             initializeSpeechRecognition();
@@ -1314,6 +1549,7 @@
 
             // 会話履歴設定の初期化
             conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
+            updateCurrentHistoryCount();
 
             addLog(`${aiName} AI アシスタントが起動しました`, 'info');
             addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
