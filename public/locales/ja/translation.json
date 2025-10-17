@@ -11,6 +11,8 @@
     "continuous_comment_send_title": "コメントの連投",
     "continuous_comment_send_description_1": "大規模人数におけるコメント荒れを防ぐため、通常はコメントの連続投稿には制約（5秒開けないといけない）があります。しかし",
     "continuous_comment_send_description_2": "このように黄色で点灯しているときはコメントの連投が可能です。",
+    "inappropriate_words_filter_title": "不適切な表現のフィルター",
+    "inappropriate_words_filter_description": "安全で快適な配信環境を保つため、コメントや名前に不適切な表現が含まれている場合、自動的に伏せ字（例：****）に置き換えられます。この処理は送信時に自動で行われ、すべての視聴者に適用されます。",
     "button_send": "送信",
     "text_movement_direction": "文字移動方向",
     "stop": "静止",

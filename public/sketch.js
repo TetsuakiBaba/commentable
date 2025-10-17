@@ -4,15 +4,76 @@ var socket; // 接続用
 var flg_speech = false;
 var flg_deactivate_comment_control;
 
-
 var color_text;
 var color_text_stroke;
+
+// 不適切な単語リスト
+var inappropriateWords = [];
+
+// 不適切な単語リストを読み込む
+async function loadInappropriateWords() {
+    try {
+        const response = await fetch('/inappropriate-words-ja/Sexual.txt');
+        const text = await response.text();
+        inappropriateWords = text.split('\n')
+            .map(word => word.trim())
+            .filter(word => word.length > 0);
+        console.log(`${inappropriateWords.length}個の不適切な単語を読み込みました`);
+    } catch (error) {
+        console.error('不適切な単語リストの読み込みに失敗しました:', error);
+    }
+}
+
+// テキストから不適切な単語を伏せ字にする
+function maskInappropriateWords(text) {
+    if (!text || inappropriateWords.length === 0) return text;
+
+    let maskedText = text;
+
+    // 長い単語から順にマッチさせる（部分一致を避けるため）
+    const sortedWords = [...inappropriateWords].sort((a, b) => b.length - a.length);
+
+    for (const word of sortedWords) {
+        if (word.length === 0) continue;
+
+        // 単語を正規表現でエスケープ
+        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedWord, 'gi');
+
+        // 単語の文字数分だけ「*」で置き換え
+        const mask = '*'.repeat(word.length);
+        maskedText = maskedText.replace(regex, mask);
+    }
+
+    return maskedText;
+}
+
 // flash / capture / 音量関連機能は未使用化のため削除
 
 function setup() {
     flg_deactivate_comment_control = false;
     color_text = document.getElementById("color_text").value;
     color_text_stroke = document.getElementById("color_text_stroke").value;
+
+    // 保存された名前をlocalStorageから読み込み
+    const savedName = localStorage.getItem('commentable_user_name');
+    if (savedName) {
+        document.getElementById('text_my_name').value = savedName;
+    }
+
+    // 名前入力フィールドの変更を監視してlocalStorageに保存
+    const nameInput = document.getElementById('text_my_name');
+    if (nameInput) {
+        nameInput.addEventListener('input', function () {
+            const name = this.value.trim();
+            if (name) {
+                localStorage.setItem('commentable_user_name', name);
+            }
+        });
+    }
+
+    // 不適切な単語リストを読み込む
+    loadInappropriateWords();
 
     //socket = io.connect('http://localhost:80');
     //socket = io.connect('https://commentable.lolipop.io')
@@ -251,7 +312,19 @@ function pushedSendButton() {
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
-    const result = CommentApp.sendComment({ comment: _str_comment, myName: _str_my_name, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
+    // 不適切な単語を伏せ字にする（絵文字の場合は除く）
+    let maskedComment = _str_comment;
+    if (!_flg_emoji && _str_comment) {
+        maskedComment = maskInappropriateWords(_str_comment);
+    }
+
+    // 名前にも不適切な単語が含まれている場合は伏せ字にする
+    let maskedName = _str_my_name;
+    if (_str_my_name) {
+        maskedName = maskInappropriateWords(_str_my_name);
+    }
+
+    const result = CommentApp.sendComment({ comment: maskedComment, myName: maskedName, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
     if (!result.ok) {
         if (result.reason === 'interval') {
             const remain = 5 - parseInt((performance.now() - CommentApp.state.lastSend) / 1000);
@@ -267,8 +340,8 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     // 自分で送信したhidden=100のコメントに対してもDOM作成
     if (_hidden === 100) {
         const selfCommentData = {
-            comment: _str_comment,
-            my_name: _str_my_name,
+            comment: maskedComment,
+            my_name: maskedName,
             hidden: _hidden
         };
         // newComment関数を直接呼び出して同じDOM処理を実行
