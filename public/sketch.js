@@ -92,6 +92,18 @@ function setup() {
     document.getElementById("checkbox_speech")?.addEventListener('click', () => {
         flg_speech = !flg_speech;
         if (window.CommentApp) CommentApp.state.speech = flg_speech;
+
+        // アイコンの切り替え
+        const iconSpeech = document.getElementById("icon_speech");
+        if (iconSpeech) {
+            if (flg_speech) {
+                iconSpeech.classList.remove('fa-volume-mute');
+                iconSpeech.classList.add('fa-volume-up');
+            } else {
+                iconSpeech.classList.remove('fa-volume-up');
+                iconSpeech.classList.add('fa-volume-mute');
+            }
+        }
     });
     document.getElementById("color_text")?.addEventListener('change', (e) => { changeTextColor(e); if (window.CommentApp) CommentApp.state.colorText = color_text; });
     document.getElementById("color_text_stroke")?.addEventListener('change', (e) => { changeTextOutlineColor(e); if (window.CommentApp) CommentApp.state.colorStroke = color_text_stroke; });

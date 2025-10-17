@@ -15,6 +15,16 @@ const is_linux = process.platform === 'linux'
 
 const path = require('path');
 
+// グローバルエラーハンドリング - サンドボックス関連のエラーを無視
+process.on('uncaughtException', (error) => {
+    // サンドボックス関連のエラーは無視
+    if (error.message && error.message.includes('sandbox')) {
+        console.log('Sandbox warning (ignored):', error.message);
+        return;
+    }
+    console.error('Uncaught Exception:', error);
+});
+
 // サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
 const USE_LOCAL_SERVER = false;
 // const USE_LOCAL_SERVER = true;
@@ -78,9 +88,20 @@ function createWindow() {
         }
     })
 
+    // レンダラープロセスのエラーを抑制（サンドボックス関連）
+    win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+        // サンドボックス関連のエラーは無視
+        if (message.includes('sandbox') || message.includes('Script failed to execute')) {
+            return;
+        }
+    });
 
+    // クラッシュハンドリング
+    win.webContents.on('render-process-gone', (event, details) => {
+        console.log('Render process gone:', details);
+    });
 
-    // debug
+    // debug - エラーを詳しく確認したい場合はコメント解除
     // win.webContents.openDevTools();
 
 }
@@ -115,6 +136,11 @@ app.whenReady().then(() => {
         app.commandLine.appendSwitch('--ignore-certificate-errors');
         app.commandLine.appendSwitch('--ignore-ssl-errors');
         app.commandLine.appendSwitch('--allow-running-insecure-content');
+    }
+
+    // macOS特有のInput Methodエラーを抑制
+    if (is_mac) {
+        app.commandLine.appendSwitch('--disable-features', 'IOSurfaceCapturer');
     }
 
     if (process.platform === 'darwin') {
@@ -450,7 +476,7 @@ app.whenReady().then(() => {
                         const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
 
                         const win_about = new BrowserWindow({
-                            title: "About QuickGPT",
+                            title: "About Commentable",
                             width: aboutWindowWidth,
                             height: aboutWindowHeight,
                             x: aboutWindowPosX,
