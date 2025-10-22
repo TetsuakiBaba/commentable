@@ -24,6 +24,7 @@ async function loadInappropriateWords() {
     }
 }
 
+
 // テキストから不適切な単語を伏せ字にする
 function maskInappropriateWords(text) {
     if (!text || inappropriateWords.length === 0) return text;
