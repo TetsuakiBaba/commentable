@@ -21,6 +21,9 @@
     <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <meta charset="utf-8">
     <style>
         .card {
@@ -101,8 +104,6 @@
         <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"><span class="badge bg-secondary">AI
                 Assistant</span></p>
 
-
-
         <div class="row">
             <div class="col-12">
                 <div class="card mb-3">
@@ -122,7 +123,7 @@
 
 
                         <div class="row" data-masonry='{"percentPosition": true }'>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="card border-info mb-3">
                                     <div class="card-header bg-info bg-opacity-10">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -182,7 +183,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="card border-success mb-3">
                                     <div class="card-header bg-success bg-opacity-10">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -266,7 +267,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="card border-warning mb-3">
                                     <div class="card-header bg-warning bg-opacity-10">
                                         <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
@@ -312,7 +313,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <!-- コメントログカード -->
                                 <div class="card mb-3">
                                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -333,17 +334,45 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h6 class="mb-0">活動ログ</h6>
-                    </div>
-                    <div class="card-body">
-                        <div id="log-container" class="log-container"></div>
-                        <button class="btn btn-sm btn-outline-secondary mt-2" id="button_clear_log">ログクリア</button>
+                            <div class="col-md-6 col-lg-4">
+                                <!-- 参加者数グラフ -->
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-people-fill"></i> 参加者数の推移
+                                        </h6>
+                                        <button class="btn btn-sm btn-outline-primary" id="button_download_user_stats">
+                                            <i class="bi bi-download"></i> CSVダウンロード
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="userStatsChart" style="max-height: 300px;"></canvas>
+                                        <div class="text-muted small mt-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            参加者の入退室がリアルタイムで記録されます
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4">
+                                <!-- 活動ログ -->
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">活動ログ</h6>
+                                        <button class="btn btn-sm btn-outline-secondary" id="button_clear_log">
+                                            <i class="bi bi-trash"></i> ログクリア
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="log-container" class="log-container"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
                     </div>
                 </div>
 
@@ -396,6 +425,10 @@
         let conversationHistoryLimit = 50; // 履歴保存数の上限
         let commentLog = []; // コメントログを保存
         let commentCount = 0; // 投稿されたコメント数をカウント
+
+        // 参加者数統計関連の変数
+        let userStatsChart = null;
+        let userStatsHistory = []; // { timestamp, count } の配列
 
         // DOM要素
         const statusIndicator = document.getElementById('status-indicator');
@@ -493,6 +526,103 @@
             textareaSystemPrompt.value = DEFAULT_SYSTEM_PROMPT;
             localStorage.removeItem('systemPrompt');
             addLog('システムプロンプトをデフォルトにリセットしました', 'info');
+        }
+
+        // 参加者数グラフの初期化
+        function initUserStatsChart() {
+            const ctx = document.getElementById('userStatsChart').getContext('2d');
+            userStatsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '参加者数',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 参加者数の更新
+        function updateUserStats(count) {
+            const timestamp = new Date();
+            const timeString = timestamp.toLocaleTimeString('ja-JP');
+
+            // 履歴に追加
+            userStatsHistory.push({
+                timestamp: timestamp.toISOString(),
+                count: count
+            });
+
+            // グラフに追加
+            if (userStatsChart) {
+                userStatsChart.data.labels.push(timeString);
+                userStatsChart.data.datasets[0].data.push(count);
+
+                // 最大50ポイントに制限
+                if (userStatsChart.data.labels.length > 50) {
+                    userStatsChart.data.labels.shift();
+                    userStatsChart.data.datasets[0].data.shift();
+                }
+
+                userStatsChart.update();
+            }
+        }
+
+        // 参加者数統計のCSVダウンロード
+        function downloadUserStatsCSV() {
+            if (userStatsHistory.length === 0) {
+                alert('ダウンロードするデータがありません');
+                return;
+            }
+
+            // CSVヘッダー
+            let csvContent = 'タイムスタンプ,参加者数\n';
+
+            // データ行
+            userStatsHistory.forEach(item => {
+                const timestamp = new Date(item.timestamp).toLocaleString('ja-JP');
+                csvContent += `${timestamp},${item.count}\n`;
+            });
+
+            // BOMを追加してExcelで正しく開けるようにする
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `参加者数統計_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            addLog('参加者数統計をCSVでダウンロードしました', 'info');
         }
 
         // 会話履歴を文字列として整形
@@ -1333,16 +1463,19 @@
                 updateStatus('connected', '接続中');
                 addLog(`部屋 "${roomName}" に参加しました (参加者数: ${data.numUsers})`, 'info');
                 buttonConnect.textContent = '切断';
+                updateUserStats(data.numUsers);
             });
 
             socket.on('comment', onNewComment);
 
             socket.on('user joined', (data) => {
                 addLog(`${data.username} が参加しました (参加者数: ${data.numUsers})`, 'info');
+                updateUserStats(data.numUsers);
             });
 
             socket.on('user left', (data) => {
                 addLog(`${data.username} が退出しました (参加者数: ${data.numUsers})`, 'info');
+                updateUserStats(data.numUsers);
             });
 
             socket.on('disconnect', () => {
@@ -1391,6 +1524,11 @@
 
         buttonClearComments.addEventListener('click', () => {
             clearCommentLog();
+        });
+
+        // 参加者数統計のダウンロード
+        document.getElementById('button_download_user_stats').addEventListener('click', () => {
+            downloadUserStatsCSV();
         });
 
         buttonTestLMStudio.addEventListener('click', () => {
@@ -1588,6 +1726,9 @@
             // 会話履歴設定の初期化
             conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
             updateCurrentHistoryCount();
+
+            // 参加者数グラフの初期化
+            initUserStatsChart();
 
             addLog(`${aiName} AI アシスタントが起動しました`, 'info');
             addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
