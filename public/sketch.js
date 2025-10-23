@@ -10,14 +10,52 @@ var color_text_stroke;
 // 不適切な単語リスト
 var inappropriateWords = [];
 
-// 不適切な単語リストを読み込む
+// 不適切な単語リストを読み込む（base64化されたファイルから）
 async function loadInappropriateWords() {
     try {
-        const response = await fetch('/inappropriate-words-ja/Sexual.txt');
-        const text = await response.text();
-        inappropriateWords = text.split('\n')
-            .map(word => word.trim())
-            .filter(word => word.length > 0);
+        // 読み込むbase64ファイルのリスト
+        const base64Files = [
+            '/inappropriate-words-ja/Sexual.base64.txt',
+            '/inappropriate-words-ja/Sexual_with_mask.base64.txt',
+            '/inappropriate-words-ja/Sexual_with_bopo.base64.txt'
+        ];
+
+        // 全てのファイルを並行して読み込む
+        const promises = base64Files.map(async (file) => {
+            try {
+                const response = await fetch(file);
+                const text = await response.text();
+
+                // 行ごとに分割してbase64デコード
+                const words = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
+                    .map(base64String => {
+                        try {
+                            // base64デコード
+                            const decoded = atob(base64String);
+                            // UTF-8としてデコード
+                            return decodeURIComponent(escape(decoded));
+                        } catch (e) {
+                            console.error(`Failed to decode: ${base64String}`, e);
+                            return null;
+                        }
+                    })
+                    .filter(word => word !== null);
+
+                return words;
+            } catch (error) {
+                console.error(`${file} の読み込みに失敗しました:`, error);
+                return [];
+            }
+        });
+
+        // 全てのファイルの読み込みを待つ
+        const results = await Promise.all(promises);
+
+        // 全ての単語を結合して重複を除去
+        inappropriateWords = [...new Set(results.flat())];
+
         console.log(`${inappropriateWords.length}個の不適切な単語を読み込みました`);
     } catch (error) {
         console.error('不適切な単語リストの読み込みに失敗しました:', error);
