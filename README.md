@@ -49,6 +49,10 @@ $ npm exec --package=@electron-forge/cli -c "electron-forge import"
 $ npm run make
 ```
 
+### 不適切用語のフィルタリング
+不適切用語のフィルタリングは、public/inappropriate-words-ja/ 以下にbase64化されて保存しています。元となっているリストは [https://github.com/MosasoM/inappropriate-words-ja](https://github.com/MosasoM/inappropriate-words-ja) を利用しています。
+
+
 # Author
   * Tetsuaki Baba
     * Tokyo Metropolitan University
