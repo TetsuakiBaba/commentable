@@ -12,3 +12,6 @@ forge.config.js
 *ignore*
 load_test/
 .vscode/
+public/inappropriate-words-ja/Sexual.txt
+public/inappropriate-words-ja/Sexual_with_bopo.txt
+public/inappropriate-words-ja/Sexual_with_mask.txt
