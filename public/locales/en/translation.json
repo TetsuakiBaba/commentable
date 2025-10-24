@@ -28,5 +28,12 @@
     "ok": "👌：Okay!",
     "pow": "👊：Pow! (Punch sound)",
     "hahaha": "🤣：Hahaha! (Loud laughter)",
-    "hehe": "😏：Hehe (Chuckle)"
+    "hehe": "😏：Hehe (Chuckle)",
+    "enter_room_name": "Please enter room name",
+    "comment_interval_message": "Thank you for your wonderful comments!\nPlease wait {{seconds}} more seconds before posting.\n\nNote: You can post continuously when the \"Repeat\" lamp at the top of the screen is lit.",
+    "comment_length_error": "Comments must be 80 characters or less.",
+    "emoji_ranking_title": "Emoji Top 10",
+    "comment_ranking_title": "Comment Top 10",
+    "no_data_yet": "No data yet",
+    "times_suffix": " times"
 }

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, function (err, t) {
             if (err) return console.error(err);
             updateContent();
-            console.log('i18next is ready', t);
+            debugLog('i18next is ready', t);
         });
 
 });

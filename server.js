@@ -1,4 +1,50 @@
 const fs = require('fs');
+const path = require('path');
+
+// コメントログファイルのパス
+const LOG_DIR = path.join(__dirname, 'public', 'chatlogs');
+
+// ログディレクトリが存在しない場合は作成
+if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+    console.log('Created log directory:', LOG_DIR);
+}
+
+// ファイル名として安全な文字列に変換する関数
+function sanitizeFilename(str) {
+    // 英数字、ハイフン、アンダースコア以外を置換
+    return str.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+// コメントをログファイルに追記する関数
+function saveCommentLog(data, room) {
+    try {
+        if (!room) {
+            console.warn('Room name is empty, skipping log save');
+            return;
+        }
+
+        // room名をファイル名として安全な形式に変換
+        const safeRoomName = sanitizeFilename(room);
+        const logFile = path.join(LOG_DIR, `${safeRoomName}.log`);
+
+        const timestamp = new Date().toISOString();
+        const logEntry = JSON.stringify({
+            timestamp,
+            room,
+            username: data.my_name || 'Anonymous',
+            comment: data.comment,
+            emoji: data.flg_emoji || false,
+            sound: data.flg_sound || false,
+            socketid: data.socketid
+        });
+
+        // ログファイルに追記（1行ずつ）
+        fs.appendFileSync(logFile, logEntry + '\n', 'utf8');
+    } catch (error) {
+        console.error('Error saving comment log:', error);
+    }
+}
 
 // ローカル開発環境では3000番ポート、本番環境では80番ポート
 var port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3000);
@@ -20,6 +66,7 @@ app.use((req, res, next) => {
 var server = app.listen(port, () => console.log('listening on', port));
 
 app.use(express.static('./public'));
+
 let broadcaster;
 var socket = require('socket.io');
 const options = {
@@ -107,6 +154,10 @@ io.on('connection', (socket) => {
     socket.on('comment', (data) => {
         // we tell the client to execute 'new message'
         data.socketid = socket.id;
+
+        // コメントをログファイルに保存
+        saveCommentLog(data, room);
+
         // 全員に送信
         socket.to(room).emit('comment', data);
     });

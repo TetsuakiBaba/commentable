@@ -28,5 +28,12 @@
     "ok": "👌：オーケー",
     "pow": "👊：バシ！（パンチの音）",
     "hahaha": "🤣：大笑い",
-    "hehe": "😏：くすくす笑い"
+    "hehe": "😏：くすくす笑い",
+    "enter_room_name": "部屋名を入力してください",
+    "comment_interval_message": "いつも素敵なコメントありがとうございます\n投稿まで後 {{seconds}} 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。",
+    "comment_length_error": "一度に遅れる文字数は80文字までです．",
+    "emoji_ranking_title": "絵文字部門 Top 10",
+    "comment_ranking_title": "コメント部門 Top 10",
+    "no_data_yet": "まだデータがありません",
+    "times_suffix": "回"
 }
