@@ -250,9 +250,14 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="card">
-                            <div class="card-header bg-primary">
-                                <i class="bi bi-trophy-fill"></i> <span data-i18n="emoji_ranking_title">絵文字部門 Top
-                                    10</span>
+                            <div class="card-header bg-primary d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-trophy-fill"></i> <span data-i18n="emoji_ranking_title">絵文字部門 Top
+                                        10</span>
+                                </span>
+                                <small class="badge bg-light text-dark">
+                                    <i class="bi bi-hash"></i> <span id="total_emoji_count">0</span>
+                                </small>
                             </div>
                             <div class="card-body p-2">
                                 <div id="emoji_ranking" class="small">
@@ -263,9 +268,15 @@
                     </div>
                     <div class="col-6">
                         <div class="card">
-                            <div class="card-header bg-success">
-                                <i class="bi bi-chat-dots-fill"></i> <span data-i18n="comment_ranking_title">コメント部門 Top
-                                    10</span>
+                            <div class="card-header bg-success d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-chat-dots-fill"></i> <span data-i18n="comment_ranking_title">コメント部門
+                                        Top
+                                        10</span>
+                                </span>
+                                <small class="badge bg-light text-dark">
+                                    <i class="bi bi-hash"></i> <span id="total_comment_count">0</span>
+                                </small>
                             </div>
                             <div class="card-body p-2">
                                 <div id="comment_ranking" class="small">

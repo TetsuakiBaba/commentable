@@ -10,8 +10,22 @@
         speech: false,
         socket: null,
         emojiFilter: true, // デフォルトでemojiフィルタはオン
-        allHistory: [], // 全てのコメント履歴を保持
+        allHistory: [], // 全てのコメント履歴を保持（表示用テキスト）
+        allHistoryJSON: [], // 全てのコメント履歴を保持（JSON形式、ダウンロード用）
+        // ランキング用の増分カウント
+        emojiSenders: {}, // {username: count}
+        normalSenders: {}, // {username: count}
+        totalEmojiCount: 0,
+        totalCommentCount: 0,
+        rankingUpdateTimer: null, // デバウンス用タイマー
+        // 表示最適化用
+        displayCache: '', // フィルタ適用済みテキストのキャッシュ
+        displayCacheLength: 0, // キャッシュの文字数（.lengthアクセスを避けるため）
+        needsFullUpdate: false, // フィルタ切り替え時にフル更新が必要かどうか
     };
+
+    const excludedNames = ['Anonymous', '匿名']; // 除外ユーザー名（定数化）
+    const usernameRegex = /\[([^\]]+)\]\s*$/; // 正規表現を事前コンパイル
 
     function pad(n, l = 2) { return String(n).padStart(l, '0'); }
 
@@ -21,59 +35,141 @@
     }
 
     function appendHistory(text) {
+        const perfStart = performance.now();
+
         // 全履歴に追加
         state.allHistory.push(text);
-        // フィルタを適用して表示
-        updateHistoryDisplay();
+
+        // 増分でランキングを更新
+        updateRankingIncremental(text);
+
+        // 差分で表示を更新（高速化）
+        updateHistoryDisplayIncremental(text);
+
+        const perfEnd = performance.now();
+        if (typeof debugLog === 'function') {
+            debugLog(`appendHistory took ${(perfEnd - perfStart).toFixed(2)}ms`);
+        }
     }
 
+    // 差分更新：新しい行だけを追加（高速化）
+    function updateHistoryDisplayIncremental(newLine) {
+        const perfStart = performance.now();
+
+        const area = document.getElementById('textarea_comment_history');
+        if (!area) return;
+
+        // emojiフィルタが有効で、新しい行がemojiを含む場合はスキップ
+        if (state.emojiFilter && newLine.includes('[emoji]')) {
+            return; // 表示しない
+        }
+
+        // キャッシュに追加
+        state.displayCache += newLine;
+        const newLineLength = newLine.length;
+
+        // 効率的に末尾に追加: setRangeText()を使用
+        // area.value.lengthではなく、キャッシュした長さを使用
+        area.setRangeText(newLine, state.displayCacheLength, state.displayCacheLength, 'end');
+        state.displayCacheLength += newLineLength;
+
+        const perfEnd = performance.now();
+        if (typeof debugLog === 'function') {
+            debugLog(`  updateHistoryDisplayIncremental took ${(perfEnd - perfStart).toFixed(2)}ms`);
+        }
+    }
+
+    // 増分ランキング更新（新しいコメント1件だけを処理）
+    function updateRankingIncremental(line) {
+        const emojiMatch = line.includes('[emoji]');
+        const usernameMatch = line.match(usernameRegex);
+
+        if (!usernameMatch) return;
+
+        const username = usernameMatch[1].trim();
+
+        if (emojiMatch) {
+            state.totalEmojiCount++;
+            if (!excludedNames.includes(username)) {
+                state.emojiSenders[username] = (state.emojiSenders[username] || 0) + 1;
+            }
+        } else {
+            state.totalCommentCount++;
+            if (!excludedNames.includes(username)) {
+                state.normalSenders[username] = (state.normalSenders[username] || 0) + 1;
+            }
+        }
+
+        // ランキング表示更新をデバウンス（300ms以内の連続更新をまとめる）
+        scheduleRankingUpdate();
+    }
+
+    // ランキング表示の更新をスケジュール（デバウンス）
+    function scheduleRankingUpdate() {
+        if (state.rankingUpdateTimer) {
+            clearTimeout(state.rankingUpdateTimer);
+        }
+        state.rankingUpdateTimer = setTimeout(() => {
+            renderRankingDisplay();
+            state.rankingUpdateTimer = null;
+        }, 300);
+    }
+
+    // フル更新（フィルタ切り替え時や同期時のみ使用）
     function updateHistoryDisplay() {
         const area = document.getElementById('textarea_comment_history');
         if (!area) return;
 
-        // フィルタ適用
+        // フィルタ適用して全体を再構築
         let displayHistory = state.allHistory;
         if (state.emojiFilter) {
-            // [emoji]を含む行を除外
             displayHistory = state.allHistory.filter(line => !line.includes('[emoji]'));
         }
 
-        area.innerHTML = displayHistory.join('');
-        area.scrollTop = area.scrollHeight;
+        // キャッシュを更新
+        state.displayCache = displayHistory.join('');
+        state.displayCacheLength = state.displayCache.length;
 
-        // トップ10を計算
-        calculateTop10();
+        // textareaに設定（innerHTML→valueに変更でパフォーマンス改善）
+        area.value = state.displayCache;
+        area.scrollTop = area.scrollHeight;
     }
 
+    // ランキングを全体から再計算（同期時のみ使用）
     function calculateTop10() {
-        // emoji部門とコメント部門で送信者をカウント
-        const emojiSenders = {};
-        const normalSenders = {};
+        // 状態をリセット
+        state.emojiSenders = {};
+        state.normalSenders = {};
+        state.totalEmojiCount = 0;
+        state.totalCommentCount = 0;
 
-        // 除外するユーザー名のリスト
-        const excludedNames = ['Anonymous', '匿名'];
-
+        // 全履歴を一度だけループして集計
         state.allHistory.forEach(line => {
-            // 行から情報を抽出
-            // フォーマット: [timestamp] comment[emoji][sound][username]\n
             const emojiMatch = line.includes('[emoji]');
-
-            // 送信者名を抽出（最後の[...]の中身）
-            const usernameMatch = line.match(/\[([^\]]+)\]\s*$/);
+            const usernameMatch = line.match(usernameRegex);
             if (!usernameMatch) return;
 
             const username = usernameMatch[1].trim();
 
-            // 除外リストに含まれている場合はスキップ
-            if (excludedNames.includes(username)) return;
-
             if (emojiMatch) {
-                emojiSenders[username] = (emojiSenders[username] || 0) + 1;
+                state.totalEmojiCount++;
+                if (!excludedNames.includes(username)) {
+                    state.emojiSenders[username] = (state.emojiSenders[username] || 0) + 1;
+                }
             } else {
-                normalSenders[username] = (normalSenders[username] || 0) + 1;
+                state.totalCommentCount++;
+                if (!excludedNames.includes(username)) {
+                    state.normalSenders[username] = (state.normalSenders[username] || 0) + 1;
+                }
             }
         });
 
+        // ランキング表示を即座に更新
+        renderRankingDisplay();
+    }
+
+    // ランキング表示のレンダリング（実際のDOM操作）
+    function renderRankingDisplay() {
         // トップ10を取得
         const getTop10 = (senders) => {
             return Object.entries(senders)
@@ -82,36 +178,14 @@
                 .map(([username, count], index) => ({ rank: index + 1, username, count }));
         };
 
-        const emojiTop10 = getTop10(emojiSenders);
-        const normalTop10 = getTop10(normalSenders);
+        const emojiTop10 = getTop10(state.emojiSenders);
+        const normalTop10 = getTop10(state.normalSenders);
 
         // HTMLに表示
-        updateRankingDisplay(emojiTop10, normalTop10);
-
-        // デバッグログに出力
-        if (typeof debugLog === 'function') {
-            debugLog('===== トップ10統計（送信者別） =====');
-            debugLog('【絵文字部門】');
-            if (emojiTop10.length === 0) {
-                debugLog('  まだデータがありません');
-            } else {
-                emojiTop10.forEach(item => {
-                    debugLog(`  ${item.rank}位: ${item.username} (${item.count}回)`);
-                });
-            }
-            debugLog('【コメント部門】');
-            if (normalTop10.length === 0) {
-                debugLog('  まだデータがありません');
-            } else {
-                normalTop10.forEach(item => {
-                    debugLog(`  ${item.rank}位: ${item.username} (${item.count}回)`);
-                });
-            }
-            debugLog('====================================');
-        }
+        updateRankingDisplay(emojiTop10, normalTop10, state.totalEmojiCount, state.totalCommentCount);
     }
 
-    function updateRankingDisplay(emojiTop10, normalTop10) {
+    function updateRankingDisplay(emojiTop10, normalTop10, totalEmojiCount, totalCommentCount) {
         // i18n翻訳を取得
         const getTranslation = (key, fallback) => {
             if (window.i18next && window.i18next.t) {
@@ -122,6 +196,17 @@
 
         const noDataText = getTranslation('no_data_yet', 'まだデータがありません');
         const timesSuffix = getTranslation('times_suffix', '回');
+
+        // 総コメント数を表示（引数で渡された値を使用）
+        const totalEmojiCountElement = document.getElementById('total_emoji_count');
+        if (totalEmojiCountElement) {
+            totalEmojiCountElement.textContent = totalEmojiCount || 0;
+        }
+
+        const totalCommentCountElement = document.getElementById('total_comment_count');
+        if (totalCommentCountElement) {
+            totalCommentCountElement.textContent = totalCommentCount || 0;
+        }
 
         // 絵文字部門のランキングを表示
         const emojiRankingDiv = document.getElementById('emoji_ranking');
@@ -225,9 +310,31 @@
         if (data.flg_sound) out += '[sound]';
         out += '[' + data.my_name + ']\n';
         appendHistory(out);
+
+        // JSON形式でも保存（ダウンロード用）
+        const jsonData = {
+            timestamp: new Date().toISOString(),
+            room: data.room || window.currentRoom || '',
+            username: data.my_name || '',
+            comment: data.comment || '',
+            emoji: data.flg_emoji || false,
+            sound: data.flg_sound || false,
+            socketid: data.socketid || ''
+        };
+        state.allHistoryJSON.push(jsonData);
     }
 
     function attachSocket(ioSocket) { state.socket = ioSocket; }
 
-    global.CommentApp = { state, formatTimestamp, appendHistory, sendComment, integrateIncoming, attachSocket, setEmojiFilter, updateHistoryDisplay };
+    global.CommentApp = {
+        state,
+        formatTimestamp,
+        appendHistory,
+        sendComment,
+        integrateIncoming,
+        attachSocket,
+        setEmojiFilter,
+        updateHistoryDisplay,
+        calculateTop10  // 同期時に全体再計算するために公開
+    };
 })(window);

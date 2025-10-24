@@ -35,5 +35,6 @@
     "emoji_ranking_title": "絵文字部門 Top 10",
     "comment_ranking_title": "コメント部門 Top 10",
     "no_data_yet": "まだデータがありません",
-    "times_suffix": "回"
+    "times_suffix": "回",
+    "total_comments": "総コメント数"
 }

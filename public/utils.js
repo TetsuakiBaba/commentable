@@ -1,9 +1,14 @@
 /* global is_streaming, number_of_viewers */
 
 function downloadAllComments() {
-  // テキストエリアより文字列を取得
-  const txt = document.getElementById('textarea_comment_history').value;
-  if (!txt) { return; }
+  // textareaに表示されているテキストをそのままダウンロード
+  const textarea = document.getElementById('textarea_comment_history');
+  if (!textarea || !textarea.value) {
+    alert('ダウンロードするコメントがありません');
+    return;
+  }
+
+  const txt = textarea.value;
 
   // 文字列をBlob化
   const blob = new Blob([txt], { type: 'text/plain' });
@@ -11,7 +16,11 @@ function downloadAllComments() {
   // ダウンロード用のaタグ生成
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = ('comments.txt');
+
+  // ファイル名にルーム名を含める
+  const roomName = window.currentRoom || 'comments';
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  a.download = `${roomName}_${timestamp}.txt`;
   a.click();
 }
 
@@ -49,12 +58,23 @@ async function syncCommentsFromServer(showAlert = true) {
     const lines = logContent.trim().split('\n').filter(line => line.length > 0);
 
     if (window.CommentApp) {
-      // state.allHistoryをクリアして、サーバーから取得したログで置き換え
+      // state.allHistoryとstate.allHistoryJSONをクリアして、サーバーから取得したログで置き換え
       window.CommentApp.state.allHistory = [];
+      window.CommentApp.state.allHistoryJSON = [];
 
-      lines.forEach(line => {
+      lines.forEach((line, index) => {
         try {
-          const entry = JSON.parse(line);
+          // 空行や不正な行をスキップ
+          const trimmedLine = line.trim();
+          if (!trimmedLine || !trimmedLine.startsWith('{')) {
+            return;
+          }
+
+          const entry = JSON.parse(trimmedLine);
+
+          // JSON形式データを保存（ダウンロード用）
+          window.CommentApp.state.allHistoryJSON.push(entry);
+
           const timestamp = new Date(entry.timestamp).toLocaleString('ja-JP');
           const emoji = entry.emoji ? '[emoji]' : '';
           const sound = entry.sound ? '[sound]' : '';
@@ -62,11 +82,14 @@ async function syncCommentsFromServer(showAlert = true) {
           const formattedLine = `[${timestamp}] ${entry.comment}${emoji}${sound}[${entry.username}]\n`;
           window.CommentApp.state.allHistory.push(formattedLine);
         } catch (e) {
-          debugError('Error parsing log entry:', e);
+          debugError(`Skipping invalid log entry at line ${index + 1}:`, line.substring(0, 100), e.message);
         }
       });
 
-      // updateHistoryDisplay()を呼び出して表示を更新
+      // 全体を再計算してランキングを更新（同期時のみ）
+      window.CommentApp.calculateTop10();
+
+      // 表示を更新
       window.CommentApp.updateHistoryDisplay();
 
       debugLog(`Synced ${lines.length} comments from server`);
