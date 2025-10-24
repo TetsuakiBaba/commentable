@@ -7,8 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="../assets/css/custom.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
@@ -100,7 +99,7 @@
 </head>
 
 <body>
-    <div class="container-sm">
+    <div class="container-fluid">
         <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"><span class="badge bg-secondary">AI
                 Assistant</span></p>
 
@@ -128,17 +127,20 @@
                                     <div class="card-header bg-info bg-opacity-10">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <h6 class="mb-0">AI設定</h6>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" role="switch"
-                                                    id="checkbox_auto_response" checked>
-                                                <label class="form-check-label" for="checkbox_auto_response"
-                                                    id="label_auto_response">
-                                                    「米太郎」を含むコメントに自動応答
-                                                </label>
-                                            </div>
+
                                         </div>
                                     </div>
+
                                     <div class="card-body">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="checkbox_auto_response" checked>
+                                            <label class="small form-check-label" for="checkbox_auto_response"
+                                                id="label_auto_response">
+                                                「米太郎」を含むコメントに自動応答
+                                            </label>
+                                        </div>
+                                        <hr>
                                         <div class="input-group mb-3">
                                             <span class="input-group-text">LM Studio URL</span>
                                             <input class="form-control" type="text" id="text_lm_studio_url"
@@ -170,11 +172,10 @@
 
                                         <div class="mb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label for="textarea_system_prompt"
-                                                    class="form-label mb-0">事前知識・システムプロンプト</label>
+                                                <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
                                                 <button class="btn btn-sm btn-outline-secondary"
                                                     id="button_reset_system_prompt">
-                                                    <i class="bi bi-arrow-clockwise"></i> デフォルトにリセット
+                                                    <i class="bi bi-arrow-clockwise"></i>default
                                                 </button>
                                             </div>
                                             <textarea class="form-control" id="textarea_system_prompt" rows="8"
@@ -188,18 +189,20 @@
                                     <div class="card-header bg-success bg-opacity-10">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <h6 class="mb-0">音声認識</h6>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox"
-                                                    id="checkbox_ai_name_auto_response" checked>
-                                                <label class="form-check-label small"
-                                                    for="checkbox_ai_name_auto_response"
-                                                    id="label_ai_name_auto_response">
-                                                    「米太郎」を含む音声認識を自動でAIに送信
-                                                </label>
-                                            </div>
+                                            <span class="small text-danger"><i class="bi bi-info-circle"></i>
+                                                音声認識はChromeのみ</span>
                                         </div>
                                     </div>
                                     <div class="card-body">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                id="checkbox_ai_name_auto_response" checked>
+                                            <label class="form-check-label small" for="checkbox_ai_name_auto_response"
+                                                id="label_ai_name_auto_response">
+                                                「米太郎」を含む音声認識を自動でAIに送信
+                                            </label>
+                                        </div>
+                                        <hr>
                                         <div class="input-group mb-3">
                                             <span class="input-group-text">マイク選択</span>
                                             <select class="form-select" id="select_microphone">
@@ -220,50 +223,64 @@
                                             </select>
                                         </div>
 
-                                        <div class="d-flex gap-2 mb-3">
-                                            <button class="btn btn-success" id="button_start_speech">
-                                                <i class="bi bi-mic"></i> 音声認識開始
-                                            </button>
-                                            <button class="btn btn-danger" id="button_stop_speech" disabled>
-                                                <i class="bi bi-mic-mute"></i> 停止
-                                            </button>
-                                            <button class="btn btn-outline-secondary" id="button_clear_speech">
-                                                <i class="bi bi-trash"></i> クリア
-                                            </button>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label for="input_speech_interim" class="form-label mb-0">
+                                                    リアルタイム認識
+                                                    <small class="text-muted">(暫定結果)</small>
+                                                </label>
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-sm btn-success" id="button_start_speech">
+                                                        <i class="bi bi-mic"></i> 開始
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" id="button_stop_speech"
+                                                        disabled>
+                                                        <i class="bi bi-mic-mute"></i> 停止
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control bg-light" id="input_speech_interim"
+                                                placeholder="音声認識中の暫定結果がここに表示されます" readonly>
                                         </div>
 
                                         <div class="mb-3">
-                                            <label for="textarea_speech_result" class="form-label">認識結果</label>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label for="textarea_speech_result" class="form-label mb-0">
+                                                    確定結果
+                                                </label>
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-sm btn-outline-secondary"
+                                                        id="button_clear_speech">
+                                                        <i class="bi bi-trash"></i> クリア
+                                                    </button>
+                                                </div>
+                                            </div>
                                             <textarea class="form-control" id="textarea_speech_result" rows="4"
-                                                placeholder="音声認識の結果がここに表示されます" readonly></textarea>
+                                                placeholder="確定した音声認識の結果がここに表示されます" readonly></textarea>
                                         </div>
 
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox"
-                                                id="checkbox_continuous_speech" checked>
+                                                id="checkbox_continuous_speech" checked disabled>
                                             <label class="form-check-label" for="checkbox_continuous_speech">
                                                 連続認識モード
                                             </label>
                                         </div>
 
-                                        <!-- 自動送信関連のUIは削除されました -->
-
                                         <div class="input-group mb-2">
-                                            <span class="input-group-text">会話履歴保存数</span>
+                                            <span class="input-group-text">Max History</span>
                                             <input type="number" class="form-control"
-                                                id="input_conversation_history_limit" value="50" min="0" max="200"
-                                                style="max-width: 100px;">
-                                            <span class="input-group-text">件</span>
-                                            <span class="input-group-text bg-light">現在: <span
-                                                    id="span_current_history_count">0</span>件</span>
-                                            <button class="btn btn-outline-secondary btn-sm"
-                                                id="button_clear_history">履歴クリア</button>
+                                                id="input_conversation_history_limit" value="50" min="0" max="200">
+                                            <span class="input-group-text bg-light">
+                                                <span id="span_current_history_count">0</span>件
+                                            </span>
+                                            <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
 
-                                        <div class="text-muted small" id="speech_info_message">
-                                            <i class="bi bi-info-circle"></i>
-                                            音声認識にはHTTPS接続またはlocalhost環境が必要です。Chrome/Edge/Safariで利用可能。Firefoxの場合は<code>about:config</code>で<code>media.webspeech.recognition.enable</code>を有効化してください。
-                                        </div>
+
+
                                     </div>
                                 </div>
                             </div>
@@ -273,9 +290,9 @@
                                         <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="form-check mb-2">
+                                        <div class="form-check form-switch mb-2">
                                             <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
-                                            <label class="form-check-label" for="checkbox_auto_posting">
+                                            <label class="small form-check-label" for="checkbox_auto_posting">
                                                 定期的に自動でコメントを投稿
                                             </label>
                                         </div>
@@ -296,6 +313,7 @@
                                                 <small class="text-muted"><span id="span_interval_max">8</span>分</small>
                                             </div>
                                         </div>
+                                        <hr>
 
                                         <div class="mb-2">
                                             <label for="select_posting_style" class="form-label">投稿スタイル</label>
@@ -319,12 +337,20 @@
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <h6 class="mb-0">コメントログ</h6>
                                         <div>
-                                            <button class="btn btn-sm btn-outline-primary me-2"
-                                                id="button_download_comments">
-                                                <i class="bi bi-download"></i> ダウンロード
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                id="button_sync_comments" title="サーバーからログを同期">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                id="button_download_comments" title="ログをダウンロード">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1" id="button_download_csv"
+                                                title="ユーザー別集計CSVをダウンロード">
+                                                <i class="bi bi-file-earmark-spreadsheet"></i>
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments">
-                                                <i class="bi bi-trash"></i> クリア
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -343,7 +369,7 @@
                                             <i class="bi bi-people-fill"></i> 参加者数の推移
                                         </h6>
                                         <button class="btn btn-sm btn-outline-primary" id="button_download_user_stats">
-                                            <i class="bi bi-download"></i> CSVダウンロード
+                                            <i class="bi bi-download"></i> CSV
                                         </button>
                                     </div>
                                     <div class="card-body">
@@ -362,7 +388,7 @@
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <h6 class="mb-0">活動ログ</h6>
                                         <button class="btn btn-sm btn-outline-secondary" id="button_clear_log">
-                                            <i class="bi bi-trash"></i> ログクリア
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
                                     <div class="card-body">
@@ -423,7 +449,8 @@
         let selectedMicrophoneId = null;
         let conversationHistory = []; // 会話履歴を保存
         let conversationHistoryLimit = 50; // 履歴保存数の上限
-        let commentLog = []; // コメントログを保存
+        let commentLog = []; // コメントログを保存（表示用テキスト）
+        let commentLogJSON = []; // コメントログのJSON形式データ（ダウンロード用）
         let commentCount = 0; // 投稿されたコメント数をカウント
 
         // 参加者数統計関連の変数
@@ -462,6 +489,7 @@
         const buttonStartSpeech = document.getElementById('button_start_speech');
         const buttonStopSpeech = document.getElementById('button_stop_speech');
         const buttonClearSpeech = document.getElementById('button_clear_speech');
+        const inputSpeechInterim = document.getElementById('input_speech_interim');
         const textareaSpeechResult = document.getElementById('textarea_speech_result');
         const checkboxContinuousSpeech = document.getElementById('checkbox_continuous_speech');
         const checkboxAiNameAutoResponse = document.getElementById('checkbox_ai_name_auto_response');
@@ -473,6 +501,7 @@
         // コメントログ関連のDOM要素
         const textareaCommentLog = document.getElementById('textarea_comment_log');
         const buttonDownloadComments = document.getElementById('button_download_comments');
+        const buttonDownloadCsv = document.getElementById('button_download_csv');
         const buttonClearComments = document.getElementById('button_clear_comments');
 
         // URL パラメータを取得してルーム名を設定
@@ -648,6 +677,18 @@
             const timestamp = new Date();
             commentCount++; // コメント数をインクリメント
 
+            // JSON形式データを保存（ダウンロード用）
+            const jsonData = {
+                timestamp: data.timestamp || timestamp.toISOString(),
+                room: data.room || roomName || 'unknown',
+                username: data.my_name || data.name || '匿名',
+                comment: data.comment || '',
+                emoji: data.flg_emoji || false,
+                sound: data.flg_sound || false,
+                socketid: data.socketid || ''
+            };
+            commentLogJSON.push(jsonData);
+
             // 形式: [2025:08:26:21:06:19-0005] 😮 [sound][匿名]
             const year = timestamp.getFullYear();
             const month = String(timestamp.getMonth() + 1).padStart(2, '0');
@@ -682,6 +723,7 @@
         // コメントログをクリア
         function clearCommentLog() {
             commentLog = [];
+            commentLogJSON = [];
             commentCount = 0; // コメント数もリセット
             textareaCommentLog.value = '';
             addLog('コメントログをクリアしました', 'info');
@@ -689,16 +731,19 @@
 
         // コメントログをダウンロード
         function downloadCommentLog() {
-            if (commentLog.length === 0) {
+            if (commentLogJSON.length === 0) {
                 addLog('ダウンロードするコメントがありません', 'info');
                 return;
             }
 
-            const currentTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            const filename = `comment-log-${currentTime}.txt`;
-            const content = commentLog.join('\n');
+            // JSON Lines形式（各行が1つのJSONオブジェクト）で出力
+            const jsonLines = commentLogJSON.map(item => JSON.stringify(item)).join('\n');
 
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const currentTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const roomPrefix = roomName ? `${roomName}_` : '';
+            const filename = `${roomPrefix}${currentTime}.log`;
+
+            const blob = new Blob([jsonLines], { type: 'application/json;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
@@ -710,6 +755,196 @@
             document.body.removeChild(a);
 
             addLog(`コメントログをダウンロードしました: ${filename}`, 'info');
+        }
+
+        // ユーザー別集計CSVをダウンロード
+        function downloadCommentCsv() {
+            if (commentLogJSON.length === 0) {
+                addLog('ダウンロードするコメントがありません', 'info');
+                return;
+            }
+
+            // ユーザーごとに集計
+            const userStats = {};
+
+            commentLogJSON.forEach(entry => {
+                const username = entry.username || '匿名';
+
+                if (!userStats[username]) {
+                    userStats[username] = {
+                        comments: [],
+                        emojiCount: 0,
+                        textCount: 0,
+                        firstTimestamp: entry.timestamp,
+                        lastTimestamp: entry.timestamp
+                    };
+                }
+
+                const stats = userStats[username];
+                stats.comments.push(entry.comment);
+
+                // 絵文字かテキストかをカウント
+                if (entry.emoji) {
+                    stats.emojiCount++;
+                } else {
+                    stats.textCount++;
+                }
+
+                // タイムスタンプを更新
+                if (new Date(entry.timestamp) < new Date(stats.firstTimestamp)) {
+                    stats.firstTimestamp = entry.timestamp;
+                }
+                if (new Date(entry.timestamp) > new Date(stats.lastTimestamp)) {
+                    stats.lastTimestamp = entry.timestamp;
+                }
+            });
+
+            // CSVヘッダー
+            let csvContent = '学修番号/投稿者,コメント内容（カンマ区切り）,コメント数,絵文字数,テキスト数,最初の投稿時刻,最後の投稿時刻\n';
+
+            // ユーザーごとにCSV行を生成
+            Object.entries(userStats).forEach(([username, stats]) => {
+                const commentsStr = stats.comments.join(', ');
+                const totalCount = stats.emojiCount + stats.textCount;
+
+                // タイムスタンプをフォーマット
+                const formatTimestamp = (isoString) => {
+                    const date = new Date(isoString);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hour = String(date.getHours()).padStart(2, '0');
+                    const minute = String(date.getMinutes()).padStart(2, '0');
+                    const second = String(date.getSeconds()).padStart(2, '0');
+                    return `${year}:${month}:${day}:${hour}:${minute}:${second}`;
+                };
+
+                const firstTime = formatTimestamp(stats.firstTimestamp);
+                const lastTime = formatTimestamp(stats.lastTimestamp);
+
+                // CSVの値をエスケープ（カンマや改行、ダブルクォートを含む場合）
+                const escapeCsv = (str) => {
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                };
+
+                csvContent += `${escapeCsv(username)},${escapeCsv(commentsStr)},${totalCount},${stats.emojiCount},${stats.textCount},${firstTime},${lastTime}\n`;
+            });
+
+            // CSVファイルとしてダウンロード
+            const currentTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const roomPrefix = roomName ? `${roomName}_` : '';
+            const filename = `${roomPrefix}user_stats_${currentTime}.csv`;
+
+            // BOM（Byte Order Mark）を追加してUTF-8で文字化けを防ぐ
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            addLog(`ユーザー別集計CSVをダウンロードしました: ${filename}`, 'info');
+        }
+
+        // サーバーからコメントログを同期
+        async function syncCommentsFromServer(showAlert = true) {
+            try {
+                const roomName = textRoomName.value.trim();
+
+                if (!roomName) {
+                    if (showAlert) {
+                        alert('部屋名が設定されていません。');
+                    }
+                    addLog('同期失敗: 部屋名が未設定', 'error');
+                    return;
+                }
+
+                // ファイル名として安全な文字列に変換
+                const safeRoomName = roomName.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+                addLog(`サーバーからログを同期中: ${roomName}`, 'info');
+
+                // サーバーからチャットログを取得
+                const response = await fetch(`/chatlogs/${safeRoomName}.log`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        if (showAlert) {
+                            alert('まだこの部屋のログはありません。');
+                        }
+                        addLog('同期: ログファイルが見つかりません', 'info');
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const logContent = await response.text();
+                const lines = logContent.trim().split('\n').filter(line => line.length > 0);
+
+                // commentLogとcommentLogJSONをクリアして、サーバーから取得したログで置き換え
+                commentLog = [];
+                commentLogJSON = [];
+                let maxCount = 0;
+
+                lines.forEach((line, index) => {
+                    try {
+                        // 空行や不正な行をスキップ
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine || !trimmedLine.startsWith('{')) {
+                            return;
+                        }
+
+                        const entry = JSON.parse(trimmedLine);
+
+                        // JSON形式データを保存（ダウンロード用）
+                        commentLogJSON.push(entry);
+
+                        const timestamp = new Date(entry.timestamp);
+                        const year = timestamp.getFullYear();
+                        const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+                        const day = String(timestamp.getDate()).padStart(2, '0');
+                        const hour = String(timestamp.getHours()).padStart(2, '0');
+                        const minute = String(timestamp.getMinutes()).padStart(2, '0');
+                        const second = String(timestamp.getSeconds()).padStart(2, '0');
+
+                        // カウントをインクリメント
+                        maxCount++;
+                        const commentCountStr = String(maxCount).padStart(4, '0');
+                        const timeStr = `${year}:${month}:${day}:${hour}:${minute}:${second}-${commentCountStr}`;
+
+                        const emoji = entry.emoji ? '' : '';
+                        const sound = entry.sound ? '[sound]' : '';
+                        const formattedLine = `[${timeStr}] ${entry.comment} ${emoji}${sound}[${entry.username}]`.trim();
+                        commentLog.push(formattedLine);
+                    } catch (e) {
+                        console.warn(`Skipping invalid log entry at line ${index + 1}:`, line.substring(0, 100), e.message);
+                    }
+                });
+
+                // commentCountを更新
+                commentCount = maxCount;
+
+                // textareaを更新
+                textareaCommentLog.value = commentLog.join('\n');
+                textareaCommentLog.scrollTop = textareaCommentLog.scrollHeight;
+
+                addLog(`${lines.length}件のコメントを同期しました`, 'info');
+
+            } catch (error) {
+                console.error('Error syncing comments:', error);
+                if (showAlert) {
+                    alert('サーバーからコメントの同期に失敗しました。');
+                }
+                addLog(`同期エラー: ${error.message}`, 'error');
+            }
         }
 
         // ログ出力関数
@@ -1028,8 +1263,18 @@
                     }
                 }
 
-                // テキストエリアに結果を表示
+                // 暫定結果をinput要素に表示
+                if (interimTranscript) {
+                    inputSpeechInterim.value = interimTranscript;
+                } else {
+                    inputSpeechInterim.value = '';
+                }
+
+                // 確定結果をテキストエリアに追加
                 if (finalTranscript) {
+                    // 暫定結果をクリア
+                    inputSpeechInterim.value = '';
+
                     const currentText = textareaSpeechResult.value;
                     const newText = currentText ? currentText + '\n' + finalTranscript : finalTranscript;
                     textareaSpeechResult.value = newText;
@@ -1060,13 +1305,6 @@
                     }
 
                     // 自動送信機能は削除されました
-                }
-
-                // 途中結果をプレースホルダーに表示
-                if (interimTranscript) {
-                    textareaSpeechResult.placeholder = `認識中: ${interimTranscript}`;
-                } else {
-                    textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
                 }
             };
 
@@ -1138,7 +1376,7 @@
             isRecognizing = false;
             buttonStartSpeech.disabled = false;
             buttonStopSpeech.disabled = true;
-            textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
+            inputSpeechInterim.value = '';
         }
 
         // 音声認識開始
@@ -1184,8 +1422,8 @@
 
         // 音声認識結果クリア
         function clearSpeechResult() {
+            inputSpeechInterim.value = '';
             textareaSpeechResult.value = '';
-            textareaSpeechResult.placeholder = '音声認識の結果がここに表示されます';
             addLog('音声認識結果をクリアしました', 'info');
         }
 
@@ -1464,6 +1702,11 @@
                 addLog(`部屋 "${roomName}" に参加しました (参加者数: ${data.numUsers})`, 'info');
                 buttonConnect.textContent = '切断';
                 updateUserStats(data.numUsers);
+
+                // 接続後、サーバーからコメントログを自動同期（アラートなし）
+                setTimeout(() => {
+                    syncCommentsFromServer(false);
+                }, 500);
             });
 
             socket.on('comment', onNewComment);
@@ -1522,8 +1765,17 @@
             downloadCommentLog();
         });
 
+        buttonDownloadCsv.addEventListener('click', () => {
+            downloadCommentCsv();
+        });
+
         buttonClearComments.addEventListener('click', () => {
             clearCommentLog();
+        });
+
+        // 同期ボタンのイベントリスナー
+        document.getElementById('button_sync_comments').addEventListener('click', () => {
+            syncCommentsFromServer(true); // アラート表示あり
         });
 
         // 参加者数統計のダウンロード

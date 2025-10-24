@@ -35,5 +35,6 @@
     "emoji_ranking_title": "Emoji Top 10",
     "comment_ranking_title": "Comment Top 10",
     "no_data_yet": "No data yet",
-    "times_suffix": " times"
+    "times_suffix": " times",
+    "total_comments": "Total Comments"
 }

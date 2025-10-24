@@ -1,6 +1,7 @@
 /node_modules
 /api_key.json
 /public/api_key.json
+/dashboard-config.js
 /electron/node_modules
 /electron/dist
 out/

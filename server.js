@@ -51,6 +51,9 @@ var port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 300
 var express = require('express');
 var app = express();
 
+// JSONボディパーサーを追加（ダッシュボードAPI用）
+app.use(express.json());
+
 // CORS設定
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -62,6 +65,10 @@ app.use((req, res, next) => {
         next();
     }
 });
+
+// ダッシュボードAPIルーターを読み込み
+const dashboardRouter = require('./dashboard-api');
+app.use(dashboardRouter);
 
 var server = app.listen(port, () => console.log('listening on', port));
 
@@ -194,3 +201,120 @@ io.on('connection', (socket) => {
         // 明示的 leave は不要（Socket.IO が処理）
     });
 });
+
+
+
+// チャットログの自動削除設定
+// ログの保持期間（古いログを削除する基準）
+const LOG_RETENTION_DAYS = 21;      // 日数で指定（例: 21 = 3週間）
+// const LOG_RETENTION_HOURS = 1;   // テスト用: 時間で指定する場合はこちらを使用
+// const LOG_RETENTION_MINUTES = 2; // テスト用: 分で指定する場合はこちらを使用
+
+// クリーンアップチェック間隔（どのくらいの頻度で古いログをチェックするか）
+const CLEANUP_CHECK_INTERVAL_HOURS = 24;    // 時間で指定（例: 24 = 1日1回）
+// const CLEANUP_CHECK_INTERVAL_MINUTES = 1; // テスト用: 分で指定する場合はこちらを使用
+
+// 保持期間の計算（優先順位: MINUTES > HOURS > DAYS）
+const getRetentionPeriodMs = () => {
+    if (typeof LOG_RETENTION_MINUTES !== 'undefined') {
+        return LOG_RETENTION_MINUTES * 60 * 1000;
+    } else if (typeof LOG_RETENTION_HOURS !== 'undefined') {
+        return LOG_RETENTION_HOURS * 60 * 60 * 1000;
+    } else {
+        return LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    }
+};
+
+// チェック間隔の計算（優先順位: MINUTES > HOURS）
+const getCheckIntervalMs = () => {
+    if (typeof CLEANUP_CHECK_INTERVAL_MINUTES !== 'undefined') {
+        return CLEANUP_CHECK_INTERVAL_MINUTES * 60 * 1000;
+    } else {
+        return CLEANUP_CHECK_INTERVAL_HOURS * 60 * 60 * 1000;
+    }
+};
+
+// 設定の表示用テキスト生成
+const getRetentionPeriodText = () => {
+    if (typeof LOG_RETENTION_MINUTES !== 'undefined') {
+        return `${LOG_RETENTION_MINUTES} minutes`;
+    } else if (typeof LOG_RETENTION_HOURS !== 'undefined') {
+        return `${LOG_RETENTION_HOURS} hours`;
+    } else {
+        return `${LOG_RETENTION_DAYS} days`;
+    }
+};
+
+const getCheckIntervalText = () => {
+    if (typeof CLEANUP_CHECK_INTERVAL_MINUTES !== 'undefined') {
+        return `every ${CLEANUP_CHECK_INTERVAL_MINUTES} minutes`;
+    } else {
+        return `every ${CLEANUP_CHECK_INTERVAL_HOURS} hours`;
+    }
+};
+
+// 古いチャットログを削除する関数
+function cleanupOldChatLogs() {
+    try {
+        const files = fs.readdirSync(LOG_DIR);
+        const now = Date.now();
+        const retentionPeriodMs = getRetentionPeriodMs();
+        let deletedCount = 0;
+
+        files.forEach(file => {
+            const filePath = path.join(LOG_DIR, file);
+
+            // .logファイルのみ対象
+            if (path.extname(file) !== '.log') {
+                return;
+            }
+
+            try {
+                const stats = fs.statSync(filePath);
+                const lastModified = stats.mtime.getTime();
+                const ageInMs = now - lastModified;
+
+                // 保持期間を超えた場合は削除
+                if (ageInMs > retentionPeriodMs) {
+                    fs.unlinkSync(filePath);
+                    deletedCount++;
+                    const ageInMinutes = Math.floor(ageInMs / (60 * 1000));
+                    const ageInHours = Math.floor(ageInMs / (60 * 60 * 1000));
+                    const ageInDays = Math.floor(ageInMs / (24 * 60 * 60 * 1000));
+
+                    let ageText;
+                    if (ageInDays > 0) {
+                        ageText = `${ageInDays} days old`;
+                    } else if (ageInHours > 0) {
+                        ageText = `${ageInHours} hours old`;
+                    } else {
+                        ageText = `${ageInMinutes} minutes old`;
+                    }
+
+                    console.log(`Deleted old chat log: ${file} (${ageText}, last modified: ${stats.mtime.toISOString()})`);
+                }
+            } catch (error) {
+                console.error(`Error processing file ${file}:`, error);
+            }
+        });
+
+        if (deletedCount > 0) {
+            console.log(`Cleanup completed: ${deletedCount} old chat log(s) deleted`);
+        } else {
+            console.log('Cleanup completed: No old chat logs to delete');
+        }
+    } catch (error) {
+        console.error('Error during chat log cleanup:', error);
+    }
+}
+
+// 定期的にチャットログをクリーンアップ
+const CLEANUP_INTERVAL_MS = getCheckIntervalMs();
+setInterval(cleanupOldChatLogs, CLEANUP_INTERVAL_MS);
+
+// サーバー起動時にも一度実行
+cleanupOldChatLogs();
+
+console.log(`Chat log cleanup scheduled:`);
+console.log(`  - Check interval: ${getCheckIntervalText()}`);
+console.log(`  - Retention period: ${getRetentionPeriodText()}`);
