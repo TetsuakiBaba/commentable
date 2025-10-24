@@ -1,5 +1,34 @@
+// ========================================
+// デバッグ設定
+// ========================================
+// デバッグモードのON/OFF (開発時はtrue、本番環境ではfalseに設定)
+const DEBUG_MODE = false;
+
+// デバッグ用ログ関数
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log('[DEBUG]', ...args);
+    }
+}
+
+// デバッグ用エラーログ関数
+function debugError(...args) {
+    if (DEBUG_MODE) {
+        console.error('[DEBUG ERROR]', ...args);
+    }
+}
+
+// デバッグ用警告ログ関数
+function debugWarn(...args) {
+    if (DEBUG_MODE) {
+        console.warn('[DEBUG WARN]', ...args);
+    }
+}
+// ========================================
+
 // 不要になった旧グローバルは削除 (comment_interval_ms / api_key / sound 系 / is_streaming / timestamp_last_send)
 var socket; // 接続用
+var currentRoom; // 現在接続している部屋名
 
 var flg_speech = false;
 var flg_deactivate_comment_control;
@@ -37,7 +66,7 @@ async function loadInappropriateWords() {
                             // UTF-8としてデコード
                             return decodeURIComponent(escape(decoded));
                         } catch (e) {
-                            console.error(`Failed to decode: ${base64String}`, e);
+                            debugError(`Failed to decode: ${base64String}`, e);
                             return null;
                         }
                     })
@@ -45,7 +74,7 @@ async function loadInappropriateWords() {
 
                 return words;
             } catch (error) {
-                console.error(`${file} の読み込みに失敗しました:`, error);
+                debugError(`${file} の読み込みに失敗しました:`, error);
                 return [];
             }
         });
@@ -56,9 +85,9 @@ async function loadInappropriateWords() {
         // 全ての単語を結合して重複を除去
         inappropriateWords = [...new Set(results.flat())];
 
-        console.log(`${inappropriateWords.length}個の不適切な単語を読み込みました`);
+        debugLog(`${inappropriateWords.length}個の不適切な単語を読み込みました`);
     } catch (error) {
-        console.error('不適切な単語リストの読み込みに失敗しました:', error);
+        debugError('不適切な単語リストの読み込みに失敗しました:', error);
     }
 }
 
@@ -126,13 +155,21 @@ function setup() {
         // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
         let params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
         if (params.room) {
-            var room = decodeURIComponent(params.room);
-            socket.emit('join', room);
+            currentRoom = decodeURIComponent(params.room);
+            socket.emit('join', currentRoom);
         } else {
-            while ((room = prompt("部屋名を入力してください", 'test_room')) == '');
-            //var room = prompt("部屋名を入力してください", 'test_room');
-            socket.emit('join', room);
+            // i18nextが初期化されている場合は翻訳を使用
+            const promptMessage = window.i18next ? window.i18next.t('enter_room_name') : '部屋名を入力してください';
+            while ((currentRoom = prompt(promptMessage, 'test_room')) == '');
+            socket.emit('join', currentRoom);
         }
+
+        // 部屋に接続した後、サーバーからチャットログを同期（アラートは表示しない）
+        setTimeout(() => {
+            if (typeof syncCommentsFromServer === 'function') {
+                syncCommentsFromServer(false);
+            }
+        }, 500); // 部屋接続後少し待ってから実行
     });
 
     socket.on('disconnect', () => {
@@ -153,11 +190,13 @@ function setup() {
         // 部屋名を指定してジョインする．部屋名が指定されていない場合はalertを出す
         let params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
         if (params.room) {
-            var room = decodeURIComponent(params.room);
-            socket.emit('join', room);
+            currentRoom = decodeURIComponent(params.room);
+            socket.emit('join', currentRoom);
         } else {
-            var room = prompt("部屋名を入力してください", 'test_room');
-            socket.emit('join', room);
+            // i18nextが初期化されている場合は翻訳を使用
+            const promptMessage = window.i18next ? window.i18next.t('enter_room_name') : '部屋名を入力してください';
+            currentRoom = prompt(promptMessage, 'test_room');
+            socket.emit('join', currentRoom);
         }
         // 再接続後に人数を明示的に問い合わせ
         setTimeout(() => {
@@ -215,6 +254,14 @@ function setup() {
         const el = document.getElementById(`button_sound_reaction_${n}`); if (el) el.addEventListener('click', sendSoundReaction);
     });
     document.getElementById("download_all_comments")?.addEventListener('click', downloadAllComments);
+    document.getElementById("sync_comments")?.addEventListener('click', syncCommentsFromServer);
+
+    // emojiフィルタのトグルボタン
+    document.getElementById("checkbox_emoji_filter")?.addEventListener('change', (e) => {
+        if (window.CommentApp) {
+            CommentApp.setEmojiFilter(e.target.checked);
+        }
+    });
 
     if (window.CommentApp) {
         CommentApp.attachSocket(socket);
@@ -231,10 +278,10 @@ function setup() {
     const v = params.get('v'); // 'v'はクエリパラメータのキーです
     if (v !== null) {
         document.querySelector('#version').innerText = v;
-        console.log(`パラメータの値は: ${v}`);
+        debugLog(`パラメータの値は: ${v}`);
     } else {
         document.querySelector('#version').innerText = 'undefined';
-        console.log('パラメータのキーは存在しません。');
+        debugLog('パラメータのキーは存在しません。');
     }
 
     // no canvas usage
@@ -280,12 +327,13 @@ if (document.readyState === 'loading') {
 
 // 以前 p5 の log もしくは独自 util があった想定のため簡易実装
 function log(msg) {
-    try { console.log(msg); } catch (e) { }
+    try { debugLog(msg); } catch (e) { }
 }
 
 
 // コメント数は CommentApp.state.count で管理
 async function newComment(data) {
+    debugLog("新しいコメント:", data);
     CommentApp.integrateIncoming(data);
     // 隠しコマンド処理
     if (data.hidden === 100) { // コード / ロングテキスト共有
@@ -367,9 +415,17 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     if (!result.ok) {
         if (result.reason === 'interval') {
             const remain = 5 - parseInt((performance.now() - CommentApp.state.lastSend) / 1000);
-            alert("いつも素敵なコメントありがとうございます\n投稿まで後 " + String(remain) + " 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。");
+            // i18nextが初期化されている場合は翻訳を使用
+            const message = window.i18next
+                ? window.i18next.t('comment_interval_message', { seconds: remain })
+                : `いつも素敵なコメントありがとうございます\n投稿まで後 ${remain} 秒お待ち下さい。\n\n注）画面上部の「繰り返し」ランプが点灯しているときは連投ができます。`;
+            alert(message);
         } else if (result.reason === 'length') {
-            alert("一度に遅れる文字数は80文字までです．");
+            // i18nextが初期化されている場合は翻訳を使用
+            const message = window.i18next
+                ? window.i18next.t('comment_length_error')
+                : '一度に遅れる文字数は80文字までです．';
+            alert(message);
         } else if (result.reason === 'empty') {
             // 無入力。特別な通知は無し
         }
