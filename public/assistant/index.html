@@ -170,6 +170,18 @@
                                                 id="input_text_color" value="#FFD700" title="文字色を選択">
                                         </div>
 
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">Max History</span>
+                                            <input type="number" class="form-control"
+                                                id="input_conversation_history_limit" value="50" min="0" max="200">
+                                            <span class="input-group-text bg-light">
+                                                <span id="span_current_history_count">0</span>件
+                                            </span>
+                                            <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+
                                         <div class="mb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
@@ -261,22 +273,10 @@
 
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox"
-                                                id="checkbox_continuous_speech" checked disabled>
+                                                id="checkbox_continuous_speech" checked>
                                             <label class="form-check-label" for="checkbox_continuous_speech">
                                                 連続認識モード
                                             </label>
-                                        </div>
-
-                                        <div class="input-group mb-2">
-                                            <span class="input-group-text">Max History</span>
-                                            <input type="number" class="form-control"
-                                                id="input_conversation_history_limit" value="50" min="0" max="200">
-                                            <span class="input-group-text bg-light">
-                                                <span id="span_current_history_count">0</span>件
-                                            </span>
-                                            <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
                                         </div>
 
 
@@ -383,6 +383,28 @@
                             </div>
 
                             <div class="col-md-6 col-lg-4">
+                                <!-- コンテキスト長グラフ -->
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-chat-dots"></i> AIトークン数の推移
+                                        </h6>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                            id="button_download_context_stats">
+                                            <i class="bi bi-download"></i> CSV
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="contextStatsChart" style="max-height: 300px;"></canvas>
+                                        <div class="text-muted small mt-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            LM Studioに送信するトークン数（推定）がリアルタイムで記録されます
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4">
                                 <!-- 活動ログ -->
                                 <div class="card mb-3">
                                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -456,6 +478,10 @@
         // 参加者数統計関連の変数
         let userStatsChart = null;
         let userStatsHistory = []; // { timestamp, count } の配列
+
+        // トークン数統計関連の変数
+        let contextStatsChart = null;
+        let contextStatsHistory = []; // { timestamp, tokens } の配列
 
         // DOM要素
         const statusIndicator = document.getElementById('status-indicator');
@@ -599,6 +625,48 @@
             });
         }
 
+        // トークン数グラフの初期化
+        function initContextStatsChart() {
+            const ctx = document.getElementById('contextStatsChart').getContext('2d');
+            contextStatsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'トークン数（推定）',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 200
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
         // 参加者数の更新
         function updateUserStats(count) {
             const timestamp = new Date();
@@ -622,6 +690,32 @@
                 }
 
                 userStatsChart.update();
+            }
+        }
+
+        // トークン数の更新
+        function updateContextStats(tokens) {
+            const timestamp = new Date();
+            const timeString = timestamp.toLocaleTimeString('ja-JP');
+
+            // 履歴に追加
+            contextStatsHistory.push({
+                timestamp: timestamp.toISOString(),
+                tokens: tokens
+            });
+
+            // グラフに追加
+            if (contextStatsChart) {
+                contextStatsChart.data.labels.push(timeString);
+                contextStatsChart.data.datasets[0].data.push(tokens);
+
+                // 最大50ポイントに制限
+                if (contextStatsChart.data.labels.length > 50) {
+                    contextStatsChart.data.labels.shift();
+                    contextStatsChart.data.datasets[0].data.shift();
+                }
+
+                contextStatsChart.update();
             }
         }
 
@@ -652,6 +746,35 @@
             URL.revokeObjectURL(url);
 
             addLog('参加者数統計をCSVでダウンロードしました', 'info');
+        }
+
+        // トークン数統計のCSVダウンロード
+        function downloadContextStatsCSV() {
+            if (contextStatsHistory.length === 0) {
+                alert('ダウンロードするデータがありません');
+                return;
+            }
+
+            // CSVヘッダー
+            let csvContent = 'タイムスタンプ,トークン数（推定）\n';
+
+            // データ行
+            contextStatsHistory.forEach(item => {
+                const timestamp = new Date(item.timestamp).toLocaleString('ja-JP');
+                csvContent += `${timestamp},${item.tokens}\n`;
+            });
+
+            // BOMを追加してExcelで正しく開けるようにする
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `トークン数統計_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            addLog('トークン数統計をCSVでダウンロードしました', 'info');
         }
 
         // 会話履歴を文字列として整形
@@ -685,7 +808,8 @@
                 comment: data.comment || '',
                 emoji: data.flg_emoji || false,
                 sound: data.flg_sound || false,
-                socketid: data.socketid || ''
+                socketid: data.socketid || '',
+                source: data.source || 'comment' // 'speech' or 'comment'
             };
             commentLogJSON.push(jsonData);
 
@@ -892,6 +1016,7 @@
                 // commentLogとcommentLogJSONをクリアして、サーバーから取得したログで置き換え
                 commentLog = [];
                 commentLogJSON = [];
+                conversationHistory = []; // 会話履歴もクリア
                 let maxCount = 0;
 
                 lines.forEach((line, index) => {
@@ -924,10 +1049,44 @@
                         const sound = entry.sound ? '[sound]' : '';
                         const formattedLine = `[${timeStr}] ${entry.comment} ${emoji}${sound}[${entry.username}]`.trim();
                         commentLog.push(formattedLine);
+
+                        // 会話履歴に追加（AIアシスタント自身のコメントは除外）
+                        if (entry.username !== aiName) {
+                            // 絵文字のみのコメントは会話履歴から除外
+                            if (!entry.emoji) {
+                                // sourceフィールドで話者を判別（speech=配信者, comment=参加者）
+                                const speaker = entry.source === 'speech' ? '配信者' : '参加者';
+                                // 音声認識（配信者）の場合はユーザー名なし、コメント（参加者）の場合はユーザー名あり
+                                const content = entry.source === 'speech'
+                                    ? entry.comment
+                                    : `${entry.username}: ${entry.comment}`;
+                                conversationHistory.push({
+                                    type: 'user',
+                                    content: content,
+                                    timestamp: entry.timestamp,
+                                    speaker: speaker
+                                });
+                            }
+                        } else {
+                            // AIアシスタント自身のコメントはassistantとして追加（絵文字のみは除外）
+                            if (!entry.emoji) {
+                                conversationHistory.push({
+                                    type: 'assistant',
+                                    content: entry.comment,
+                                    timestamp: entry.timestamp
+                                });
+                            }
+                        }
                     } catch (e) {
                         console.warn(`Skipping invalid log entry at line ${index + 1}:`, line.substring(0, 100), e.message);
                     }
                 });
+
+                // 会話履歴が上限を超えている場合は最新のものだけ残す
+                if (conversationHistory.length > conversationHistoryLimit) {
+                    conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+                    addLog(`会話履歴を最新${conversationHistoryLimit}件に調整しました`, 'info');
+                }
 
                 // commentCountを更新
                 commentCount = maxCount;
@@ -936,7 +1095,10 @@
                 textareaCommentLog.value = commentLog.join('\n');
                 textareaCommentLog.scrollTop = textareaCommentLog.scrollHeight;
 
-                addLog(`${lines.length}件のコメントを同期しました`, 'info');
+                // 会話履歴数を更新
+                updateCurrentHistoryCount();
+
+                addLog(`${lines.length}件のコメントを同期しました（会話履歴: ${conversationHistory.length}件）`, 'info');
 
             } catch (error) {
                 console.error('Error syncing comments:', error);
@@ -995,11 +1157,8 @@
             const stylePrompts = prompts[style] || prompts.mixed;
             const randomPrompt = stylePrompts[Math.floor(Math.random() * stylePrompts.length)];
 
-            // 会話履歴を含めた完全なプロンプトを生成
-            const historyContext = formatConversationHistory();
-            const fullPrompt = `${historyContext}\n\n現在の指示: ${randomPrompt}\n\n※これまでの会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。`;
-            console.log(fullPrompt);
-            return fullPrompt;
+            // 指示のみを返す（会話履歴はbuildPrompt()で処理される）
+            return randomPrompt;
         }
 
         // リアクション専用の送信関数
@@ -1282,8 +1441,19 @@
 
                     addLog(`音声認識結果: ${finalTranscript}`, 'info');
 
-                    // 会話履歴にユーザー発言を追加
-                    addToConversationHistory('user', finalTranscript);
+                    // 音声認識結果をログに保存（配信者の発言として）
+                    const speechLogData = {
+                        my_name: '配信者',
+                        comment: finalTranscript,
+                        flg_speech: false,
+                        flg_emoji: false,
+                        flg_sound: false,
+                        source: 'speech'
+                    };
+                    addToCommentLog(speechLogData);
+
+                    // 会話履歴に配信者の発言として追加（ユーザー名なし）
+                    addToConversationHistory('user', finalTranscript, '配信者');
 
                     // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
                     if (isAiNameAutoResponse && finalTranscript.includes(aiName)) {
@@ -1293,7 +1463,7 @@
                             try {
                                 const aiResponse = await sendToLMStudio(finalTranscript);
                                 setTimeout(() => {
-                                    sendComment(aiResponse);
+                                    sendComment(aiResponse, 'speech'); // 音声認識由来であることを明示
                                     // AIの応答も会話履歴に追加
                                     addToConversationHistory('assistant', aiResponse);
                                     addLog(`音声認識からのAI応答: ${aiResponse}`, 'info');
@@ -1343,11 +1513,15 @@
                             startSpeechRecognition();
                         }
                     }, 3000); // 3秒待ってから再開
-                } else if (!isRecoverable) {
-                    // 回復不可能なエラーの場合は連続モードを停止
-                    addLog('回復不可能なエラーのため、連続認識モードを停止します', 'error');
-                    isContinuous = false;
-                    checkboxContinuousSpeech.checked = false;
+                } else if (isContinuous && !isRecoverable) {
+                    // 回復不可能なエラーでも連続モードは維持し、5秒後に再試行
+                    addLog(`回復不可能なエラー: ${event.error}。連続認識モードを維持し、5秒後に再試行します。`, 'error');
+                    setTimeout(() => {
+                        if (isContinuous) {
+                            addLog('音声認識を再試行しています...', 'info');
+                            startSpeechRecognition();
+                        }
+                    }, 5000); // 5秒待ってから再開
                 }
             };
 
@@ -1435,12 +1609,13 @@
         }
 
         // 会話履歴に追加
-        function addToConversationHistory(type, content) {
+        function addToConversationHistory(type, content, speaker = null) {
             const timestamp = new Date().toISOString();
             conversationHistory.push({
                 type: type, // 'user' または 'assistant'
                 content: content,
-                timestamp: timestamp
+                timestamp: timestamp,
+                speaker: speaker // '配信者' または '参加者'
             });
 
             // 履歴数の上限を超えた場合、古いものから削除
@@ -1451,7 +1626,8 @@
             // 現在の履歴数を更新
             updateCurrentHistoryCount();
 
-            addLog(`会話履歴に追加: [${type}] ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`, 'info');
+            const speakerLabel = speaker ? `[${speaker}]` : '';
+            addLog(`会話履歴に追加: ${speakerLabel}[${type}] ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`, 'info');
         }
 
         // 会話履歴をクリア
@@ -1461,25 +1637,65 @@
             addLog('会話履歴をクリアしました', 'info');
         }
 
-        // 会話履歴をシステムプロンプトに組み込む
-        function buildSystemPromptWithHistory() {
-            let basePrompt = textareaSystemPrompt.value.trim();
-            if (basePrompt) {
-                basePrompt = basePrompt.replace(/{AI_NAME}/g, aiName);
+        // プロンプトを構築（system, user, assistantを分離）
+        function buildPrompt() {
+            // システムプロンプト: 事前知識のみ
+            let systemPrompt = textareaSystemPrompt.value.trim();
+            if (systemPrompt) {
+                systemPrompt = systemPrompt.replace(/{AI_NAME}/g, aiName);
             }
 
-            // 会話履歴がある場合は追加
+            // アシスタントプロンプト: 過去の会話履歴
+            let assistantPrompt = '';
+
+            // ユーザープロンプト: 指示
+            let userPrompt = '';
+
             if (conversationHistory.length > 0) {
+                // デバッグ: 会話履歴の内容を確認
+                console.log('=== 会話履歴デバッグ ===');
+                conversationHistory.forEach((entry, index) => {
+                    console.log(`[${index}] type: ${entry.type}, speaker: ${entry.speaker}, content: ${entry.content.substring(0, 50)}`);
+                });
+                console.log('===================');
+
                 const historyText = conversationHistory.map(entry => {
-                    const role = entry.type === 'user' ? 'ユーザー' : 'アシスタント';
-                    return `${role}: ${entry.content}`;
+                    if (entry.type === 'assistant') {
+                        // AIアシスタントの応答
+                        return `アシスタント(${aiName}): ${entry.content}`;
+                    } else {
+                        // ユーザーの発言
+                        if (entry.speaker) {
+                            // speaker フィールドがある場合（配信者 or 参加者）
+                            return `${entry.speaker}: ${entry.content}`;
+                        } else {
+                            // speaker フィールドがない場合（互換性のため）
+                            return `ユーザー: ${entry.content}`;
+                        }
+                    }
                 }).join('\n');
 
-                const historyPrompt = `\n\n【過去の会話履歴】\n${historyText}\n\n上記の会話履歴を参考にして、文脈に沿った自然な返答をしてください。`;
-                return basePrompt + historyPrompt;
+                // 過去ログをアシスタントプロンプトとして設定
+                assistantPrompt = `【過去の会話履歴】\n${historyText}`;
+
+                // 指示をユーザープロンプトとして設定
+                userPrompt = 'これまでの会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。';
             }
 
-            return basePrompt;
+            // デバッグ: 完成したプロンプトを確認
+            console.log('=== システムプロンプト ===');
+            console.log(systemPrompt);
+            console.log('=== アシスタントプロンプト（過去ログ） ===');
+            console.log(assistantPrompt);
+            console.log('=== ユーザープロンプト（指示） ===');
+            console.log(userPrompt);
+            console.log('================================');
+
+            return {
+                system: systemPrompt,
+                assistant: assistantPrompt,
+                user: userPrompt
+            };
         }
 
         // LM Studio 接続テスト
@@ -1506,30 +1722,53 @@
                 // LM Studio の接続テスト
                 addLog(`接続先: ${lmStudioUrl}`, 'info');
 
-                // システムプロンプトを取得し、AI名前のプレースホルダーを置換
-                let systemPrompt = buildSystemPromptWithHistory();
+                // プロンプトを構築（system, assistant, userを分離）
+                const prompts = buildPrompt();
 
                 // メッセージ配列を構築
                 const messages = [];
 
-                // システムプロンプトがある場合は追加
-                if (systemPrompt) {
+                // システムプロンプト（事前知識）を追加
+                if (prompts.system) {
                     messages.push({
                         role: 'system',
-                        content: systemPrompt
+                        content: prompts.system
                     });
                 }
 
-                // ユーザーメッセージを追加
+                // アシスタントプロンプト（過去ログ）を追加
+                if (prompts.assistant) {
+                    messages.push({
+                        role: 'assistant',
+                        content: prompts.assistant
+                    });
+                }
+
+                // ユーザープロンプト（指示 + 今回のメッセージ）を追加
+                let userContent = '';
+                if (prompts.user) {
+                    // 会話履歴がある場合は指示を含める
+                    userContent = prompts.user + '\n\n' + message;
+                } else {
+                    // 会話履歴がない場合は今回のメッセージのみ
+                    userContent = message;
+                }
+
                 messages.push({
                     role: 'user',
-                    content: message
+                    content: userContent
                 });
 
+                // トークン数を計算して記録（文字数 ÷ 0.75 で推定）
+                const totalCharLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+                const estimatedTokens = Math.round(totalCharLength / 0.75);
+                updateContextStats(estimatedTokens);
+                addLog(`推定トークン数: ${estimatedTokens} (文字数: ${totalCharLength})`, 'info');
+
                 addLog(`送信メッセージ数: ${messages.length}`, 'info');
-                if (systemPrompt) {
-                    addLog(`システムプロンプト: ${systemPrompt.substring(0, 50)}...`, 'info');
-                }
+                console.log('=== LM Studioに送信するメッセージ ===');
+                console.log(JSON.stringify(messages, null, 2));
+                console.log('====================================');
 
                 const response = await fetch(`${textLmStudioUrl.value.trim()}/chat/completions`, {
                     method: 'POST',
@@ -1541,7 +1780,7 @@
                         model: 'local-model',
                         messages: messages,
                         temperature: 0.7,
-                        max_tokens: 2048
+                        max_tokens: 4096
                     })
                 });
 
@@ -1607,7 +1846,7 @@
         }
 
         // コメントをサーバに送信
-        function sendComment(comment) {
+        function sendComment(comment, source = 'comment') {
             if (!socket || !isConnected) {
                 addLog('サーバに接続されていません', 'error');
                 return;
@@ -1623,7 +1862,8 @@
                 flg_emoji: false,
                 flg_sound: false,
                 id_sound: 0,
-                hidden: -1
+                hidden: -1,
+                source: source // 'speech' or 'comment'
             };
 
             socket.emit('comment', data);
@@ -1640,9 +1880,11 @@
             // コメントログに追加（すべてのコメント）
             addToCommentLog(data);
 
-            // すべてのコメントを会話履歴に追加（自分のコメント以外）
-            if (data.my_name !== aiName) {
-                addToConversationHistory('user', `${data.my_name}: ${data.comment}`);
+            // すべてのコメントを会話履歴に追加（自分のコメント以外、絵文字のみは除外）
+            if (data.my_name !== aiName && !data.flg_emoji) {
+                // sourceフィールドで話者を判別（speech=配信者, comment=参加者）
+                const speaker = data.source === 'speech' ? '配信者' : '参加者';
+                addToConversationHistory('user', `${data.my_name}: ${data.comment}`, speaker);
             }
 
             // AI名前が含まれているかチェック
@@ -1781,6 +2023,11 @@
         // 参加者数統計のダウンロード
         document.getElementById('button_download_user_stats').addEventListener('click', () => {
             downloadUserStatsCSV();
+        });
+
+        // コンテキスト長統計のダウンロード
+        document.getElementById('button_download_context_stats').addEventListener('click', () => {
+            downloadContextStatsCSV();
         });
 
         buttonTestLMStudio.addEventListener('click', () => {
@@ -1981,6 +2228,9 @@
 
             // 参加者数グラフの初期化
             initUserStatsChart();
+
+            // コンテキスト長グラフの初期化
+            initContextStatsChart();
 
             addLog(`${aiName} AI アシスタントが起動しました`, 'info');
             addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
