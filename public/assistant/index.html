@@ -124,11 +124,9 @@
                         <div class="row" data-masonry='{"percentPosition": true }'>
                             <div class="col-md-6 col-lg-4">
                                 <div class="card border-info mb-3">
-                                    <div class="card-header bg-info bg-opacity-10">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">AI設定</h6>
-
-                                        </div>
+                                    <div
+                                        class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="bi bi-robot"></i> AI設定</h6>
                                     </div>
 
                                     <div class="card-body">
@@ -190,7 +188,7 @@
                                                     <i class="bi bi-arrow-clockwise"></i>default
                                                 </button>
                                             </div>
-                                            <textarea class="form-control" id="textarea_system_prompt" rows="8"
+                                            <textarea class="form-control" id="textarea_system_prompt" rows="4"
                                                 placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
                                         </div>
                                     </div>
@@ -200,7 +198,7 @@
                                 <div class="card border-success mb-3">
                                     <div class="card-header bg-success bg-opacity-10">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">音声認識</h6>
+                                            <h6 class="mb-0"><i class="bi bi-mic-fill"></i> 音声認識</h6>
                                             <span class="small text-danger"><i class="bi bi-info-circle"></i>
                                                 音声認識はChromeのみ</span>
                                         </div>
@@ -287,7 +285,7 @@
                             <div class="col-md-6 col-lg-4">
                                 <div class="card border-warning mb-3">
                                     <div class="card-header bg-warning bg-opacity-10">
-                                        <h6 class="mb-0">自動投稿機能（授業盛り上げ）</h6>
+                                        <h6 class="mb-0"><i class="bi bi-send-fill"></i> 自動投稿機能（授業盛り上げ）</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-check form-switch mb-2">
@@ -335,7 +333,7 @@
                                 <!-- コメントログカード -->
                                 <div class="card mb-3">
                                     <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">コメントログ</h6>
+                                        <h6 class="mb-0"><i class="bi bi-chat-left-text-fill"></i> コメントログ</h6>
                                         <div>
                                             <button class="btn btn-sm btn-outline-primary me-1"
                                                 id="button_sync_comments" title="サーバーからログを同期">
@@ -408,7 +406,7 @@
                                 <!-- 活動ログ -->
                                 <div class="card mb-3">
                                     <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">活動ログ</h6>
+                                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> 活動ログ</h6>
                                         <button class="btn btn-sm btn-outline-secondary" id="button_clear_log">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -444,7 +442,7 @@
 
     <script>
         // デフォルトのシステムプロンプト
-        const DEFAULT_SYSTEM_PROMPT = 'あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。';
+        const DEFAULT_SYSTEM_PROMPT = 'あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。あなたのコメントは配信者表示に流れるため、返答は必ず120文字以内の短い一文でお答えください。';
 
         // グローバル変数
         let socket;
@@ -2071,7 +2069,7 @@
         // 自動応答ラベルを更新する関数
         function updateAutoResponseLabel() {
             const labelAutoResponse = document.getElementById('label_auto_response');
-            labelAutoResponse.textContent = `「${aiName}」を含むメッセージに自動応答`;
+            labelAutoResponse.textContent = `「${aiName}」を含むコメントに自動応答`;
         }
 
         // 音声認識のAI名前自動応答ラベルを更新する関数
