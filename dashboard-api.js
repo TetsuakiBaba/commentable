@@ -11,12 +11,18 @@ const LOG_DIR = path.join(__dirname, 'public', 'chatlogs');
 // 管理者パスワードの取得
 // 優先順位: 1. 環境変数 2. dashboard-config.js 3. デフォルト値
 let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+let SKIP_AUTH = false;
 
 if (!ADMIN_PASSWORD) {
     try {
         const config = require('./dashboard-config');
         ADMIN_PASSWORD = config.adminPassword;
+        SKIP_AUTH = config.skipAuth || false;
         console.log('Admin password loaded from dashboard-config.js');
+        if (SKIP_AUTH) {
+            console.warn('⚠️  WARNING: Authentication is DISABLED (skipAuth: true)');
+            console.warn('⚠️  This should ONLY be used for development/debugging!');
+        }
     } catch (error) {
         // dashboard-config.jsが存在しない場合はデフォルト値
         ADMIN_PASSWORD = 'admin123';
@@ -26,6 +32,11 @@ if (!ADMIN_PASSWORD) {
 
 // 簡易的な認証チェック用ミドルウェア
 function checkAuth(req, res, next) {
+    // skipAuthが有効な場合は認証をスキップ
+    if (SKIP_AUTH) {
+        return next();
+    }
+
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -41,6 +52,11 @@ function checkAuth(req, res, next) {
 
 // パスワード認証エンドポイント
 router.post('/api/dashboard/auth', (req, res) => {
+    // skipAuthが有効な場合は常に成功を返す
+    if (SKIP_AUTH) {
+        return res.json({ success: true, message: 'Authentication skipped (development mode)' });
+    }
+
     const { password } = req.body;
 
     if (password === ADMIN_PASSWORD) {
@@ -48,6 +64,14 @@ router.post('/api/dashboard/auth', (req, res) => {
     } else {
         res.status(401).json({ success: false, message: 'Invalid password' });
     }
+});
+
+// 認証状態確認エンドポイント（skipAuth設定を取得）
+router.get('/api/dashboard/auth/status', (req, res) => {
+    console.log('📍 /api/dashboard/auth/status called, SKIP_AUTH:', SKIP_AUTH);
+    res.json({
+        skipAuth: SKIP_AUTH
+    });
 });
 
 // ログファイル一覧取得

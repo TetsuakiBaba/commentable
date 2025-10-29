@@ -5,5 +5,10 @@
 module.exports = {
     // 管理者パスワード
     // 本番環境では強力なパスワードに変更してください
-    adminPassword: 'your-secure-password-here'
+    adminPassword: 'your-secure-password-here',
+
+    // 開発・デバッグモード（認証スキップ）
+    // true にすると認証なしでダッシュボードにアクセスできます
+    // 本番環境では必ず false にしてください
+    skipAuth: false
 };
