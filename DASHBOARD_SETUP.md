@@ -10,7 +10,20 @@ cp dashboard-config.sample.js dashboard-config.js
 2. `dashboard-config.js` を編集してパスワードを設定:
 ```javascript
 module.exports = {
-    adminPassword: 'your-secure-password-here'
+    adminPassword: 'your-secure-password-here',
+    
+    // 開発・デバッグモード（オプション）
+    // true にすると認証なしでダッシュボードにアクセスできます
+    // 本番環境では必ず false にするか、この行を削除してください
+    skipAuth: false  // デフォルト: false
+};
+```
+
+**開発環境で認証をスキップする場合:**
+```javascript
+module.exports = {
+    adminPassword: 'your-secure-password-here',
+    skipAuth: true  // 開発時のみ true に設定
 };
 ```
 
@@ -42,7 +55,8 @@ http://localhost:3000/dashboard/
 ```bash
 cat > dashboard-config.js << 'EOF'
 module.exports = {
-    adminPassword: 'あなたの安全なパスワード'
+    adminPassword: 'あなたの安全なパスワード',
+    skipAuth: false  // 本番環境では必ず false
 };
 EOF
 ```
@@ -61,6 +75,38 @@ EOF
 - 本番環境では必ず強力なパスワードを設定してください
 - 環境変数での管理を推奨します
 - デフォルトパスワード (`admin123`) は開発環境でのみ使用してください
+- **`skipAuth: true` は開発・デバッグ時のみ使用してください**
+  - 本番環境では必ず `false` にするか、設定を削除してください
+  - `skipAuth: true` の場合、認証なしでダッシュボードにアクセスできます
+  - サーバー起動時に警告メッセージが表示されます
+
+## skipAuth オプションについて
+
+### 用途
+開発やデバッグ時に、毎回パスワードを入力する手間を省くためのオプションです。
+
+### 設定方法
+```javascript
+module.exports = {
+    adminPassword: 'your-password',
+    skipAuth: true  // 認証をスキップ
+};
+```
+
+### 動作
+- `skipAuth: true` の場合:
+  - ダッシュボードを開くと、ログイン画面をスキップして直接ダッシュボードが表示されます
+  - サーバー起動時に警告メッセージが表示されます
+  - すべてのAPI認証チェックがスキップされます
+
+- `skipAuth: false` または未設定の場合:
+  - 通常通りログイン画面が表示されます
+  - パスワード認証が必要です
+
+### 注意事項
+- **本番環境では絶対に `skipAuth: true` にしないでください**
+- 設定を省略した場合、デフォルトで `false` になります
+- 開発が終わったら必ず `false` に戻すか、この設定を削除してください
 
 ## トラブルシューティング
 
