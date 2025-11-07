@@ -11,7 +11,8 @@ var time_end;
 var time_end_hour;
 var time_end_minute;
 var is_streaming = false;
-let max_life = 255;
+let max_life = 255; // 後方互換性のため残す（非推奨）
+let comment_display_duration = 10000; // コメント表示時間（ミリ秒）
 var timestamp_last_send
 
 var flg_speech;
@@ -23,6 +24,16 @@ var g_room_name;
 var color_text;
 var color_text_stroke;
 var volume = 0.1;
+
+// カメラ関連の変数
+var cameraCapture = null;
+var personX = 0; // カメラ映像のX座標
+var personY = 0; // カメラ映像のY座標
+var personScale = 0.3; // カメラ映像のスケール（デフォルト: 小）
+var cameraPosition = 'top-right'; // カメラ位置: 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
+
+// コメントコマンド関連の変数
+var commentCommands = []; // アクティブなコメントコマンドの配列
 
 function setVolume(value) {
     volume = parseFloat(value);
@@ -186,7 +197,9 @@ class Comment {
         this.y = random(100);
         this.text = "test";
         this.alpha = random(100);
-        this.life = 1; // 0 - 255
+        this.life = 1; // 0 - 255（後方互換性のため残す）
+        this.startTime = 0; // コメント開始時刻（ミリ秒）
+        this.duration = comment_display_duration; // 表示時間（ミリ秒）
         this.size = 72.0;
         this.flg_img = false;
         this.volume = 0.1;
@@ -199,6 +212,8 @@ class Comment {
     }
     setLife(_life) {
         this.life = _life;
+        this.startTime = millis(); // 開始時刻を記録
+        this.duration = comment_display_duration;
     }
     getLife() {
         return this.life;
@@ -232,94 +247,88 @@ class Comment {
         }
     }
     update() {
+        // 経過時間を計算
+        const elapsed = millis() - this.startTime;
+        const progress = elapsed / this.duration; // 0.0 - 1.0
+
+        // 終了チェック
+        if (elapsed >= this.duration) {
+            this.life = 0;
+            return;
+        }
+
         this.size = abs((height / 20) * sin(0.5 * PI));
 
         if (this.text_direction == 'still') {
-            if (this.life > 0) {
-                textAlign(CENTER, CENTER);
-                this.alpha = this.life;
-                this.size = abs((height / 20) * sin(0.5 * PI * this.life / max_life));
-                this.life = this.life - 1;
-            }
+            textAlign(CENTER, CENTER);
+            // 残り時間に応じてアルファ値を計算（フェードアウト）
+            this.alpha = 255 * (1 - progress);
+            this.size = abs((height / 20) * sin(0.5 * PI * (1 - progress)));
+            // lifeは後方互換性のため更新
+            this.life = 255 * (1 - progress);
         }
         else if (this.text_direction == 'left') {
-            if (this.life > 0) {
-                textAlign(LEFT, CENTER);
-                // this.textの横野長さを計算
-                textSize(this.size);
-                let text_width = textWidth(this.text);
+            textAlign(LEFT, CENTER);
+            // this.textの横野長さを計算
+            textSize(this.size);
+            let text_width = textWidth(this.text);
 
-                let start_x = windowWidth;
-                let end_x = -text_width;
+            let start_x = windowWidth;
+            let end_x = -text_width;
 
-                // lifeの割合を計算
-                let life_ratio = this.life / max_life;
-
-                // xの位置を更新
-                this.x = start_x + (1 - life_ratio) * (end_x - start_x);
-                this.alpha = 255;
-                this.life--;
-            }
+            // xの位置を更新（progressを使用）
+            this.x = start_x + progress * (end_x - start_x);
+            this.alpha = 255;
+            // lifeは後方互換性のため更新
+            this.life = 255 * (1 - progress);
         }
         else if (this.text_direction == "right") {
-            if (this.life > 0) {
-                textAlign(LEFT, CENTER);
-                // this.textの横野長さを計算
-                textSize(this.size);
-                let text_width = textWidth(this.text);
+            textAlign(LEFT, CENTER);
+            // this.textの横野長さを計算
+            textSize(this.size);
+            let text_width = textWidth(this.text);
 
-                let start_x = -text_width;
-                let end_x = windowWidth;
+            let start_x = -text_width;
+            let end_x = windowWidth;
 
-                // lifeの割合を計算
-                let life_ratio = this.life / max_life;
-
-                // xの位置を更新
-                this.x = start_x + (1 - life_ratio) * (end_x - start_x);
-                this.alpha = 255;
-                this.life--;
-            }
+            // xの位置を更新（progressを使用）
+            this.x = start_x + progress * (end_x - start_x);
+            this.alpha = 255;
+            // lifeは後方互換性のため更新
+            this.life = 255 * (1 - progress);
         }
         else if (this.text_direction == 'up') {
-            if (this.life > 0) {
-                textAlign(CENTER, TOP);
+            textAlign(CENTER, TOP);
 
-                // this.textの縦の高さを計算
-                textSize(this.size);
-                let text_height = textAscent() + textDescent();
+            // this.textの縦の高さを計算
+            textSize(this.size);
+            let text_height = textAscent() + textDescent();
 
-                let start_y = windowHeight;
-                let end_y = -text_height;
+            let start_y = windowHeight;
+            let end_y = -text_height;
 
-                // lifeの割合を計算
-                let life_ratio = this.life / max_life;
-
-                // xの位置を更新
-                this.y = start_y + (1 - life_ratio) * (end_y - start_y);
-                this.alpha = 255;
-                this.life--;
-            }
+            // yの位置を更新（progressを使用）
+            this.y = start_y + progress * (end_y - start_y);
+            this.alpha = 255;
+            // lifeは後方互換性のため更新
+            this.life = 255 * (1 - progress);
         }
         else if (this.text_direction == "down") {
-            if (this.life > 0) {
-                textAlign(CENTER, TOP);
-                // this.textの縦の高さを計算
-                textSize(this.size);
-                let text_height = textAscent() + textDescent();
+            textAlign(CENTER, TOP);
+            // this.textの縦の高さを計算
+            textSize(this.size);
+            let text_height = textAscent() + textDescent();
 
-                let start_y = -text_height;
-                let end_y = windowHeight;
+            let start_y = -text_height;
+            let end_y = windowHeight;
 
-                // lifeの割合を計算
-                let life_ratio = this.life / max_life;
-
-                // xの位置を更新
-                this.y = start_y + (1 - life_ratio) * (end_y - start_y);
-                this.alpha = 255;
-                this.life--;
-            }
-
+            // yの位置を更新（progressを使用）
+            this.y = start_y + progress * (end_y - start_y);
+            this.alpha = 255;
+            // lifeは後方互換性のため更新
+            this.life = 255 * (1 - progress);
         }
+
         return;
     }
     draw() {
@@ -331,6 +340,53 @@ class Comment {
         return;
     }
 }
+
+// コメントコマンドクラス
+class CommentCommand {
+    constructor(commandName, args, colorText, colorTextStroke) {
+        this.commandName = commandName;
+        this.args = args;
+        this.colorText = colorText || "#ffffff";
+        this.colorTextStroke = colorTextStroke || "#000000";
+        this.startTime = millis();
+        this.duration = 10000; // 10秒間表示
+        this.isActive = true;
+    }
+
+    update() {
+        if (millis() - this.startTime > this.duration) {
+            this.isActive = false;
+        }
+    }
+
+    draw() {
+        if (!this.isActive) return;
+
+        // commandNameに応じた描画処理
+        if (this.commandName === 'text') {
+            this.drawText();
+        }
+    }
+
+    drawText() {
+        // 引数: text(表示テキスト, x位置(0-1), y位置(0-1))
+        if (this.args.length >= 3) {
+            const textContent = this.args[0].replace(/['"]/g, ''); // クォートを削除
+            const xPos = parseFloat(this.args[1]) * windowWidth;
+            const yPos = parseFloat(this.args[2]) * windowHeight;
+
+            push();
+            textAlign(CENTER, CENTER);
+            textSize(height / 15);
+            strokeWeight(5.0);
+            stroke(this.colorTextStroke);
+            fill(this.colorText);
+            text(textContent, xPos, yPos);
+            pop();
+        }
+    }
+}
+
 var comments = []; //new Array(50);
 function whileLoading(total) {
     //console.log('loaded: ', + total);
@@ -480,10 +536,10 @@ function setup() {
 
     textFont("Noto Sans JP");
     mycanvas = createCanvas(windowWidth, windowHeight);
-    //console.log(windowWidth, windowHeight);
+    console.log('Canvas created with size:', windowWidth, 'x', windowHeight);
     document.getElementById("canvas_placeholder").append(mycanvas.elt);
 
-    frameRate(30);
+    // frameRate(30);
     flg_deactivate_comment_control = false;
 
 
@@ -501,6 +557,34 @@ function setup() {
     speech = new p5.Speech();
     speech.setVolume(volume);
 
+    // カメラ選択のIPCイベントリスナーを設定
+    if (window.electronAPI) {
+        window.electronAPI.onSelectCamera((event, deviceId) => {
+            console.log('Camera selected:', deviceId);
+            startCamera(deviceId);
+        });
+
+        window.electronAPI.onStopCamera(() => {
+            console.log('Stop camera requested');
+            stopCamera();
+        });
+
+        // 保存された設定を読み込み
+        loadCameraSettingsFromMain();
+    }
+
+}
+
+// カメラ設定を読み込み
+async function loadCameraSettingsFromMain() {
+    try {
+        const settings = await window.electronAPI.getCameraSetting();
+        console.log('Loaded camera settings:', settings);
+        // 設定は文字列で返ってくる可能性があるのでパースする
+        // ここでは使わないが、位置とサイズはtoggleCameraで適用される
+    } catch (error) {
+        console.error('Error loading camera settings:', error);
+    }
 }
 
 function showNotification(text) {
@@ -525,7 +609,31 @@ function showNotification(text) {
 }
 function draw() {
     clear();
-    //background(0, 0, 0, 0);
+
+    // カメラ映像を描画
+    if (cameraCapture && personScale > 0) {
+        // マウスがカメラ映像の範囲内にあるかチェック
+        const vidWidth = cameraCapture.width * personScale;
+        const vidHeight = cameraCapture.height * personScale;
+        const cameraLeft = personX - vidWidth / 2;
+        const cameraRight = personX + vidWidth / 2;
+        const cameraTop = personY - vidHeight / 2;
+        const cameraBottom = personY + vidHeight / 2;
+
+        const isMouseOverCamera = mouseX >= cameraLeft && mouseX <= cameraRight &&
+            mouseY >= cameraTop && mouseY <= cameraBottom;
+
+        push();
+        imageMode(CENTER);
+
+        // マウスがホバーしている場合は透過度を下げる
+        if (isMouseOverCamera) {
+            tint(255, 50); // 透明度を約20%に設定（255の約20% = 50）
+        }
+
+        image(cameraCapture, personX, personY, vidWidth, vidHeight);
+        pop();
+    }
 
     if (flg_clock == true) {
         let now = new Date();
@@ -553,6 +661,17 @@ function draw() {
 
     protofessional_effect.draw();
     flash.draw();
+
+    // コメントコマンドの描画
+    for (let i = commentCommands.length - 1; i >= 0; i--) {
+        commentCommands[i].update();
+        if (commentCommands[i].isActive) {
+            commentCommands[i].draw();
+        } else {
+            // 非アクティブなコマンドを削除
+            commentCommands.splice(i, 1);
+        }
+    }
 
     if (admin_message.show) {
         textAlign(CENTER, CENTER);
@@ -592,7 +711,39 @@ function parseFunctionString(str) {
     };
 }
 
+// コメントコマンドをパースして実行
+function executeCommentCommand(commandString, colorText, colorTextStroke) {
+    // = で始まるかチェック
+    if (!commandString.startsWith('=')) {
+        return false;
+    }
 
+    // = を削除
+    const command = commandString.substring(1);
+
+    // 関数としてパース
+    const parsed = parseFunctionString(command);
+
+    if (!parsed) {
+        console.log('Invalid comment command format:', commandString);
+        return false;
+    }
+
+    // 許可された関数名のリスト
+    const allowedCommands = ['text'];
+
+    if (!allowedCommands.includes(parsed.functionName)) {
+        console.log('Command not allowed:', parsed.functionName);
+        return false;
+    }
+
+    // コメントコマンドを作成して配列に追加
+    const commentCommand = new CommentCommand(parsed.functionName, parsed.args, colorText, colorTextStroke);
+    commentCommands.push(commentCommand);
+
+    console.log('Comment command executed:', parsed.functionName, parsed.args, 'colors:', colorText, colorTextStroke);
+    return true;
+}
 
 var count_comment = 0;
 
@@ -609,6 +760,15 @@ function newComment(data) {
     comment_format += "[" + data.my_name + "]" + "\n";
     //here
     select("#textarea_comment_history").html(comment_format, true);
+
+    // コメントコマンドチェック（= で始まる場合）
+    if (data.comment && data.comment.startsWith('=')) {
+        const executed = executeCommentCommand(data.comment, data.color_text, data.color_text_stroke);
+        if (executed) {
+            console.log('Comment command processed:', data.comment);
+            return; // コメントコマンドとして処理したので通常の描画はスキップ
+        }
+    }
 
     // 隠しコマンド
     if (data.hidden >= 0) {
@@ -801,4 +961,111 @@ function sendCodeSnippet(clip_text) {
     newComment(data);
 
     showNotification("資料スペースにクリップボードの内容を送信しました。");
+}
+
+// ========== カメラ関連の関数 ==========
+
+// カメラを開始
+async function startCamera(deviceId) {
+    console.log('Starting camera with deviceId:', deviceId);
+
+    try {
+        // 既存のカメラを停止
+        stopCamera();
+
+        const constraints = {
+            video: {
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
+        console.log('Creating capture with constraints:', constraints);
+
+        cameraCapture = createCapture(constraints, () => {
+            console.log('Camera capture created successfully');
+            console.log('Camera size:', cameraCapture.width, 'x', cameraCapture.height);
+
+            // ビデオ要素を非表示にする（p5で描画するため）
+            cameraCapture.hide();
+
+            // 位置を設定
+            updateCameraPosition();
+            console.log('Initial position set to:', personX, personY, 'scale:', personScale);
+        });
+
+        // エラーハンドリング
+        cameraCapture.elt.addEventListener('error', (e) => {
+            console.error('Camera error:', e);
+        });
+
+    } catch (error) {
+        console.error('Error starting camera:', error);
+    }
+}
+
+// カメラを停止
+function stopCamera() {
+    if (cameraCapture) {
+        cameraCapture.remove();
+        cameraCapture = null;
+        console.log('Camera stopped');
+    }
+}
+
+// カメラ位置を設定
+function setCameraPosition(position) {
+    cameraPosition = position;
+    updateCameraPosition();
+    console.log('Camera position set to:', position);
+}
+
+// カメラサイズを設定
+function setCameraSize(size) {
+    switch (size) {
+        case 'small':
+            personScale = 0.3;
+            break;
+        case 'medium':
+            personScale = 0.5;
+            break;
+        case 'large':
+            personScale = 0.8;
+            break;
+    }
+    updateCameraPosition(); // サイズ変更時も位置を再計算
+    console.log('Camera size set to:', size, 'scale:', personScale);
+}
+
+// カメラ位置を更新
+function updateCameraPosition() {
+    if (!cameraCapture) return;
+
+    const margin = 50; // 画面端からのマージン
+    const vidWidth = cameraCapture.width * personScale;
+    const vidHeight = cameraCapture.height * personScale;
+
+    switch (cameraPosition) {
+        case 'top-left':
+            personX = margin + vidWidth / 2;
+            personY = margin + vidHeight / 2;
+            break;
+        case 'top-right':
+            personX = windowWidth - margin - vidWidth / 2;
+            personY = margin + vidHeight / 2;
+            break;
+        case 'bottom-left':
+            personX = margin + vidWidth / 2;
+            personY = windowHeight - margin - vidHeight / 2;
+            break;
+        case 'bottom-right':
+            personX = windowWidth - margin - vidWidth / 2;
+            personY = windowHeight - margin - vidHeight / 2;
+            break;
+        case 'center':
+            personX = windowWidth / 2;
+            personY = windowHeight / 2;
+            break;
+    }
 }

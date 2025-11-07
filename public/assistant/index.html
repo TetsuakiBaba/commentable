@@ -12,9 +12,9 @@
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"
-        integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous"
-        async></script>
+    <!-- Packery for draggable grid layout -->
+    <script src="https://unpkg.com/packery@2.1.2/dist/packery.pkgd.min.js"></script>
+    <script src="https://unpkg.com/draggabilly@2.4.1/dist/draggabilly.pkgd.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
@@ -95,345 +95,410 @@
         .log-info {
             color: #6c757d;
         }
+
+        /* ドラッグ可能なカードハンドルのスタイル */
+        .card-handle {
+            cursor: move;
+            user-select: none;
+        }
+
+        .card-handle:active {
+            cursor: grabbing;
+        }
+
+        /* ドラッグ中のカードスタイル */
+        .is-dragging {
+            opacity: 0.7;
+            z-index: 1000;
+        }
+
+        /* アコーディオンボタンのスタイル */
+        .accordion-toggle {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: inherit;
+            transition: transform 0.3s ease;
+            margin-right: 8px;
+        }
+
+        .accordion-toggle:hover {
+            opacity: 0.7;
+        }
+
+        .accordion-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* 最小化時のカードボディ */
+        .card-body.collapsed {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
+    <!-- ブラウザ警告モーダル -->
+    <div class="modal fade" id="browserWarningModal" tabindex="-1" aria-labelledby="browserWarningModalLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="browserWarningModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> ブラウザの互換性警告
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        <strong>Google Chrome以外のブラウザをご利用されています。</strong>
+                    </p>
+                    <p class="mb-2">このアプリケーションは以下の機能でChromeブラウザが必要です:</p>
+                    <ul>
+                        <li>音声認識機能（Web Speech API）</li>
+                        <li>LM Studioへのデータ送信</li>
+                    </ul>
+                    <p class="text-danger mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        正常に動作しない可能性があります。Google Chromeのご利用を強く推奨します。
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        このまま続ける
+                    </button>
+                    <a href="https://www.google.com/chrome/" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Chromeをダウンロード
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container-fluid">
         <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"><span class="badge bg-secondary">AI
                 Assistant</span></p>
 
         <div class="row">
             <div class="col-12">
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <span id="status-indicator" class="status-indicator status-disconnected"></span>
-                            接続状態: <span id="status-text">接続待機中</span>
-                        </h6>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span id="status-indicator" class="status-indicator status-disconnected"></span>
+                        <span class="small">接続状態: <strong id="status-text">接続待機中</strong></span>
                     </div>
-                    <div class="card-body">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text">部屋名</span>
-                            <input class="form-control" type="text" id="text_room_name" placeholder="配信中の部屋名が自動入力されます"
-                                value="">
-                            <button class="btn btn-outline-primary" id="button_connect">接続</button>
-                        </div>
-
-
-                        <div class="row" data-masonry='{"percentPosition": true }'>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card border-info mb-3">
-                                    <div
-                                        class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0"><i class="bi bi-robot"></i> AI設定</h6>
-                                    </div>
-
-                                    <div class="card-body">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                id="checkbox_auto_response" checked>
-                                            <label class="small form-check-label" for="checkbox_auto_response"
-                                                id="label_auto_response">
-                                                「米太郎」を含むコメントに自動応答
-                                            </label>
-                                        </div>
-                                        <hr>
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">LM Studio URL</span>
-                                            <input class="form-control" type="text" id="text_lm_studio_url"
-                                                value="http://127.0.0.1:1234/v1">
-                                            <button class="btn btn-outline-secondary"
-                                                id="button_test_lm_studio">テスト</button>
-                                        </div>
-
-
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">AIアシスタント名</span>
-                                            <input class="form-control" type="text" id="text_ai_name"
-                                                placeholder="AIアシスタント名を入力">
-                                        </div>
-
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">文字移動方向</span>
-                                            <select class="form-select" id="select_text_direction">
-                                                <option value="still">静止</option>
-                                                <option value="up">↑</option>
-                                                <option value="down">↓</option>
-                                                <option value="left" selected>←</option>
-                                                <option value="right">→</option>
-                                            </select>
-                                            <span class="input-group-text">文字色</span>
-                                            <input type="color" class="form-control form-control-color"
-                                                id="input_text_color" value="#FFD700" title="文字色を選択">
-                                        </div>
-
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">Max History</span>
-                                            <input type="number" class="form-control"
-                                                id="input_conversation_history_limit" value="50" min="0" max="200">
-                                            <span class="input-group-text bg-light">
-                                                <span id="span_current_history_count">0</span>件
-                                            </span>
-                                            <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
-                                                <button class="btn btn-sm btn-outline-secondary"
-                                                    id="button_reset_system_prompt">
-                                                    <i class="bi bi-arrow-clockwise"></i>default
-                                                </button>
-                                            </div>
-                                            <textarea class="form-control" id="textarea_system_prompt" rows="4"
-                                                placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card border-success mb-3">
-                                    <div class="card-header bg-success bg-opacity-10">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0"><i class="bi bi-mic-fill"></i> 音声認識</h6>
-                                            <span class="small text-danger"><i class="bi bi-info-circle"></i>
-                                                音声認識はChromeのみ</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox"
-                                                id="checkbox_ai_name_auto_response" checked>
-                                            <label class="form-check-label small" for="checkbox_ai_name_auto_response"
-                                                id="label_ai_name_auto_response">
-                                                「米太郎」を含む音声認識を自動でAIに送信
-                                            </label>
-                                        </div>
-                                        <hr>
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">マイク選択</span>
-                                            <select class="form-select" id="select_microphone">
-                                                <option value="">マイクを選択してください</option>
-                                            </select>
-                                            <button class="btn btn-outline-secondary"
-                                                id="button_refresh_mics">更新</button>
-                                        </div>
-
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">言語</span>
-                                            <select class="form-select" id="select_speech_language">
-                                                <option value="ja-JP">日本語</option>
-                                                <option value="en-US">English (US)</option>
-                                                <option value="en-GB">English (UK)</option>
-                                                <option value="zh-CN">中文 (简体)</option>
-                                                <option value="ko-KR">한국어</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label for="input_speech_interim" class="form-label mb-0">
-                                                    リアルタイム認識
-                                                    <small class="text-muted">(暫定結果)</small>
-                                                </label>
-                                                <div class="d-flex gap-2">
-                                                    <button class="btn btn-sm btn-success" id="button_start_speech">
-                                                        <i class="bi bi-mic"></i> 開始
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" id="button_stop_speech"
-                                                        disabled>
-                                                        <i class="bi bi-mic-mute"></i> 停止
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <input type="text" class="form-control bg-light" id="input_speech_interim"
-                                                placeholder="音声認識中の暫定結果がここに表示されます" readonly>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label for="textarea_speech_result" class="form-label mb-0">
-                                                    確定結果
-                                                </label>
-                                                <div class="d-flex gap-2">
-                                                    <button class="btn btn-sm btn-outline-secondary"
-                                                        id="button_clear_speech">
-                                                        <i class="bi bi-trash"></i> クリア
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <textarea class="form-control" id="textarea_speech_result" rows="4"
-                                                placeholder="確定した音声認識の結果がここに表示されます" readonly></textarea>
-                                        </div>
-
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox"
-                                                id="checkbox_continuous_speech" checked>
-                                            <label class="form-check-label" for="checkbox_continuous_speech">
-                                                連続認識モード
-                                            </label>
-                                        </div>
-
-
-
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card border-warning mb-3">
-                                    <div class="card-header bg-warning bg-opacity-10">
-                                        <h6 class="mb-0"><i class="bi bi-send-fill"></i> 自動投稿機能（授業盛り上げ）</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check form-switch mb-2">
-                                            <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
-                                            <label class="small form-check-label" for="checkbox_auto_posting">
-                                                定期的に自動でコメントを投稿
-                                            </label>
-                                        </div>
-
-                                        <div class="row mb-2">
-                                            <div class="col-6">
-                                                <label for="range_posting_interval_min"
-                                                    class="form-label">最小間隔（分）</label>
-                                                <input type="range" class="form-range" id="range_posting_interval_min"
-                                                    min="1" max="10" value="2">
-                                                <small class="text-muted"><span id="span_interval_min">2</span>分</small>
-                                            </div>
-                                            <div class="col-6">
-                                                <label for="range_posting_interval_max"
-                                                    class="form-label">最大間隔（分）</label>
-                                                <input type="range" class="form-range" id="range_posting_interval_max"
-                                                    min="5" max="20" value="8">
-                                                <small class="text-muted"><span id="span_interval_max">8</span>分</small>
-                                            </div>
-                                        </div>
-                                        <hr>
-
-                                        <div class="mb-2">
-                                            <label for="select_posting_style" class="form-label">投稿スタイル</label>
-                                            <select class="form-select form-select-sm" id="select_posting_style">
-                                                <option value="mixed">ミックス（授業関連＋雑談）</option>
-                                                <option value="academic">授業関連のみ</option>
-                                                <option value="casual">雑談のみ</option>
-                                                <option value="reaction">リアクションのみ</option>
-                                            </select>
-                                        </div>
-
-                                        <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
-                                            テスト投稿
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <!-- コメントログカード -->
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0"><i class="bi bi-chat-left-text-fill"></i> コメントログ</h6>
-                                        <div>
-                                            <button class="btn btn-sm btn-outline-primary me-1"
-                                                id="button_sync_comments" title="サーバーからログを同期">
-                                                <i class="bi bi-arrow-clockwise"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-primary me-1"
-                                                id="button_download_comments" title="ログをダウンロード">
-                                                <i class="bi bi-download"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-1" id="button_download_csv"
-                                                title="ユーザー別集計CSVをダウンロード">
-                                                <i class="bi bi-file-earmark-spreadsheet"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <textarea id="textarea_comment_log" readonly class="form-control" rows="6"
-                                            placeholder="受信したコメントがここに表示されます"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 col-lg-4">
-                                <!-- 参加者数グラフ -->
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">
-                                            <i class="bi bi-people-fill"></i> 参加者数の推移
-                                        </h6>
-                                        <button class="btn btn-sm btn-outline-primary" id="button_download_user_stats">
-                                            <i class="bi bi-download"></i> CSV
-                                        </button>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="userStatsChart" style="max-height: 300px;"></canvas>
-                                        <div class="text-muted small mt-2">
-                                            <i class="bi bi-info-circle"></i>
-                                            参加者の入退室がリアルタイムで記録されます
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 col-lg-4">
-                                <!-- コンテキスト長グラフ -->
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">
-                                            <i class="bi bi-chat-dots"></i> AIトークン数の推移
-                                        </h6>
-                                        <button class="btn btn-sm btn-outline-primary"
-                                            id="button_download_context_stats">
-                                            <i class="bi bi-download"></i> CSV
-                                        </button>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="contextStatsChart" style="max-height: 300px;"></canvas>
-                                        <div class="text-muted small mt-2">
-                                            <i class="bi bi-info-circle"></i>
-                                            LM Studioに送信するトークン数（推定）がリアルタイムで記録されます
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 col-lg-4">
-                                <!-- 活動ログ -->
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> 活動ログ</h6>
-                                        <button class="btn btn-sm btn-outline-secondary" id="button_clear_log">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="log-container" class="log-container"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
+                    <div class="input-group">
+                        <span class="input-group-text">部屋名</span>
+                        <input class="form-control" type="text" id="text_room_name" placeholder="配信中の部屋名が自動入力されます"
+                            value="">
+                        <button class="btn btn-outline-primary" id="button_connect">接続</button>
                     </div>
                 </div>
 
 
+                <div class="row" id="dashboard-grid">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-info mb-3">
+                            <div class="card-header card-handle bg-info bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-robot"></i> AI設定</h6>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="checkbox_auto_response" checked>
+                                    <label class="small form-check-label" for="checkbox_auto_response"
+                                        id="label_auto_response">
+                                        「米太郎」を含むコメントに自動応答
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">LM Studio URL</span>
+                                    <input class="form-control" type="text" id="text_lm_studio_url"
+                                        value="http://127.0.0.1:1234/v1">
+                                    <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
+                                </div>
+
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">AIアシスタント名</span>
+                                    <input class="form-control" type="text" id="text_ai_name"
+                                        placeholder="AIアシスタント名を入力">
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">文字移動方向</span>
+                                    <select class="form-select" id="select_text_direction">
+                                        <option value="still">静止</option>
+                                        <option value="up">↑</option>
+                                        <option value="down">↓</option>
+                                        <option value="left" selected>←</option>
+                                        <option value="right">→</option>
+                                    </select>
+                                    <span class="input-group-text">文字色</span>
+                                    <input type="color" class="form-control form-control-color" id="input_text_color"
+                                        value="#FFD700" title="文字色を選択">
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Max History</span>
+                                    <input type="number" class="form-control" id="input_conversation_history_limit"
+                                        value="50" min="0" max="200">
+                                    <span class="input-group-text bg-light">
+                                        <span id="span_current_history_count">0</span>件
+                                    </span>
+                                    <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            id="button_reset_system_prompt">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                    <textarea class="form-control" id="textarea_system_prompt" rows="4"
+                                        placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-success mb-3">
+                            <div class="card-header card-handle bg-success bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-mic-fill"></i> 音声認識</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_ai_name_auto_response"
+                                        checked>
+                                    <label class="form-check-label small" for="checkbox_ai_name_auto_response"
+                                        id="label_ai_name_auto_response">
+                                        「米太郎」を含む音声認識を自動でAIに送信
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">マイク選択</span>
+                                    <select class="form-select" id="select_microphone">
+                                        <option value="">マイクを選択してください</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" id="button_refresh_mics">更新</button>
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">言語</span>
+                                    <select class="form-select" id="select_speech_language">
+                                        <option value="ja-JP">日本語</option>
+                                        <option value="en-US">English (US)</option>
+                                        <option value="en-GB">English (UK)</option>
+                                        <option value="zh-CN">中文 (简体)</option>
+                                        <option value="ko-KR">한국어</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="input_speech_interim" class="form-label mb-0">
+                                            リアルタイム認識
+                                            <small class="text-muted">(暫定結果)</small>
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-success" id="button_start_speech">
+                                                <i class="bi bi-mic"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" id="button_stop_speech" disabled>
+                                                <i class="bi bi-mic-mute"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control bg-light" id="input_speech_interim"
+                                        placeholder="音声認識中の暫定結果がここに表示されます" readonly>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="textarea_speech_result" class="form-label mb-0">
+                                            確定結果
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" id="button_download_speech">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" id="button_clear_speech">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea class="form-control" id="textarea_speech_result" rows="4"
+                                        placeholder="確定した音声認識の結果がここに表示されます" readonly></textarea>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_continuous_speech"
+                                        checked>
+                                    <label class="form-check-label" for="checkbox_continuous_speech">
+                                        連続認識モード
+                                    </label>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-warning mb-3">
+                            <div class="card-header card-handle bg-warning bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-send-fill"></i> 自動投稿機能（授業盛り上げ）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
+                                    <label class="small form-check-label" for="checkbox_auto_posting">
+                                        定期的に自動でコメントを投稿
+                                    </label>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_min" class="form-label">最小間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_min" min="1"
+                                            max="10" value="2">
+                                        <small class="text-muted"><span id="span_interval_min">2</span>分</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_max" class="form-label">最大間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_max" min="5"
+                                            max="20" value="8">
+                                        <small class="text-muted"><span id="span_interval_max">8</span>分</small>
+                                    </div>
+                                </div>
+                                <hr>
+
+                                <div class="mb-2">
+                                    <label for="select_posting_style" class="form-label">投稿スタイル</label>
+                                    <select class="form-select form-select-sm" id="select_posting_style">
+                                        <option value="mixed">ミックス（授業関連＋雑談）</option>
+                                        <option value="academic">授業関連のみ</option>
+                                        <option value="casual">雑談のみ</option>
+                                        <option value="reaction">リアクションのみ</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
+                                    テスト投稿
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <!-- コメントログカード -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-chat-left-text-fill"></i> コメントログ</h6>
+                                <div class="ms-auto">
+                                    <button class="btn btn-sm btn-outline-primary me-1" id="button_sync_comments"
+                                        title="サーバーからログを同期">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary me-1" id="button_download_comments"
+                                        title="ログをダウンロード">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success me-1" id="button_download_csv"
+                                        title="ユーザー別集計CSVをダウンロード">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <textarea id="textarea_comment_log" readonly class="form-control" rows="6"
+                                    placeholder="受信したコメントがここに表示されます"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <!-- 参加者数グラフ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-people-fill"></i> 参加者数の推移
+                                </h6>
+                                <button class="btn btn-sm btn-outline-primary ms-auto" id="button_download_user_stats">
+                                    <i class="bi bi-download"></i> CSV
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="userStatsChart" style="max-height: 300px;"></canvas>
+                                <div class="text-muted small mt-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    参加者の入退室がリアルタイムで記録されます
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <!-- コンテキスト長グラフ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-chat-dots"></i> AIトークン数の推移
+                                </h6>
+                                <button class="btn btn-sm btn-outline-primary ms-auto"
+                                    id="button_download_context_stats">
+                                    <i class="bi bi-download"></i> CSV
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="contextStatsChart" style="max-height: 300px;"></canvas>
+                                <div class="text-muted small mt-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    LM Studioに送信するトークン数（推定）がリアルタイムで記録されます
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <!-- 活動ログ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-list-ul"></i> 活動ログ</h6>
+                                <button class="btn btn-sm btn-outline-secondary ms-auto" id="button_clear_log">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="log-container" class="log-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <hr>
 
-        <footer class="page-footer font-small">
-            <div class="footer-copyright small text-center">
-                Commentable Kometaro AI Assistant<br>
-                &copy; 2025 <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
-            </div>
-        </footer>
+    </div>
+    </div>
+
+    <hr>
+
+    <footer class="page-footer font-small">
+        <div class="footer-copyright small text-center">
+            Commentable Kometaro AI Assistant<br>
+            &copy; 2025 <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
+        </div>
+    </footer>
     </div>
 
     <!-- Scripts -->
@@ -513,6 +578,7 @@
         const buttonStartSpeech = document.getElementById('button_start_speech');
         const buttonStopSpeech = document.getElementById('button_stop_speech');
         const buttonClearSpeech = document.getElementById('button_clear_speech');
+        const buttonDownloadSpeech = document.getElementById('button_download_speech');
         const inputSpeechInterim = document.getElementById('input_speech_interim');
         const textareaSpeechResult = document.getElementById('textarea_speech_result');
         const checkboxContinuousSpeech = document.getElementById('checkbox_continuous_speech');
@@ -1592,6 +1658,34 @@
             resetSpeechRecognition();
         }
 
+        // 音声認識結果のダウンロード
+        function downloadSpeechResult() {
+            const speechText = textareaSpeechResult.value.trim();
+
+            if (!speechText) {
+                alert('ダウンロードする音声認識結果がありません');
+                addLog('音声認識結果が空のため、ダウンロードできません', 'info');
+                return;
+            }
+
+            // テキストファイルを生成
+            const blob = new Blob([speechText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // ファイル名: 音声認識結果_YYYY-MM-DD_HHMMSS.txt
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+            const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHMMSS
+            link.download = `音声認識結果_${dateStr}_${timeStr}.txt`;
+
+            link.click();
+            URL.revokeObjectURL(url);
+
+            addLog('音声認識結果をダウンロードしました', 'info');
+        }
+
         // 音声認識結果クリア
         function clearSpeechResult() {
             inputSpeechInterim.value = '';
@@ -2144,6 +2238,11 @@
             stopSpeechRecognition();
         });
 
+        // 音声認識結果のダウンロード
+        buttonDownloadSpeech.addEventListener('click', () => {
+            downloadSpeechResult();
+        });
+
         buttonClearSpeech.addEventListener('click', () => {
             clearSpeechResult();
         });
@@ -2185,6 +2284,12 @@
 
         // 初期化処理
         document.addEventListener('DOMContentLoaded', () => {
+            // ブラウザチェック
+            checkBrowser();
+
+            // アコーディオン機能を最初に初期化
+            initAccordionButtons();
+
             // URL パラメータからルーム名を取得
             const params = getURLParams();
             if (params.room) {
@@ -2236,23 +2341,120 @@
             addLog('自動投稿機能で授業を盛り上げることができます', 'info');
             addLog('音声認識機能が利用可能です', 'info');
             addLog(`会話履歴機能が有効です（保存数: ${conversationHistoryLimit}件）`, 'info');
-            // Masonry の初期化と textarea の Resize を監視して再レイアウト
-            (function initResponsiveMasonry() {
-                const grid = document.querySelector('[data-masonry]');
+            // Packery の初期化とドラッグ可能な配置
+            (function initPackery() {
+                const grid = document.querySelector('#dashboard-grid');
                 if (!grid) return;
 
+                const STORAGE_KEY = 'dashboard_card_order';
+
+                // 各カードにユニークなIDを付与
+                function assignCardIds() {
+                    const itemElems = Array.from(grid.children);
+                    itemElems.forEach((elem, index) => {
+                        if (!elem.dataset.cardId) {
+                            // カード内の最初のh6要素のテキストをIDとして使用
+                            const h6 = elem.querySelector('h6');
+                            if (h6) {
+                                elem.dataset.cardId = h6.textContent.trim();
+                            } else {
+                                elem.dataset.cardId = `card-${index}`;
+                            }
+                        }
+                    });
+                }
+
+                // localStorageからカードの順序を復元
+                function restoreCardOrder() {
+                    try {
+                        const savedOrder = localStorage.getItem(STORAGE_KEY);
+                        if (!savedOrder) return false;
+
+                        const orderArray = JSON.parse(savedOrder);
+                        const itemElems = Array.from(grid.children);
+
+                        // 保存された順序に従ってカードを並べ替え
+                        const sortedElems = [];
+                        orderArray.forEach(cardId => {
+                            const elem = itemElems.find(el => el.dataset.cardId === cardId);
+                            if (elem) {
+                                sortedElems.push(elem);
+                            }
+                        });
+
+                        // 保存されていないカードを最後に追加
+                        itemElems.forEach(elem => {
+                            if (!sortedElems.includes(elem)) {
+                                sortedElems.push(elem);
+                            }
+                        });
+
+                        // DOM順序を更新
+                        sortedElems.forEach(elem => {
+                            grid.appendChild(elem);
+                        });
+
+                        return true;
+                    } catch (e) {
+                        console.error('カードの順序復元に失敗:', e);
+                        return false;
+                    }
+                }
+
+                // カードの順序をlocalStorageに保存
+                function saveCardOrder() {
+                    try {
+                        const itemElems = Array.from(grid.children);
+                        const orderArray = itemElems.map(elem => elem.dataset.cardId);
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(orderArray));
+                        console.log('カード順序を保存:', orderArray);
+                    } catch (e) {
+                        console.error('カードの順序保存に失敗:', e);
+                    }
+                }
+
                 function setup() {
-                    if (typeof Masonry === 'undefined') {
-                        // Masonry がロードされていなければ遅延リトライ
+                    if (typeof Packery === 'undefined' || typeof Draggabilly === 'undefined') {
+                        // Packery または Draggabilly がロードされていなければ遅延リトライ
                         setTimeout(setup, 150);
                         return;
                     }
 
-                    // .col-md-6 をアイテムとして扱う
-                    const msnry = new Masonry(grid, {
-                        itemSelector: '.col-md-6',
+                    // カードIDを付与
+                    assignCardIds();
+
+                    // 保存された順序を復元（Packery初期化前に実行）
+                    const restored = restoreCardOrder();
+                    if (restored) {
+                        console.log('カード順序を復元しました');
+                    }
+
+                    // Packery でグリッドレイアウト初期化
+                    const pckry = new Packery(grid, {
+                        itemSelector: '.col-md-6, .col-lg-4',
                         percentPosition: true,
                         transitionDuration: '0.25s'
+                    });
+
+                    // 各カードをドラッグ可能に設定
+                    const itemElems = pckry.getItemElements();
+                    itemElems.forEach(function (itemElem) {
+                        const draggie = new Draggabilly(itemElem, {
+                            handle: '.card-handle'
+                        });
+                        // ドラッグ終了時にレイアウトを更新
+                        pckry.bindDraggabillyEvents(draggie);
+
+                        // ドラッグ終了時にDOM順序を更新して保存
+                        draggie.on('dragEnd', function () {
+                            // Packeryのアイテム順序でDOM順序を更新
+                            const items = pckry.getItemElements();
+                            items.forEach(item => {
+                                grid.appendChild(item);
+                            });
+                            // 順序を保存
+                            saveCardOrder();
+                        });
                     });
 
                     // 監視対象の textarea を取得（カード内の textarea 全て）
@@ -2260,7 +2462,7 @@
                     let layoutTimer = null;
                     const scheduleLayout = () => {
                         if (layoutTimer) clearTimeout(layoutTimer);
-                        layoutTimer = setTimeout(() => msnry.layout(), 120);
+                        layoutTimer = setTimeout(() => pckry.layout(), 120);
                     };
 
                     if (typeof ResizeObserver !== 'undefined') {
@@ -2276,12 +2478,139 @@
                     textareas.forEach(t => t.addEventListener('input', scheduleLayout));
 
                     // 初回レイアウト
-                    setTimeout(() => msnry.layout(), 300);
+                    setTimeout(() => pckry.layout(), 300);
                 }
 
                 setup();
             })();
         });
+
+        // ブラウザチェック関数
+        function checkBrowser() {
+            // Chrome/Chromiumベースのブラウザかチェック
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+            const isEdge = /Edg/.test(navigator.userAgent);
+            const isBrave = navigator.brave !== undefined;
+
+            // Chrome、Edge、Braveは許可（すべてChromiumベース）
+            if (isChrome || isEdge || isBrave) {
+                console.log('互換性のあるブラウザです:', navigator.userAgent);
+                return;
+            }
+
+            // Chrome以外の場合、警告モーダルを表示
+            console.warn('Chrome以外のブラウザです:', navigator.userAgent);
+            const browserWarningModal = new bootstrap.Modal(document.getElementById('browserWarningModal'));
+            browserWarningModal.show();
+        }
+
+        // アコーディオン機能の初期化（全カード対象）
+        function initAccordionButtons() {
+            const COLLAPSE_STATE_KEY = 'dashboard_card_collapse_state';
+
+            // 保存された最小化状態を復元
+            function restoreCollapseState() {
+                try {
+                    const savedState = localStorage.getItem(COLLAPSE_STATE_KEY);
+                    if (!savedState) return;
+
+                    const stateObj = JSON.parse(savedState);
+                    Object.keys(stateObj).forEach(cardId => {
+                        const cards = document.querySelectorAll('.card');
+                        cards.forEach(card => {
+                            const header = card.querySelector('.card-header');
+                            const h6 = header?.querySelector('h6');
+                            if (h6 && h6.textContent.trim() === cardId && stateObj[cardId] === true) {
+                                const cardBody = card.querySelector('.card-body');
+                                const toggleBtn = header.querySelector('.accordion-toggle');
+                                if (cardBody && toggleBtn) {
+                                    cardBody.classList.add('collapsed');
+                                    toggleBtn.classList.add('collapsed');
+                                }
+                            }
+                        });
+                    });
+                } catch (e) {
+                    console.error('最小化状態の復元に失敗:', e);
+                }
+            }
+
+            // 最小化状態を保存
+            function saveCollapseState() {
+                try {
+                    const stateObj = {};
+                    const cards = document.querySelectorAll('.card');
+                    cards.forEach(card => {
+                        const header = card.querySelector('.card-header');
+                        const h6 = header?.querySelector('h6');
+                        const cardBody = card.querySelector('.card-body');
+                        if (h6 && cardBody) {
+                            const cardId = h6.textContent.trim();
+                            stateObj[cardId] = cardBody.classList.contains('collapsed');
+                        }
+                    });
+                    localStorage.setItem(COLLAPSE_STATE_KEY, JSON.stringify(stateObj));
+                } catch (e) {
+                    console.error('最小化状態の保存に失敗:', e);
+                }
+            }
+
+            // すべてのカードヘッダーにアコーディオンボタンを追加（dashboard-grid内のカードのみ）
+            const grid = document.querySelector('#dashboard-grid');
+            if (!grid) {
+                console.warn('dashboard-gridが見つかりません');
+                return;
+            }
+
+            const cardHeaders = grid.querySelectorAll('.card-header');
+            console.log(`アコーディオンボタンを${cardHeaders.length}個のカードに追加します`);
+
+            cardHeaders.forEach(header => {
+                // すでにボタンがある場合はスキップ
+                if (header.querySelector('.accordion-toggle')) {
+                    console.log('既にアコーディオンボタンが存在します');
+                    return;
+                }
+
+                // アコーディオンボタンを作成
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'accordion-toggle';
+                toggleBtn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+                toggleBtn.setAttribute('type', 'button');
+                toggleBtn.setAttribute('aria-label', 'カードを最小化/展開');
+
+                // ヘッダーの最初に挿入（prependを使用）
+                if (header.firstChild) {
+                    header.insertBefore(toggleBtn, header.firstChild);
+                } else {
+                    header.appendChild(toggleBtn);
+                }
+
+                // クリックイベント
+                toggleBtn.addEventListener('click', function (e) {
+                    e.stopPropagation(); // ドラッグイベントと干渉しないように
+                    const card = header.closest('.card');
+                    const cardBody = card.querySelector('.card-body');
+
+                    if (cardBody) {
+                        cardBody.classList.toggle('collapsed');
+                        toggleBtn.classList.toggle('collapsed');
+
+                        // 最小化状態を保存
+                        saveCollapseState();
+
+                        // Packeryレイアウトを更新（存在する場合）
+                        const grid = document.querySelector('#dashboard-grid');
+                        if (grid && window.packeryInstance) {
+                            setTimeout(() => window.packeryInstance.layout(), 100);
+                        }
+                    }
+                });
+            });
+
+            // 保存された最小化状態を復元
+            restoreCollapseState();
+        }
 
         // ページが閉じられる前にソケットを閉じる
         window.addEventListener('beforeunload', () => {

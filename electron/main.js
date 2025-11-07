@@ -2,6 +2,7 @@ require('update-electron-app')()
 
 const { app, BrowserWindow, Menu, Tray, screen, MenuItem, shell, clipboard, globalShortcut } = require('electron')
 const { ipcMain } = require('electron');
+const fs = require('fs');
 
 const prompt = require('electron-prompt');
 
@@ -29,6 +30,9 @@ process.on('uncaughtException', (error) => {
 const USE_LOCAL_SERVER = false;
 // const USE_LOCAL_SERVER = true;
 
+// デバッグモードフラグ（true: DevTools表示 + マウス操作可能, false: DevTools非表示 + マウス操作不可）
+const DEBUG_MODE = false;
+
 // ベースURL設定
 function getBaseUrl() {
     if (USE_LOCAL_SERVER) {
@@ -53,6 +57,127 @@ function switchServerUrl(newUrl) {
 
 var admin_message = "15:00から再開します";
 var win;
+var contextMenu; // グローバル変数として定義
+var g_room; // 部屋名をグローバルに保存
+var tray; // trayをグローバルに保存
+var cameraEnabled = false; // カメラのON/OFF状態
+
+const settingsPath = path.join(app.getPath('userData'), 'camera-settings.json');
+
+// カメラ設定を保存
+function saveCameraSettings(settings) {
+    try {
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+        console.log('Camera settings saved:', settings);
+    } catch (error) {
+        console.error('Error saving camera settings:', error);
+    }
+}
+
+// カメラ位置を保存
+function saveCameraPosition(position) {
+    const settings = loadCameraSettings();
+    settings.position = position;
+    saveCameraSettings(settings);
+}
+
+// カメラサイズを保存
+function saveCameraSize(size) {
+    const settings = loadCameraSettings();
+    settings.size = size;
+    saveCameraSettings(settings);
+}
+
+// カメラ設定を読み込み
+function loadCameraSettings() {
+    try {
+        if (fs.existsSync(settingsPath)) {
+            const data = fs.readFileSync(settingsPath, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading camera settings:', error);
+    }
+    return {
+        deviceId: null,
+        enabled: false,
+        position: 'top-right',
+        size: 'small'
+    };
+}
+
+// カメラON/OFF切り替え
+function toggleCamera(enabled) {
+    console.log('Toggle camera:', enabled);
+
+    if (enabled) {
+        const settings = loadCameraSettings();
+        if (settings.deviceId) {
+            // 保存されたカメラデバイスIDで起動
+            win.webContents.send('select-camera', settings.deviceId);
+
+            // 保存された位置とサイズを適用
+            if (settings.position) {
+                win.webContents.executeJavaScript(`setCameraPosition('${settings.position}');`)
+                    .catch(console.error);
+            }
+            if (settings.size) {
+                win.webContents.executeJavaScript(`setCameraSize('${settings.size}');`)
+                    .catch(console.error);
+            }
+        } else {
+            // デバイスIDがない場合は設定画面を開く
+            openCameraSettings();
+        }
+    } else {
+        // カメラを停止
+        win.webContents.send('stop-camera');
+    }
+}
+
+// カメラ設定ウィンドウを開く
+function openCameraSettings() {
+    const mainWindowSize = win.getSize();
+    const mainWindowPos = win.getPosition();
+
+    const settingsWindowWidth = 600;
+    const settingsWindowHeight = 500;
+
+    const settingsWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - settingsWindowWidth) / 2;
+    const settingsWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - settingsWindowHeight) / 2;
+
+    const settingsWindow = new BrowserWindow({
+        title: "カメラ設定",
+        width: settingsWindowWidth,
+        height: settingsWindowHeight,
+        x: settingsWindowPosX,
+        y: settingsWindowPosY,
+        hasShadow: true,
+        alwaysOnTop: true,
+        resizable: false,
+        frame: true,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    settingsWindow.loadFile(path.join(__dirname, 'camera-settings.html'));
+
+    // 設定ウィンドウが閉じられた時の処理
+    settingsWindow.on('closed', () => {
+        console.log('Camera settings window closed');
+        // カメラがONの場合、設定を再読み込みして適用
+        if (cameraEnabled) {
+            const settings = loadCameraSettings();
+            if (settings.deviceId) {
+                win.webContents.send('select-camera', settings.deviceId);
+            }
+        }
+    });
+}
+
 function createWindow() {
 
     console.log(screen.getAllDisplays());
@@ -94,6 +219,11 @@ function createWindow() {
         if (message.includes('sandbox') || message.includes('Script failed to execute')) {
             return;
         }
+        // カメラ関連のログは表示
+        if (message.includes('camera') || message.includes('Camera') ||
+            message.includes('MediaPipe') || message.includes('Segmentation')) {
+            console.log(`[Renderer] ${message}`);
+        }
     });
 
     // クラッシュハンドリング
@@ -101,8 +231,12 @@ function createWindow() {
         console.log('Render process gone:', details);
     });
 
-    // debug - エラーを詳しく確認したい場合はコメント解除
-    // win.webContents.openDevTools();
+    // デバッグモードのログ出力
+    if (DEBUG_MODE) {
+        console.log('DEBUG_MODE: DevTools will open after page load, mouse events enabled');
+    } else {
+        console.log('DEBUG_MODE: DevTools disabled, mouse events disabled');
+    }
 
 }
 
@@ -124,8 +258,20 @@ function generateName() {
 }
 
 // In main process.
-let tray = null
-var g_room;
+// trayとg_roomはグローバルで既に宣言済み
+
+// IPCハンドラーを設定
+ipcMain.handle('save-camera-setting', async (event, deviceId) => {
+    const settings = { deviceId, enabled: cameraEnabled };
+    saveCameraSettings(settings);
+    return true;
+});
+
+ipcMain.handle('get-camera-setting', async () => {
+    const settings = loadCameraSettings();
+    return settings.deviceId;
+});
+
 app.whenReady().then(() => {
 
     // 開発環境では証明書エラーを無視（SSL/TLSエラー回避）
@@ -197,7 +343,12 @@ app.whenReady().then(() => {
             });
             win.setFullScreenable(false);
             win.setAlwaysOnTop(true, "screen-saver")
-            win.setIgnoreMouseEvents(true);
+
+            // デバッグモードでない場合はマウスイベントを無視
+            if (!DEBUG_MODE) {
+                win.setIgnoreMouseEvents(true);
+            }
+
             //win.webContents.openDevTools();
             win.loadFile('index.html')
 
@@ -231,7 +382,12 @@ app.whenReady().then(() => {
                     console.log('Room name set in renderer process:', room);
                 }).catch(console.error)
 
-            var contextMenu = Menu.buildFromTemplate([
+            // 保存された設定を読み込む
+            const savedSettings = loadCameraSettings();
+            const savedPosition = savedSettings.position || 'top-right';
+            const savedSize = savedSettings.size || 'small';
+
+            contextMenu = Menu.buildFromTemplate([
                 {
                     label: "投稿ページを開く", click: async () => {
                         try {
@@ -458,6 +614,126 @@ app.whenReady().then(() => {
                     ]
                 },
                 {
+                    label: 'カメラ',
+                    submenu: [
+                        {
+                            label: 'カメラON/OFF',
+                            type: 'checkbox',
+                            checked: false,
+                            click: (menuItem) => {
+                                cameraEnabled = menuItem.checked;
+                                toggleCamera(menuItem.checked);
+                                // 設定を保存
+                                const settings = loadCameraSettings();
+                                settings.enabled = cameraEnabled;
+                                saveCameraSettings(settings);
+                            }
+                        },
+                        {
+                            type: 'separator'
+                        },
+                        {
+                            label: 'カメラ設定...',
+                            click: () => {
+                                openCameraSettings();
+                            }
+                        },
+                        {
+                            type: 'separator'
+                        },
+                        {
+                            label: '表示位置',
+                            submenu: [
+                                {
+                                    label: '左上',
+                                    type: 'radio',
+                                    checked: savedPosition === 'top-left',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraPosition('top-left');`)
+                                            .catch(console.error);
+                                        saveCameraPosition('top-left');
+                                    }
+                                },
+                                {
+                                    label: '右上',
+                                    type: 'radio',
+                                    checked: savedPosition === 'top-right',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraPosition('top-right');`)
+                                            .catch(console.error);
+                                        saveCameraPosition('top-right');
+                                    }
+                                },
+                                {
+                                    label: '左下',
+                                    type: 'radio',
+                                    checked: savedPosition === 'bottom-left',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraPosition('bottom-left');`)
+                                            .catch(console.error);
+                                        saveCameraPosition('bottom-left');
+                                    }
+                                },
+                                {
+                                    label: '右下',
+                                    type: 'radio',
+                                    checked: savedPosition === 'bottom-right',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraPosition('bottom-right');`)
+                                            .catch(console.error);
+                                        saveCameraPosition('bottom-right');
+                                    }
+                                },
+                                {
+                                    label: '中央',
+                                    type: 'radio',
+                                    checked: savedPosition === 'center',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraPosition('center');`)
+                                            .catch(console.error);
+                                        saveCameraPosition('center');
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            label: 'サイズ',
+                            submenu: [
+                                {
+                                    label: '小',
+                                    type: 'radio',
+                                    checked: savedSize === 'small',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraSize('small');`)
+                                            .catch(console.error);
+                                        saveCameraSize('small');
+                                    }
+                                },
+                                {
+                                    label: '中',
+                                    type: 'radio',
+                                    checked: savedSize === 'medium',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraSize('medium');`)
+                                            .catch(console.error);
+                                        saveCameraSize('medium');
+                                    }
+                                },
+                                {
+                                    label: '大',
+                                    type: 'radio',
+                                    checked: savedSize === 'large',
+                                    click: () => {
+                                        win.webContents.executeJavaScript(`setCameraSize('large');`)
+                                            .catch(console.error);
+                                        saveCameraSize('large');
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     type: 'separator',
                 },
 
@@ -545,7 +821,8 @@ app.whenReady().then(() => {
             tray.setToolTip('commentable-desktop')
 
             tray.setContextMenu(contextMenu)
-            //クリック時の操作を設定
+
+            //クリック時の操作を設定  
             tray.on('click', () => {
                 // メニューを表示
                 tray.popUpContextMenu(contextMenu)
@@ -644,13 +921,38 @@ app.whenReady().then(() => {
 
     win.webContents.on('did-finish-load', () => {
         win.show();
+
+        // デバッグモードの場合はページ読み込み後にDevToolsを開く
+        if (DEBUG_MODE) {
+            win.webContents.openDevTools();
+        }
+
         // QRコードの表示
         win.webContents.executeJavaScript(`toggleQR(true, "top_right", "${g_room}");`, true)
             .then(result => {
 
             }).catch(console.error);
 
+        // 保存されたカメラ設定を読み込んで適用
+        const settings = loadCameraSettings();
+        cameraEnabled = settings.enabled || false;
 
+        if (cameraEnabled && settings.deviceId) {
+            console.log('Auto-starting camera with saved settings:', settings.deviceId);
+            win.webContents.send('select-camera', settings.deviceId);
+
+            // 少し待ってから位置とサイズを適用
+            setTimeout(() => {
+                if (settings.position) {
+                    win.webContents.executeJavaScript(`setCameraPosition('${settings.position}');`)
+                        .catch(console.error);
+                }
+                if (settings.size) {
+                    win.webContents.executeJavaScript(`setCameraSize('${settings.size}');`)
+                        .catch(console.error);
+                }
+            }, 500);
+        }
     });
 
     app.on('activate', () => {

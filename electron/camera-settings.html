@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カメラ設定</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .camera-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .camera-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .camera-item.selected {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #cameraPreview {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2 class="mb-4">カメラ設定</h2>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">利用可能なカメラデバイス</h5>
+                <div id="cameraList" class="list-group mb-3">
+                    <div class="list-group-item">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">読み込み中...</span>
+                        </div>
+                        カメラデバイスを読み込み中...
+                    </div>
+                </div>
+
+                <div class="preview-container">
+                    <h5>プレビュー</h5>
+                    <video id="cameraPreview" autoplay playsinline style="display:none; max-height: 300px;"></video>
+                    <div id="noPreview" class="text-muted">カメラを選択するとプレビューが表示されます</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+            <button id="saveBtn" class="btn btn-primary" disabled>設定を保存</button>
+            <button id="cancelBtn" class="btn btn-secondary">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedDeviceId = null;
+        let currentStream = null;
+
+        // カメラデバイス一覧を取得
+        async function loadCameraDevices() {
+            try {
+                // まずカメラ権限を取得
+                await navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        stream.getTracks().forEach(track => track.stop());
+                    });
+
+                // デバイス一覧を取得
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const cameras = devices.filter(d => d.kind === 'videoinput');
+
+                const cameraList = document.getElementById('cameraList');
+                cameraList.innerHTML = '';
+
+                if (cameras.length === 0) {
+                    cameraList.innerHTML = '<div class="list-group-item">カメラが見つかりませんでした</div>';
+                    return;
+                }
+
+                // 保存された設定を読み込む
+                const savedDeviceId = await window.electronAPI.getCameraSetting();
+
+                cameras.forEach((camera, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item list-group-item-action camera-item';
+                    item.textContent = camera.label || `カメラ ${index + 1}`;
+                    item.dataset.deviceId = camera.deviceId;
+
+                    if (savedDeviceId === camera.deviceId) {
+                        item.classList.add('selected');
+                        selectedDeviceId = camera.deviceId;
+                        document.getElementById('saveBtn').disabled = false;
+                        startPreview(camera.deviceId);
+                    }
+
+                    item.addEventListener('click', () => {
+                        // 既存の選択を解除
+                        document.querySelectorAll('.camera-item').forEach(i => {
+                            i.classList.remove('selected');
+                        });
+
+                        // 新しい選択
+                        item.classList.add('selected');
+                        selectedDeviceId = camera.deviceId;
+                        document.getElementById('saveBtn').disabled = false;
+
+                        // プレビューを開始
+                        startPreview(camera.deviceId);
+                    });
+
+                    cameraList.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error('Error loading cameras:', error);
+                document.getElementById('cameraList').innerHTML =
+                    '<div class="list-group-item text-danger">カメラの読み込みに失敗しました</div>';
+            }
+        }
+
+        // カメラプレビューを開始
+        async function startPreview(deviceId) {
+            try {
+                // 既存のストリームを停止
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                // 新しいストリームを開始
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: deviceId } }
+                });
+
+                currentStream = stream;
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = stream;
+                video.style.display = 'block';
+                document.getElementById('noPreview').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error starting preview:', error);
+            }
+        }
+
+        // 保存ボタン
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            if (selectedDeviceId) {
+                await window.electronAPI.saveCameraSetting(selectedDeviceId);
+                alert('カメラ設定を保存しました');
+                window.close();
+            }
+        });
+
+        // キャンセルボタン
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            window.close();
+        });
+
+        // ウィンドウを閉じる時にストリームを停止
+        window.addEventListener('beforeunload', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // 読み込み時にカメラ一覧を取得
+        loadCameraDevices();
+    </script>
+</body>
+
+</html>
