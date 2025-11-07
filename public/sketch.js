@@ -290,20 +290,69 @@ function setup() {
     window.__isComposing = false;
     const __imeTarget = document.getElementById('text_comment');
     if (__imeTarget) {
+        // コメント履歴機能
+        const commentHistory = JSON.parse(localStorage.getItem('commentHistory') || '[]');
+        let historyIndex = -1;
+
+        // 履歴に追加する関数
+        const addToHistory = (text) => {
+            if (!text || text.trim() === '') return;
+            // 同じコメントが既にある場合は削除
+            const index = commentHistory.indexOf(text);
+            if (index > -1) {
+                commentHistory.splice(index, 1);
+            }
+            // 先頭に追加
+            commentHistory.unshift(text);
+            // 最大100件まで保存
+            if (commentHistory.length > 100) {
+                commentHistory.pop();
+            }
+            localStorage.setItem('commentHistory', JSON.stringify(commentHistory));
+        };
+
         __imeTarget.addEventListener('compositionstart', () => { window.__isComposing = true; });
         __imeTarget.addEventListener('compositionend', () => { window.__isComposing = false; });
         // Enter 処理をテキストエリア専用に移行
         __imeTarget.addEventListener('keydown', (e) => {
             if (window.__isComposing || e.isComposing || e.keyCode === 229) return; // IME 中は無視
+            
+            // 履歴機能: Ctrl+P / Ctrl+N または 上下キー
+            if ((e.ctrlKey && e.key === 'p') || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (commentHistory.length === 0) return;
+                if (historyIndex < commentHistory.length - 1) {
+                    historyIndex++;
+                    __imeTarget.value = commentHistory[historyIndex];
+                }
+                return;
+            }
+            if ((e.ctrlKey && e.key === 'n') || e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    __imeTarget.value = commentHistory[historyIndex];
+                } else if (historyIndex === 0) {
+                    historyIndex = -1;
+                    __imeTarget.value = '';
+                }
+                return;
+            }
+
             if (e.key === 'Enter') {
                 // Ctrl(+Shift) の隠しコマンド判定
                 let hidden = -1;
                 if (e.ctrlKey && !e.shiftKey) hidden = 0;
                 if (e.ctrlKey && e.shiftKey) hidden = 100;
 
+                // 履歴に追加
+                const commentText = document.getElementById("text_comment").value;
+                addToHistory(commentText);
+                historyIndex = -1; // リセット
+
                 // 文字列長チェックは sendComment 内で既存処理利用
                 sendComment(
-                    document.getElementById("text_comment").value,
+                    commentText,
                     false,
                     document.getElementById("text_my_name").value,
                     false,

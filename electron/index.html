@@ -38,6 +38,19 @@
             right: 20px;
             top: 20px;
             animation: fadeIn 2.0s ease 0.0s 1 normal;
+            z-index: 9999;
+            /* メニューの前面に配置 */
+            transition: opacity 0.2s ease;
+        }
+
+        .QR_top_right * {
+            pointer-events: none;
+            /* 子要素のマウスイベントを無効化 */
+        }
+
+        .QR_top_right:hover {
+            opacity: 0 !important;
+            /* マウスホバー時に非表示 */
         }
 
         .QR_center {
@@ -47,6 +60,19 @@
             margin-top: -16%;
             margin-left: -16%;
             animation: fadeIn 2.0s ease 0.0s 1 normal;
+            z-index: 9999;
+            /* メニューの前面に配置 */
+            transition: opacity 0.2s ease;
+        }
+
+        .QR_center * {
+            pointer-events: none;
+            /* 子要素のマウスイベントを無効化 */
+        }
+
+        .QR_center:hover {
+            opacity: 0 !important;
+            /* マウスホバー時に非表示 */
         }
 
 

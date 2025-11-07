@@ -116,6 +116,39 @@
                                         class="fas fa-volume-up"></i><span
                                         data-i18n="comment_send_description_2">ボタン）のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。</span>
                                 </p>
+
+                                <h5><i class="bi bi-terminal"></i> コメントコマンド機能</h5>
+                                <p>
+                                    コメント入力欄で <code>=</code> で始まる特殊なコマンドを入力することで、配信画面上に様々な表現を追加できます。
+                                </p>
+                                <div class="card mb-2">
+                                    <div class="card-header bg-primary text-white">
+                                        <strong>text()</strong> - テキスト表示コマンド
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="small mb-1"><strong>書式:</strong></p>
+                                        <code>=text("表示テキスト", X座標, Y座標)</code>
+                                        
+                                        <p class="small mt-2 mb-1"><strong>例:</strong></p>
+                                        <ul class="small mb-2">
+                                            <li><code>=text("注目!", 0.5, 0.5)</code> → 画面中央に「注目!」を10秒間表示</li>
+                                            <li><code>=text("おつかれさま", 0.9, 0.1)</code> → 右上に表示</li>
+                                        </ul>
+                                        <p class="small text-muted mb-0">
+                                            ※ X座標・Y座標は0.0〜1.0で指定（0.5が中央）
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <h5><i class="bi bi-clock-history"></i> コメント履歴機能</h5>
+                                <p class="small">
+                                    コメント入力欄では、過去に入力したコメントを簡単に呼び出せます:
+                                </p>
+                                <ul class="small">
+                                    <li><kbd>Ctrl</kbd> + <kbd>P</kbd> または <kbd>↑</kbd>: 前の履歴を表示</li>
+                                    <li><kbd>Ctrl</kbd> + <kbd>N</kbd> または <kbd>↓</kbd>: 次の履歴を表示</li>
+                                </ul>
+
                                 <h5 data-i18n="continuous_comment_send_title">コメントの連投</h5>
                                 <p>
                                     <span
