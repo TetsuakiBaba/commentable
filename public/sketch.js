@@ -120,8 +120,28 @@ function maskInappropriateWords(text) {
 
 function setup() {
     flg_deactivate_comment_control = false;
+
+    // 保存された設定をlocalStorageから読み込み
+    const savedTextColor = localStorage.getItem('commentable_text_color');
+    const savedStrokeColor = localStorage.getItem('commentable_stroke_color');
+    const savedTextDirection = localStorage.getItem('commentable_text_direction');
+
+    // テキスト色の復元
+    if (savedTextColor) {
+        document.getElementById("color_text").value = savedTextColor;
+    }
     color_text = document.getElementById("color_text").value;
+
+    // アウトライン色の復元
+    if (savedStrokeColor) {
+        document.getElementById("color_text_stroke").value = savedStrokeColor;
+    }
     color_text_stroke = document.getElementById("color_text_stroke").value;
+
+    // 文字移動方向の復元
+    if (savedTextDirection) {
+        document.getElementById("select_text_direction").value = savedTextDirection;
+    }
 
     // 保存された名前をlocalStorageから読み込み
     const savedName = localStorage.getItem('commentable_user_name');
@@ -244,8 +264,21 @@ function setup() {
             }
         }
     });
-    document.getElementById("color_text")?.addEventListener('change', (e) => { changeTextColor(e); if (window.CommentApp) CommentApp.state.colorText = color_text; });
-    document.getElementById("color_text_stroke")?.addEventListener('change', (e) => { changeTextOutlineColor(e); if (window.CommentApp) CommentApp.state.colorStroke = color_text_stroke; });
+    document.getElementById("color_text")?.addEventListener('change', (e) => {
+        changeTextColor(e);
+        if (window.CommentApp) CommentApp.state.colorText = color_text;
+        localStorage.setItem('commentable_text_color', color_text);
+    });
+    document.getElementById("color_text_stroke")?.addEventListener('change', (e) => {
+        changeTextOutlineColor(e);
+        if (window.CommentApp) CommentApp.state.colorStroke = color_text_stroke;
+        localStorage.setItem('commentable_stroke_color', color_text_stroke);
+    });
+
+    // 文字移動方向の変更を監視
+    document.getElementById("select_text_direction")?.addEventListener('change', (e) => {
+        localStorage.setItem('commentable_text_direction', e.target.value);
+    });
 
     ["01", "02", "03", "04", "05"].forEach(n => {
         const el = document.getElementById(`button_emoji_reaction_${n}`); if (el) el.addEventListener('click', sendEmojiReaction);
@@ -316,7 +349,7 @@ function setup() {
         // Enter 処理をテキストエリア専用に移行
         __imeTarget.addEventListener('keydown', (e) => {
             if (window.__isComposing || e.isComposing || e.keyCode === 229) return; // IME 中は無視
-            
+
             // 履歴機能: Ctrl+P / Ctrl+N または 上下キー
             if ((e.ctrlKey && e.key === 'p') || e.key === 'ArrowUp') {
                 e.preventDefault();

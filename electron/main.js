@@ -272,6 +272,19 @@ ipcMain.handle('get-camera-setting', async () => {
     return settings.deviceId;
 });
 
+// レンダラープロセスからのログをメインプロセスのコンソールに出力
+ipcMain.on('console-log', (event, ...args) => {
+    console.log('[Renderer]', ...args);
+});
+
+ipcMain.on('console-warn', (event, ...args) => {
+    console.warn('[Renderer]', ...args);
+});
+
+ipcMain.on('console-error', (event, ...args) => {
+    console.error('[Renderer]', ...args);
+});
+
 app.whenReady().then(() => {
 
     // 開発環境では証明書エラーを無視（SSL/TLSエラー回避）

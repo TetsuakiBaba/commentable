@@ -35,6 +35,31 @@ var cameraPosition = 'top-right'; // カメラ位置: 'top-left', 'top-right', '
 // コメントコマンド関連の変数
 var commentCommands = []; // アクティブなコメントコマンドの配列
 
+// メインプロセスのコンソールに出力するヘルパー関数
+function mainLog(...args) {
+    if (window.electronAPI && window.electronAPI.log) {
+        window.electronAPI.log(...args);
+    } else {
+        console.log(...args);
+    }
+}
+
+function mainWarn(...args) {
+    if (window.electronAPI && window.electronAPI.warn) {
+        window.electronAPI.warn(...args);
+    } else {
+        console.warn(...args);
+    }
+}
+
+function mainError(...args) {
+    if (window.electronAPI && window.electronAPI.error) {
+        window.electronAPI.error(...args);
+    } else {
+        console.error(...args);
+    }
+}
+
 function setVolume(value) {
     volume = parseFloat(value);
 }
@@ -257,12 +282,14 @@ class Comment {
             return;
         }
 
+
         this.size = abs((height / 20) * sin(0.5 * PI));
+
 
         if (this.text_direction == 'still') {
             textAlign(CENTER, CENTER);
             // 残り時間に応じてアルファ値を計算（フェードアウト）
-            this.alpha = 255 * (1 - progress);
+            this.alpha = parseInt(255 * (1.0 - progress));
             this.size = abs((height / 20) * sin(0.5 * PI * (1 - progress)));
             // lifeは後方互換性のため更新
             this.life = 255 * (1 - progress);
@@ -608,7 +635,9 @@ function showNotification(text) {
 
 }
 function draw() {
+    // 透明背景をクリア
     clear();
+    // background(0, 0, 0, 0); // 完全透明の背景
 
     // カメラ映像を描画
     if (cameraCapture && personScale > 0) {
