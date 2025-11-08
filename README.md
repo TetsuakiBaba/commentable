@@ -48,9 +48,10 @@ npm exec --package=@electron-forge/cli -c "electron-forge import"
 npm run make
 ```
 
-intel chip macOS 用のビルドは以下のコマンドを実行してください。
+intel chip macOS 用も一緒にビルドする場合は以下のコマンドを利用してください
 ```
-npm run make -- --arch="x64"
+npm run make -- --arch=x64,arm64
+npm run publish -- --arch=x64,arm64
 ```
 
 ## 不適切用語のフィルタリング

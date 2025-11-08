@@ -11,7 +11,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // カメラを停止
     onStopCamera: (callback) => ipcRenderer.on('stop-camera', callback),
     // カメラON/OFF状態を受信
-    onToggleCamera: (callback) => ipcRenderer.on('toggle-camera', callback)
+    onToggleCamera: (callback) => ipcRenderer.on('toggle-camera', callback),
+    // メインプロセスのコンソールに出力
+    log: (...args) => ipcRenderer.send('console-log', ...args),
+    warn: (...args) => ipcRenderer.send('console-warn', ...args),
+    error: (...args) => ipcRenderer.send('console-error', ...args)
 })
 
 
