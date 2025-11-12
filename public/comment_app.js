@@ -275,6 +275,7 @@
             color_text: state.colorText,
             color_text_stroke: state.colorStroke,
             text_direction: document.getElementById('select_text_direction')?.value || 'left',
+            font_size: document.getElementById('select_font_size')?.value || 'medium',
             flg_emoji: emoji,
             flg_sound: sound,
             id_sound: idSound,

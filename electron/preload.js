@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onStopCamera: (callback) => ipcRenderer.on('stop-camera', callback),
     // カメラON/OFF状態を受信
     onToggleCamera: (callback) => ipcRenderer.on('toggle-camera', callback),
+    // ウィンドウリサイズイベントを受信
+    onWindowResized: (callback) => ipcRenderer.on('window-resized', callback),
     // メインプロセスのコンソールに出力
     log: (...args) => ipcRenderer.send('console-log', ...args),
     warn: (...args) => ipcRenderer.send('console-warn', ...args),

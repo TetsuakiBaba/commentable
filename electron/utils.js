@@ -23,14 +23,14 @@ class Flash {
   }
   do() {
     this.status = true;
-    this.alpha = 100;
+    this.alpha = 55;
   }
   draw() {
     if (this.status) {
       noStroke();
       fill(255, this.alpha);
       rect(0, 0, width, height);
-      this.alpha = this.alpha / 10.0;
+      this.alpha = this.alpha * 0.85;
       if (this.alpha < 1.0) {
         this.status = false;
       }

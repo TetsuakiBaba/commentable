@@ -180,13 +180,19 @@ function openCameraSettings() {
 
 function createWindow() {
 
-    console.log(screen.getAllDisplays());
+    console.log('All displays:', screen.getAllDisplays());
     //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     let active_screen = screen.getPrimaryDisplay();
-    console.log("active_screen", active_screen);
+    console.log("Active screen:", active_screen);
+    console.log("Scale factor:", active_screen.scaleFactor);
+
     let { width, height } = active_screen.workAreaSize
     const x = active_screen.workArea.x;
     const y = active_screen.workArea.y;
+
+    console.log("Logical window size:", width, 'x', height);
+    console.log("Physical window size:", Math.round(width * active_screen.scaleFactor), 'x', Math.round(height * active_screen.scaleFactor));
+
     //width = 1200;
     //height = 800;
     //console.log(x, y);
@@ -201,7 +207,7 @@ function createWindow() {
         hasShadow: false,
         transparent: true,
         frame: false,
-        resizable: false,
+        resizable: true, // ウィンドウのリサイズを許可
         alwaysOnTop: true,
         //focusable: false,
         webPreferences: {
@@ -213,22 +219,48 @@ function createWindow() {
         }
     })
 
-    // レンダラープロセスのエラーを抑制（サンドボックス関連）
+    // レンダラープロセスのエラーを表示（デバッグ用）
     win.webContents.on('console-message', (event, level, message, line, sourceId) => {
-        // サンドボックス関連のエラーは無視
-        if (message.includes('sandbox') || message.includes('Script failed to execute')) {
-            return;
-        }
-        // カメラ関連のログは表示
-        if (message.includes('camera') || message.includes('Camera') ||
-            message.includes('MediaPipe') || message.includes('Segmentation')) {
-            console.log(`[Renderer] ${message}`);
+        // 全てのメッセージを表示
+        console.log(`[Renderer] Level ${level}: ${message}`);
+        if (line && sourceId) {
+            console.log(`  at ${sourceId}:${line}`);
         }
     });
 
     // クラッシュハンドリング
     win.webContents.on('render-process-gone', (event, details) => {
         console.log('Render process gone:', details);
+    });
+
+    // ウィンドウリサイズイベントのリスナー
+    win.on('resize', () => {
+        const bounds = win.getBounds();
+        const display = screen.getDisplayMatching(bounds);
+        const scaleFactor = display.scaleFactor;
+
+        // 論理ピクセルサイズ
+        const [logicalWidth, logicalHeight] = win.getContentSize();
+
+        // 物理ピクセルサイズ（DPIスケーリング考慮）
+        const physicalWidth = Math.round(logicalWidth * scaleFactor);
+        const physicalHeight = Math.round(logicalHeight * scaleFactor);
+
+        console.log('Window resized:');
+        console.log('  Logical size:', logicalWidth, 'x', logicalHeight);
+        console.log('  Scale factor:', scaleFactor);
+        console.log('  Physical size:', physicalWidth, 'x', physicalHeight);
+
+        // レンダラープロセスにリサイズイベントを送信（論理サイズを使用）
+        if (win.webContents) {
+            win.webContents.send('window-resized', {
+                width: logicalWidth,
+                height: logicalHeight,
+                scaleFactor: scaleFactor,
+                physicalWidth: physicalWidth,
+                physicalHeight: physicalHeight
+            });
+        }
     });
 
     // デバッグモードのログ出力
@@ -238,8 +270,77 @@ function createWindow() {
         console.log('DEBUG_MODE: DevTools disabled, mouse events disabled');
     }
 
+    // ディスプレイ変更イベントのリスナー
+    screen.on('display-added', (event, newDisplay) => {
+        console.log('Display added:', newDisplay);
+        adjustWindowToCurrentDisplay();
+        rebuildTrayMenu(); // メニューを再構築
+    });
+
+    screen.on('display-removed', (event, oldDisplay) => {
+        console.log('Display removed:', oldDisplay);
+        adjustWindowToCurrentDisplay();
+        rebuildTrayMenu(); // メニューを再構築
+    });
+
+    screen.on('display-metrics-changed', (event, display, changedMetrics) => {
+        console.log('Display metrics changed:', display.id, changedMetrics);
+        adjustWindowToCurrentDisplay();
+        rebuildTrayMenu(); // メニューを再構築
+    });
+
+    // ウィンドウが別のディスプレイに移動した時
+    win.on('move', () => {
+        const bounds = win.getBounds();
+        const currentDisplay = screen.getDisplayMatching(bounds);
+        const primaryDisplay = screen.getPrimaryDisplay();
+
+        // ウィンドウが存在するディスプレイが変わった場合
+        if (win.lastDisplayId !== currentDisplay.id) {
+            console.log('Window moved to different display:', currentDisplay.id);
+            win.lastDisplayId = currentDisplay.id;
+            adjustWindowToCurrentDisplay();
+        }
+    });
+
+    // 初期ディスプレイIDを記録
+    win.lastDisplayId = active_screen.id;
+
 }
 
+// 現在のディスプレイに合わせてウィンドウサイズを調整
+function adjustWindowToCurrentDisplay() {
+    if (!win) return;
+
+    const bounds = win.getBounds();
+    const currentDisplay = screen.getDisplayMatching(bounds);
+    const { width, height } = currentDisplay.workAreaSize;
+    const { x, y } = currentDisplay.workArea;
+
+    console.log('Adjusting window to display:', currentDisplay.id);
+    console.log('  New logical size:', width, 'x', height);
+    console.log('  Scale factor:', currentDisplay.scaleFactor);
+    console.log('  New physical size:', Math.round(width * currentDisplay.scaleFactor), 'x', Math.round(height * currentDisplay.scaleFactor));
+
+    // ウィンドウサイズと位置を更新
+    win.setBounds({
+        x: x,
+        y: y,
+        width: width,
+        height: height
+    });
+
+    // リサイズイベントが自動的に発火され、レンダラープロセスに通知される
+}
+
+// トレイメニューを再構築する関数
+function rebuildTrayMenu() {
+    if (typeof global.rebuildTrayMenu === 'function') {
+        global.rebuildTrayMenu();
+    } else {
+        console.warn('rebuildTrayMenu is not yet defined');
+    }
+}
 
 
 function capFirst(string) {
@@ -400,436 +501,450 @@ app.whenReady().then(() => {
             const savedPosition = savedSettings.position || 'top-right';
             const savedSize = savedSettings.size || 'small';
 
-            contextMenu = Menu.buildFromTemplate([
-                {
-                    label: "投稿ページを開く", click: async () => {
-                        try {
-                            const { shell } = require('electron')
-                            await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                        } catch (error) {
-                            console.error('Error opening post page:', error);
-                        }
-                    }
-                },
-                {
-                    label: '投稿ページURLをコピー',
-                    click(item, focusedWindows) {
-                        clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                        console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                    }
-                },
+            // メニューを構築する関数
+            function buildTrayMenu() {
+                const screens = screen.getAllDisplays();
 
-                {
-                    type: 'separator',
-                },
-                {
-                    label: `サーバー: ${currentBaseUrl}`,
-                    enabled: false, // 表示のみ、クリック不可
-                },
-                {
-                    type: 'separator',
-                },
-                {
-                    label: "QR Code表示",
-                    submenu: [
-                        {
-                            label: '非表示', type: 'radio',
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
+                return Menu.buildFromTemplate([
+                    {
+                        label: "投稿ページを開く", click: async () => {
+                            try {
+                                const { shell } = require('electron')
+                                await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                            } catch (error) {
+                                console.error('Error opening post page:', error);
                             }
-                        },
-                        {
-                            label: 'QR Code [CENTER]', type: 'radio',
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            }
-                        },
-                        {
-                            label: 'QR Code [TOP RIGHT]', type: 'radio', checked: true,
-                            click(item, focusedWindow) {
-                                console.log(item, focusedWindow);
-                                win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
-                                    .then(result => {
-                                    }).catch(console.error);
-                            }
-                        },
-                    ]
-                },
-                {
-                    type: 'separator',
-                },
-                {
-                    label: '投稿制限解除', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
-                            .then(result => {
-                            }).catch(console.error);
-                    }
-                },
-                {
-                    label: 'サウンドコメントのミュート', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        win.webContents.executeJavaScript(`toggleSoundMute();`, true)
-                            .then(result => {
-                            }).catch(console.error);
-                    }
-                },
-                {
-                    label: 'メッセージ表示', type: 'checkbox',
-                    click(item, focusedWindow) {
-                        if (item.checked == true) {
-                            prompt({
-                                title: 'Commentable',
-                                alwaysOnTop: true,
-                                label: '表示テキストを入力してください',
-                                value: admin_message,
-                                menuBarVisible: true,
-                                buttonLabels: {
-                                    ok: '表示する',
-                                    cancel: 'キャンセル'
-                                },
-                                inputAttrs: {
-                                    type: 'text',
-                                    required: true
-                                },
-                                type: 'input',
-                                //resizable: true,
-                                customStylesheet: path.join(__dirname, '/css/prompt.css')
-                            })
-                                .then((r) => {
-                                    if (r === null) {
-                                        //console.log('user cancelled');
-                                        item.checked = false;
-                                        return;
-                                    } else {
-                                        admin_message = r;
-                                        win.webContents.executeJavaScript(`toggleMessage(${item.checked},'${r}');`, true)
-                                            .then(result => {
-
-                                            }).catch(console.error)
-
-                                    }
-                                }).catch(console.error);
                         }
-                        else {
-                            win.webContents.executeJavaScript(`toggleMessage(${item.checked},'');`, true)
-                                .then(result => {
-
-                                }).catch(console.error)
+                    },
+                    {
+                        label: '投稿ページURLをコピー',
+                        click(item, focusedWindows) {
+                            clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
+                            console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
                         }
-                    }
-                },
-                {
-                    label: '時刻表示', type: 'checkbox',
-                    click(item, focusedWindow) {
+                    },
 
-                        win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
-                            .then(result => {
-                            }).catch(console.error)
-
-                    }
-                },
-
-                {
-                    label: 'クリップボード内容を配布資料欄に送信',
-                    accelerator: process.platform === 'darwin' ? 'Command+Alt+V' : 'Control+Alt+V',
-                    click: () => {
-                        sendClipText2CodeSnippet();
-                    }
-
-                },
-                {
-                    label: "ツール",
-                    submenu: [
-                        {
-                            label: '効果音セット',
-                            click: () => {
-                                //mainWindow.loadFile(path.join(__dirname, 'about.html'));
-                                const mainWindowSize = win.getSize();
-                                const mainWindowPos = win.getPosition();
-
-                                const aboutWindowWidth = 400;
-                                const aboutWindowHeight = 900;
-
-                                const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
-                                const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
-
-                                let win_sepad = new BrowserWindow({
-                                    title: "効果音",
-                                    width: aboutWindowWidth,
-                                    height: aboutWindowHeight,
-                                    x: aboutWindowPosX,
-                                    y: aboutWindowPosY,
-                                    hasShadow: true,
-                                    alwaysOnTop: false,
-                                    resizable: false,
-                                    frame: true,
-                                    webPreferences: {
-                                        preload: path.join(__dirname, 'preload.js'),
-                                        nodeIntegration: false,
-                                        contextIsolation: true
-                                    }
-                                });
-                                win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
-                                    win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                    {
+                        type: 'separator',
+                    },
+                    {
+                        label: `サーバー: ${currentBaseUrl}`,
+                        enabled: false, // 表示のみ、クリック不可
+                    },
+                    {
+                        type: 'separator',
+                    },
+                    {
+                        label: "QR Code表示",
+                        submenu: [
+                            {
+                                label: '非表示', type: 'radio',
+                                click(item, focusedWindow) {
+                                    console.log(item, focusedWindow);
+                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
                                         .then(result => {
                                         }).catch(console.error);
+                                }
+                            },
+                            {
+                                label: 'QR Code [CENTER]', type: 'radio',
+                                click(item, focusedWindow) {
+                                    console.log(item, focusedWindow);
+                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
+                                        .then(result => {
+                                        }).catch(console.error);
+                                }
+                            },
+                            {
+                                label: 'QR Code [TOP RIGHT]', type: 'radio', checked: true,
+                                click(item, focusedWindow) {
+                                    console.log(item, focusedWindow);
+                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
+                                        .then(result => {
+                                        }).catch(console.error);
+                                }
+                            },
+                        ]
+                    },
+                    {
+                        type: 'separator',
+                    },
+                    {
+                        label: '投稿制限解除', type: 'checkbox',
+                        click(item, focusedWindow) {
+                            win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        }
+                    },
+                    {
+                        label: 'サウンドコメントのミュート', type: 'checkbox',
+                        click(item, focusedWindow) {
+                            win.webContents.executeJavaScript(`toggleSoundMute();`, true)
+                                .then(result => {
+                                }).catch(console.error);
+                        }
+                    },
+                    {
+                        label: 'メッセージ表示', type: 'checkbox',
+                        click(item, focusedWindow) {
+                            if (item.checked == true) {
+                                prompt({
+                                    title: 'Commentable',
+                                    alwaysOnTop: true,
+                                    label: '表示テキストを入力してください',
+                                    value: admin_message,
+                                    menuBarVisible: true,
+                                    buttonLabels: {
+                                        ok: '表示する',
+                                        cancel: 'キャンセル'
+                                    },
+                                    inputAttrs: {
+                                        type: 'text',
+                                        required: true
+                                    },
+                                    type: 'input',
+                                    //resizable: true,
+                                    customStylesheet: path.join(__dirname, '/css/prompt.css')
+                                })
+                                    .then((r) => {
+                                        if (r === null) {
+                                            //console.log('user cancelled');
+                                            item.checked = false;
+                                            return;
+                                        } else {
+                                            admin_message = r;
+                                            win.webContents.executeJavaScript(`toggleMessage(${item.checked},'${r}');`, true)
+                                                .then(result => {
 
-                                    ipcMain.on('set-volume', (event, value) => {
-                                        // arg には 'yourVariableHere' が格納されています。
-                                        console.log(value, win_sepad);
-                                        win.webContents.executeJavaScript(`setVolume("${value}");`, true)
+                                                }).catch(console.error)
+
+                                        }
+                                    }).catch(console.error);
+                            }
+                            else {
+                                win.webContents.executeJavaScript(`toggleMessage(${item.checked},'');`, true)
+                                    .then(result => {
+
+                                    }).catch(console.error)
+                            }
+                        }
+                    },
+                    {
+                        label: '時刻表示', type: 'checkbox',
+                        click(item, focusedWindow) {
+
+                            win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
+                                .then(result => {
+                                }).catch(console.error)
+
+                        }
+                    },
+
+                    {
+                        label: 'クリップボード内容を配布資料欄に送信',
+                        accelerator: process.platform === 'darwin' ? 'Command+Alt+V' : 'Control+Alt+V',
+                        click: () => {
+                            sendClipText2CodeSnippet();
+                        }
+
+                    },
+                    {
+                        label: "ツール",
+                        submenu: [
+                            {
+                                label: '効果音セット',
+                                click: () => {
+                                    //mainWindow.loadFile(path.join(__dirname, 'about.html'));
+                                    const mainWindowSize = win.getSize();
+                                    const mainWindowPos = win.getPosition();
+
+                                    const aboutWindowWidth = 400;
+                                    const aboutWindowHeight = 900;
+
+                                    const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
+                                    const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
+
+                                    let win_sepad = new BrowserWindow({
+                                        title: "効果音",
+                                        width: aboutWindowWidth,
+                                        height: aboutWindowHeight,
+                                        x: aboutWindowPosX,
+                                        y: aboutWindowPosY,
+                                        hasShadow: true,
+                                        alwaysOnTop: false,
+                                        resizable: false,
+                                        frame: true,
+                                        webPreferences: {
+                                            preload: path.join(__dirname, 'preload.js'),
+                                            nodeIntegration: false,
+                                            contextIsolation: true
+                                        }
+                                    });
+                                    win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
+                                        win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
                                             .then(result => {
                                             }).catch(console.error);
+
+                                        ipcMain.on('set-volume', (event, value) => {
+                                            // arg には 'yourVariableHere' が格納されています。
+                                            console.log(value, win_sepad);
+                                            win.webContents.executeJavaScript(`setVolume("${value}");`, true)
+                                                .then(result => {
+                                                }).catch(console.error);
+                                        });
                                     });
-                                });
 
-                            }
-                        },
-                        {
-                            label: "AIアシスタント", click: async () => {
-                                try {
-                                    console.log(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
-                                } catch (error) {
-                                    console.error('Error opening AI assistant:', error);
                                 }
-                            }
-                        },
-                        {
-                            label: "チャレンジブル", click: async () => {
-                                try {
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
-                                } catch (error) {
-                                    console.error('Error opening challengeable:', error);
-                                }
-                            }
-                        },
-                        {
-                            label: "アクセシブルスピーチトレーニング", click: async () => {
-                                try {
-                                    const { shell } = require('electron')
-                                    await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
-                                } catch (error) {
-                                    console.error('Error opening speech training:', error);
-                                }
-                            }
-                        },
-
-                    ]
-                },
-                {
-                    label: 'カメラ',
-                    submenu: [
-                        {
-                            label: 'カメラON/OFF',
-                            type: 'checkbox',
-                            checked: false,
-                            click: (menuItem) => {
-                                cameraEnabled = menuItem.checked;
-                                toggleCamera(menuItem.checked);
-                                // 設定を保存
-                                const settings = loadCameraSettings();
-                                settings.enabled = cameraEnabled;
-                                saveCameraSettings(settings);
-                            }
-                        },
-                        {
-                            type: 'separator'
-                        },
-                        {
-                            label: 'カメラ設定...',
-                            click: () => {
-                                openCameraSettings();
-                            }
-                        },
-                        {
-                            type: 'separator'
-                        },
-                        {
-                            label: '表示位置',
-                            submenu: [
-                                {
-                                    label: '左上',
-                                    type: 'radio',
-                                    checked: savedPosition === 'top-left',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraPosition('top-left');`)
-                                            .catch(console.error);
-                                        saveCameraPosition('top-left');
-                                    }
-                                },
-                                {
-                                    label: '右上',
-                                    type: 'radio',
-                                    checked: savedPosition === 'top-right',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraPosition('top-right');`)
-                                            .catch(console.error);
-                                        saveCameraPosition('top-right');
-                                    }
-                                },
-                                {
-                                    label: '左下',
-                                    type: 'radio',
-                                    checked: savedPosition === 'bottom-left',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraPosition('bottom-left');`)
-                                            .catch(console.error);
-                                        saveCameraPosition('bottom-left');
-                                    }
-                                },
-                                {
-                                    label: '右下',
-                                    type: 'radio',
-                                    checked: savedPosition === 'bottom-right',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraPosition('bottom-right');`)
-                                            .catch(console.error);
-                                        saveCameraPosition('bottom-right');
-                                    }
-                                },
-                                {
-                                    label: '中央',
-                                    type: 'radio',
-                                    checked: savedPosition === 'center',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraPosition('center');`)
-                                            .catch(console.error);
-                                        saveCameraPosition('center');
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            label: 'サイズ',
-                            submenu: [
-                                {
-                                    label: '小',
-                                    type: 'radio',
-                                    checked: savedSize === 'small',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraSize('small');`)
-                                            .catch(console.error);
-                                        saveCameraSize('small');
-                                    }
-                                },
-                                {
-                                    label: '中',
-                                    type: 'radio',
-                                    checked: savedSize === 'medium',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraSize('medium');`)
-                                            .catch(console.error);
-                                        saveCameraSize('medium');
-                                    }
-                                },
-                                {
-                                    label: '大',
-                                    type: 'radio',
-                                    checked: savedSize === 'large',
-                                    click: () => {
-                                        win.webContents.executeJavaScript(`setCameraSize('large');`)
-                                            .catch(console.error);
-                                        saveCameraSize('large');
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    type: 'separator',
-                },
-
-
-                {
-                    label: 'About',
-                    click: () => {
-                        //mainWindow.loadFile(path.join(__dirname, 'about.html'));
-                        const mainWindowSize = win.getSize();
-                        const mainWindowPos = win.getPosition();
-
-                        const aboutWindowWidth = 300;
-                        const aboutWindowHeight = 300;
-
-                        const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
-                        const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
-
-                        const win_about = new BrowserWindow({
-                            title: "About Commentable",
-                            width: aboutWindowWidth,
-                            height: aboutWindowHeight,
-                            x: aboutWindowPosX,
-                            y: aboutWindowPosY,
-                            hasShadow: false,
-                            alwaysOnTop: true,
-                            resizable: false,
-                            frame: false,
-                            webPreferences: {
-                                preload: path.join(__dirname, 'preload.js'),
                             },
-                            show: true,
-                        });
-                        win_about.loadFile(path.join(__dirname, `about.html`)).then(() => {
+                            {
+                                label: "AIアシスタント", click: async () => {
+                                    try {
+                                        console.log(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
+                                    } catch (error) {
+                                        console.error('Error opening AI assistant:', error);
+                                    }
+                                }
+                            },
+                            {
+                                label: "チャレンジブル", click: async () => {
+                                    try {
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
+                                    } catch (error) {
+                                        console.error('Error opening challengeable:', error);
+                                    }
+                                }
+                            },
+                            {
+                                label: "アクセシブルスピーチトレーニング", click: async () => {
+                                    try {
+                                        const { shell } = require('electron')
+                                        await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
+                                    } catch (error) {
+                                        console.error('Error opening speech training:', error);
+                                    }
+                                }
+                            },
 
-                            win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
-                                .then(result => {
-
-                                }).catch(console.error);
-
-                            win_about.webContents.executeJavaScript(`setCopyrightYear("${copyrightYear}");`, true)
-                                .then(result => {
-
-                                }).catch(console.error);
-                        });
-                        // 以下を追加
-                        win_about.webContents.setWindowOpenHandler(({ url }) => {
-                            if (url.startsWith('http')) {
-                                shell.openExternal(url).catch(error => {
-                                    console.error('Error opening external URL:', error);
-                                });
+                        ]
+                    },
+                    {
+                        label: 'カメラ',
+                        submenu: [
+                            {
+                                label: 'カメラON/OFF',
+                                type: 'checkbox',
+                                checked: false,
+                                click: (menuItem) => {
+                                    cameraEnabled = menuItem.checked;
+                                    toggleCamera(menuItem.checked);
+                                    // 設定を保存
+                                    const settings = loadCameraSettings();
+                                    settings.enabled = cameraEnabled;
+                                    saveCameraSettings(settings);
+                                }
+                            },
+                            {
+                                type: 'separator'
+                            },
+                            {
+                                label: 'カメラ設定...',
+                                click: () => {
+                                    openCameraSettings();
+                                }
+                            },
+                            {
+                                type: 'separator'
+                            },
+                            {
+                                label: '表示位置',
+                                submenu: [
+                                    {
+                                        label: '左上',
+                                        type: 'radio',
+                                        checked: savedPosition === 'top-left',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraPosition('top-left');`)
+                                                .catch(console.error);
+                                            saveCameraPosition('top-left');
+                                        }
+                                    },
+                                    {
+                                        label: '右上',
+                                        type: 'radio',
+                                        checked: savedPosition === 'top-right',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraPosition('top-right');`)
+                                                .catch(console.error);
+                                            saveCameraPosition('top-right');
+                                        }
+                                    },
+                                    {
+                                        label: '左下',
+                                        type: 'radio',
+                                        checked: savedPosition === 'bottom-left',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraPosition('bottom-left');`)
+                                                .catch(console.error);
+                                            saveCameraPosition('bottom-left');
+                                        }
+                                    },
+                                    {
+                                        label: '右下',
+                                        type: 'radio',
+                                        checked: savedPosition === 'bottom-right',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraPosition('bottom-right');`)
+                                                .catch(console.error);
+                                            saveCameraPosition('bottom-right');
+                                        }
+                                    },
+                                    {
+                                        label: '中央',
+                                        type: 'radio',
+                                        checked: savedPosition === 'center',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraPosition('center');`)
+                                                .catch(console.error);
+                                            saveCameraPosition('center');
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                label: 'サイズ',
+                                submenu: [
+                                    {
+                                        label: '小',
+                                        type: 'radio',
+                                        checked: savedSize === 'small',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraSize('small');`)
+                                                .catch(console.error);
+                                            saveCameraSize('small');
+                                        }
+                                    },
+                                    {
+                                        label: '中',
+                                        type: 'radio',
+                                        checked: savedSize === 'medium',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraSize('medium');`)
+                                                .catch(console.error);
+                                            saveCameraSize('medium');
+                                        }
+                                    },
+                                    {
+                                        label: '大',
+                                        type: 'radio',
+                                        checked: savedSize === 'large',
+                                        click: () => {
+                                            win.webContents.executeJavaScript(`setCameraSize('large');`)
+                                                .catch(console.error);
+                                            saveCameraSize('large');
+                                        }
+                                    }
+                                ]
                             }
-                            return { action: 'deny' }
-                        })
-                    }
-                },
+                        ]
+                    },
+                    {
+                        type: 'separator',
+                    },
 
-                { label: 'Quit', role: 'quit' },
-            ])
 
-            let screens = screen.getAllDisplays();
+                    {
+                        label: 'About',
+                        click: () => {
+                            //mainWindow.loadFile(path.join(__dirname, 'about.html'));
+                            const mainWindowSize = win.getSize();
+                            const mainWindowPos = win.getPosition();
 
-            var data_append;
-            data_append = {
-                label: '表示ディスプレイ選択',
-                submenu: []
+                            const aboutWindowWidth = 300;
+                            const aboutWindowHeight = 300;
+
+                            const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
+                            const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
+
+                            const win_about = new BrowserWindow({
+                                title: "About Commentable",
+                                width: aboutWindowWidth,
+                                height: aboutWindowHeight,
+                                x: aboutWindowPosX,
+                                y: aboutWindowPosY,
+                                hasShadow: false,
+                                alwaysOnTop: true,
+                                resizable: false,
+                                frame: false,
+                                webPreferences: {
+                                    preload: path.join(__dirname, 'preload.js'),
+                                },
+                                show: true,
+                            });
+                            win_about.loadFile(path.join(__dirname, `about.html`)).then(() => {
+
+                                win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
+                                    .then(result => {
+
+                                    }).catch(console.error);
+
+                                win_about.webContents.executeJavaScript(`setCopyrightYear("${copyrightYear}");`, true)
+                                    .then(result => {
+
+                                    }).catch(console.error);
+                            });
+                            // 以下を追加
+                            win_about.webContents.setWindowOpenHandler(({ url }) => {
+                                if (url.startsWith('http')) {
+                                    shell.openExternal(url).catch(error => {
+                                        console.error('Error opening external URL:', error);
+                                    });
+                                }
+                                return { action: 'deny' }
+                            })
+                        }
+                    },
+
+                    { label: 'Quit', role: 'quit' },
+                ]);
             }
-            sc_count = 0;
-            for (sc of screens) {
-                data_append.submenu[sc_count] = {
-                    label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height,
-                    type: 'radio',
-                    x: sc.workArea.x,
-                    y: sc.workArea.y,
-                    w: sc.workArea.width,
-                    h: sc.workArea.height,
-                    click: function (item) {
-                        win.setPosition(item.x, item.y, true);
-                        win.setSize(item.w, item.h, true);
-                    }
+
+            // 初回メニュー構築
+            contextMenu = buildTrayMenu();
+
+            // ディスプレイ選択メニューを追加
+            function addDisplaySelectionMenu(menu) {
+                const allScreens = screen.getAllDisplays();
+
+                const displayMenuItem = {
+                    label: '表示ディスプレイ選択',
+                    submenu: []
                 };
-                sc_count++;
+
+                let sc_count = 0;
+                for (const sc of allScreens) {
+                    displayMenuItem.submenu[sc_count] = {
+                        label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height + " (Scale: " + sc.scaleFactor + ")",
+                        type: 'radio',
+                        x: sc.workArea.x,
+                        y: sc.workArea.y,
+                        w: sc.workArea.width,
+                        h: sc.workArea.height,
+                        click: function (item) {
+                            win.setPosition(item.x, item.y, true);
+                            win.setSize(item.w, item.h, true);
+                        }
+                    };
+                    sc_count++;
+                }
+                menu.insert(3, new MenuItem(displayMenuItem));
+                return menu;
             }
-            contextMenu.insert(3, new MenuItem(data_append));
+
+            contextMenu = addDisplaySelectionMenu(contextMenu);
 
             tray.setToolTip('commentable-desktop')
 
@@ -841,7 +956,23 @@ app.whenReady().then(() => {
                 tray.popUpContextMenu(contextMenu)
             })
 
-            // メニューを更新する関数をグローバルに定義
+            // メニューを再構築する関数をグローバルに定義
+            global.rebuildTrayMenu = function () {
+                if (!tray) return;
+
+                console.log('Rebuilding tray menu...');
+
+                // メニューを再構築
+                contextMenu = buildTrayMenu();
+                contextMenu = addDisplaySelectionMenu(contextMenu);
+
+                // トレイメニューを更新
+                tray.setContextMenu(contextMenu);
+
+                console.log('Tray menu rebuilt successfully');
+            };
+
+            // メニューを更新する関数をグローバルに定義（後方互換性のため残す）
             global.updateTrayMenu = function () {
                 if (!tray) return;
 

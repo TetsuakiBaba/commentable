@@ -215,22 +215,51 @@
 
                 <div class="input-group mb-3">
 
-                    <ul class="dropdown-menu">
-                        <li class="dropdown-item"><input type="color" id="color_text" value="#EEEEEE"> Text
-                            Color</input>
+                    <ul class="dropdown-menu p-2 pe-2" style="min-width: 240px;">
+                        <!-- テキスト色 -->
+                        <li class="mb-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label for="color_text" class="form-label mb-0 me-2 small">Text Color</label>
+                                <input type="color" id="color_text" value="#EEEEEE"
+                                    class="form-control form-control-color" style="width: 50px; height: 32px;">
+                            </div>
                         </li>
-                        <li class="dropdown-item"><input type="color" id="color_text_stroke" value="#111111">
-                            Outline
-                            Color</input></li>
-                        <li class="dropdown-item">
-                            <select id="select_text_direction">
-                                <option value="still" selected data-i18n="stop">静止</option>
-                                <option value="up">↑</option>
-                                <option value="down">↓</option>
-                                <option value="left">←</option>
-                                <option value="right">→</option>
-                            </select>
-                            <span data-i18n="text_movement_direction">文字移動方向</span>
+
+                        <!-- アウトライン色 -->
+                        <li class="mb-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label for="color_text_stroke" class="form-label mb-0 me-2 small">Outline Color</label>
+                                <input type="color" id="color_text_stroke" value="#111111"
+                                    class="form-control form-control-color" style="width: 50px; height: 32px;">
+                            </div>
+                        </li>
+
+                        <!-- フォントサイズ -->
+                        <li class="mb-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label for="select_font_size" class="form-label mb-0 me-2 small">Font Size</label>
+                                <select id="select_font_size" class="form-select form-select-sm" style="width: 90px;">
+                                    <option value="small">小</option>
+                                    <option value="medium" selected>中</option>
+                                    <option value="large">大</option>
+                                </select>
+                            </div>
+                        </li>
+
+                        <!-- 文字移動方向 -->
+                        <li>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label for="select_text_direction" class="form-label mb-0 me-2 small"
+                                    data-i18n="text_movement_direction">文字移動方向</label>
+                                <select id="select_text_direction" class="form-select form-select-sm"
+                                    style="width: 90px;">
+                                    <option value="still" selected data-i18n="stop">静止</option>
+                                    <option value="up">↑</option>
+                                    <option value="down">↓</option>
+                                    <option value="left">←</option>
+                                    <option value="right">→</option>
+                                </select>
+                            </div>
                         </li>
                     </ul>
 

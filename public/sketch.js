@@ -143,6 +143,12 @@ function setup() {
         document.getElementById("select_text_direction").value = savedTextDirection;
     }
 
+    // フォントサイズの復元
+    const savedFontSize = localStorage.getItem('commentable_font_size');
+    if (savedFontSize) {
+        document.getElementById("select_font_size").value = savedFontSize;
+    }
+
     // 保存された名前をlocalStorageから読み込み
     const savedName = localStorage.getItem('commentable_user_name');
     if (savedName) {
@@ -278,6 +284,11 @@ function setup() {
     // 文字移動方向の変更を監視
     document.getElementById("select_text_direction")?.addEventListener('change', (e) => {
         localStorage.setItem('commentable_text_direction', e.target.value);
+    });
+
+    // フォントサイズの変更を監視
+    document.getElementById("select_font_size")?.addEventListener('change', (e) => {
+        localStorage.setItem('commentable_font_size', e.target.value);
     });
 
     ["01", "02", "03", "04", "05"].forEach(n => {
