@@ -197,7 +197,7 @@
 
 
                 <div class="row" id="dashboard-grid">
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <div class="card border-info mb-3">
                             <div class="card-header card-handle bg-info bg-opacity-10 d-flex align-items-center">
                                 <h6 class="mb-0"><i class="bi bi-robot"></i> AI設定</h6>
@@ -267,7 +267,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <div class="card border-success mb-3">
                             <div class="card-header card-handle bg-success bg-opacity-10 d-flex align-items-center">
                                 <h6 class="mb-0"><i class="bi bi-mic-fill"></i> 音声認識</h6>
@@ -351,7 +351,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <div class="card border-warning mb-3">
                             <div class="card-header card-handle bg-warning bg-opacity-10 d-flex align-items-center">
                                 <h6 class="mb-0"><i class="bi bi-send-fill"></i> 自動投稿機能（授業盛り上げ）</h6>
@@ -396,7 +396,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <!-- コメントログカード -->
                         <div class="card mb-3">
                             <div class="card-header card-handle d-flex align-items-center">
@@ -426,7 +426,94 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-lg-4">
+                    <!-- 効果音パネル -->
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <div class="card border-danger mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-volume-up-fill"></i> 効果音パネル
+                                </h6>
+                                <div class="form-check form-switch ms-auto">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_sound_trigger" checked>
+                                    <label class="form-check-label small" for="checkbox_sound_trigger">音声認識連動</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- 音量調整 -->
+                                <div class="mb-3">
+                                    <label for="range_sound_volume" class="form-label">音量: <span
+                                            id="sound_volume_label">50</span>%</label>
+                                    <input type="range" class="form-range" id="range_sound_volume" min="0" max="100"
+                                        value="50">
+                                </div>
+
+                                <!-- 効果音ボタン -->
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="クイズ.mp3">クイズ</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="クイズ.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="チャイム.mp3">チャイム</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="チャイム.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ドラ.mp3">ドラ</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ドラ.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ドラムロール.mp3">ドラムロール</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ドラムロール.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ピンポン.mp3">ピンポン</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ピンポン.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="太鼓.mp3">太鼓</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="太鼓.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="拍手.mp3">拍手</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="拍手.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 音声プレイヤー(非表示) -->
+                                <audio id="sound_player" preload="metadata"></audio>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <!-- 参加者数グラフ -->
                         <div class="card mb-3">
                             <div class="card-header card-handle d-flex align-items-center">
@@ -447,7 +534,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <!-- コンテキスト長グラフ -->
                         <div class="card mb-3">
                             <div class="card-header card-handle d-flex align-items-center">
@@ -469,7 +556,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <!-- 活動ログ -->
                         <div class="card mb-3">
                             <div class="card-header card-handle d-flex align-items-center">
@@ -545,6 +632,12 @@
         // トークン数統計関連の変数
         let contextStatsChart = null;
         let contextStatsHistory = []; // { timestamp, tokens } の配列
+
+        // 効果音パネル関連
+        let soundPlayer = null;
+        let soundVolume = 0.5; // 0.0-1.0
+        let soundTriggers = {}; // {filename: [triggers]}
+        let isSoundTriggerEnabled = true; // 音声認識連動フラグ（デフォルトON）
 
         // DOM要素
         const statusIndicator = document.getElementById('status-indicator');
@@ -1321,7 +1414,123 @@
 
             // 次の投稿をスケジュール
             scheduleNextAutoPosting();
-        }        // 次の自動投稿をスケジュール
+        }        // ========================================
+        // 効果音パネル機能
+        // ========================================
+
+        // 効果音を再生
+        function playSoundEffect(filename) {
+            try {
+                if (!soundPlayer) {
+                    addLog('効果音プレイヤーが初期化されていません', 'error');
+                    return;
+                }
+
+                soundPlayer.src = `./sounds/${filename}`;
+                soundPlayer.volume = soundVolume;
+                soundPlayer.play().catch(err => {
+                    addLog(`効果音再生エラー: ${err.message}`, 'error');
+                });
+                addLog(`効果音再生: ${filename}`, 'info');
+            } catch (error) {
+                addLog(`効果音再生エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 音量を保存
+        function saveSoundVolume(volume) {
+            try {
+                localStorage.setItem('soundEffectVolume', volume.toString());
+            } catch (error) {
+                addLog(`音量保存エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 音量を読み込み
+        function loadSoundVolume() {
+            try {
+                const saved = localStorage.getItem('soundEffectVolume');
+                return saved !== null ? parseFloat(saved) : 0.5;
+            } catch (error) {
+                addLog(`音量読み込みエラー: ${error.message}`, 'error');
+                return 0.5;
+            }
+        }
+
+        // トリガー文字列を保存
+        function saveSoundTriggers() {
+            try {
+                localStorage.setItem('soundTriggers', JSON.stringify(soundTriggers));
+            } catch (error) {
+                addLog(`トリガー保存エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // トリガー文字列を読み込み
+        function loadSoundTriggers() {
+            try {
+                const saved = localStorage.getItem('soundTriggers');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (error) {
+                addLog(`トリガー読み込みエラー: ${error.message}`, 'error');
+            }
+
+            // デフォルトトリガー
+            return {
+                'クイズ.mp3': ['クイズ', '問題'],
+                'チャイム.mp3': ['チャイム', '始まり', '終わり'],
+                'ドラ.mp3': ['ドラ', 'どん'],
+                'ドラムロール.mp3': ['ドラムロール', '緊張'],
+                'ピンポン.mp3': ['正解', 'ピンポン', '正しい'],
+                '太鼓.mp3': ['太鼓', 'ドン'],
+                '拍手.mp3': ['拍手', 'すごい', 'おめでとう']
+            };
+        }
+
+        // トリガー文字列を編集
+        function editSoundTrigger(filename) {
+            try {
+                const currentTriggers = soundTriggers[filename] || [];
+                const currentText = currentTriggers.join(', ');
+
+                const result = prompt(`「${filename}」のトリガー文字列を入力してください（カンマ区切り）:`, currentText);
+
+                if (result !== null) {
+                    // カンマ区切りで分割し、空白をトリム
+                    const newTriggers = result.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    soundTriggers[filename] = newTriggers;
+                    saveSoundTriggers();
+                    addLog(`トリガー更新: ${filename} = [${newTriggers.join(', ')}]`, 'info');
+                }
+            } catch (error) {
+                addLog(`トリガー編集エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // トリガー文字列をチェックして効果音を再生
+        function checkSoundTriggers(text) {
+            try {
+                if (!text || !isSoundTriggerEnabled) return;
+
+                // 各効果音のトリガーをチェック
+                for (const [filename, triggers] of Object.entries(soundTriggers)) {
+                    if (triggers && Array.isArray(triggers)) {
+                        for (const trigger of triggers) {
+                            if (text.includes(trigger)) {
+                                playSoundEffect(filename);
+                                return; // 最初にマッチした効果音のみ再生
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                addLog(`トリガーチェックエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 次の自動投稿をスケジュール
         function scheduleNextAutoPosting() {
             if (!isAutoPosting) {
                 return;
@@ -1495,6 +1704,9 @@
 
                 // 確定結果をテキストエリアに追加
                 if (finalTranscript) {
+                    // 効果音トリガーをチェック（テキストエリア追加前）
+                    checkSoundTriggers(finalTranscript);
+
                     // 暫定結果をクリア
                     inputSpeechInterim.value = '';
 
@@ -1615,6 +1827,76 @@
             buttonStartSpeech.disabled = false;
             buttonStopSpeech.disabled = true;
             inputSpeechInterim.value = '';
+        }
+
+        // ========================================
+        // 効果音パネル初期化
+        // ========================================
+        function initializeSoundPanel() {
+            try {
+                // Audio要素取得
+                soundPlayer = document.getElementById('sound_player');
+                if (!soundPlayer) {
+                    addLog('効果音プレイヤー要素が見つかりません', 'error');
+                    return;
+                }
+
+                // 音量を読み込み
+                soundVolume = loadSoundVolume();
+                const rangeVolume = document.getElementById('range_sound_volume');
+                const labelVolume = document.getElementById('sound_volume_label');
+                if (rangeVolume && labelVolume) {
+                    rangeVolume.value = Math.round(soundVolume * 100);
+                    labelVolume.textContent = Math.round(soundVolume * 100);
+                }
+
+                // トリガー文字列を読み込み
+                soundTriggers = loadSoundTriggers();
+                addLog('効果音パネル初期化完了', 'info');
+
+                // 音声認識連動トグルのイベントリスナー
+                const checkboxSoundTrigger = document.getElementById('checkbox_sound_trigger');
+                if (checkboxSoundTrigger) {
+                    checkboxSoundTrigger.addEventListener('change', function () {
+                        isSoundTriggerEnabled = this.checked;
+                        addLog(`音声認識連動: ${isSoundTriggerEnabled ? 'ON' : 'OFF'}`, 'info');
+                    });
+                }
+
+                // 音量スライダーのイベントリスナー
+                if (rangeVolume) {
+                    rangeVolume.addEventListener('input', function () {
+                        const value = parseInt(this.value);
+                        soundVolume = value / 100.0;
+                        if (labelVolume) {
+                            labelVolume.textContent = value;
+                        }
+                        saveSoundVolume(soundVolume);
+                    });
+                }
+
+                // 効果音ボタンのイベントリスナー
+                document.querySelectorAll('.sound-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const filename = this.getAttribute('data-sound');
+                        if (filename) {
+                            playSoundEffect(filename);
+                        }
+                    });
+                });
+
+                // トリガー編集ボタンのイベントリスナー
+                document.querySelectorAll('.edit-trigger-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const filename = this.getAttribute('data-sound');
+                        if (filename) {
+                            editSoundTrigger(filename);
+                        }
+                    });
+                });
+            } catch (error) {
+                addLog(`効果音パネル初期化エラー: ${error.message}`, 'error');
+            }
         }
 
         // 音声認識開始
@@ -2325,6 +2607,9 @@
             initializeSpeechRecognition();
             refreshMicrophones();
 
+            // 効果音パネルの初期化
+            initializeSoundPanel();
+
             // 会話履歴設定の初期化
             conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
             updateCurrentHistoryCount();
@@ -2435,6 +2720,9 @@
                         percentPosition: true,
                         transitionDuration: '0.25s'
                     });
+
+                    // グローバルに保存（アコーディオンからアクセスするため）
+                    window.packeryInstance = pckry;
 
                     // 各カードをドラッグ可能に設定
                     const itemElems = pckry.getItemElements();
