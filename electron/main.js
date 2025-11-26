@@ -62,6 +62,15 @@ var g_room; // 部屋名をグローバルに保存
 var tray; // trayをグローバルに保存
 var cameraEnabled = false; // カメラのON/OFF状態
 
+// メニューの状態管理用変数
+var menuState = {
+    qrCode: 'top_right', // 'none', 'center', 'top_right'
+    commentControl: false,
+    soundMute: false,
+    message: false,
+    clock: false
+};
+
 const settingsPath = path.join(app.getPath('userData'), 'camera-settings.json');
 
 // カメラ設定を保存
@@ -500,6 +509,7 @@ app.whenReady().then(() => {
             const savedSettings = loadCameraSettings();
             const savedPosition = savedSettings.position || 'top-right';
             const savedSize = savedSettings.size || 'small';
+            cameraEnabled = savedSettings.enabled || false;
 
             // メニューを構築する関数
             function buildTrayMenu() {
@@ -539,7 +549,9 @@ app.whenReady().then(() => {
                         submenu: [
                             {
                                 label: '非表示', type: 'radio',
+                                checked: menuState.qrCode === 'none',
                                 click(item, focusedWindow) {
+                                    menuState.qrCode = 'none';
                                     console.log(item, focusedWindow);
                                     win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
                                         .then(result => {
@@ -548,7 +560,9 @@ app.whenReady().then(() => {
                             },
                             {
                                 label: 'QR Code [CENTER]', type: 'radio',
+                                checked: menuState.qrCode === 'center',
                                 click(item, focusedWindow) {
+                                    menuState.qrCode = 'center';
                                     console.log(item, focusedWindow);
                                     win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
                                         .then(result => {
@@ -556,8 +570,10 @@ app.whenReady().then(() => {
                                 }
                             },
                             {
-                                label: 'QR Code [TOP RIGHT]', type: 'radio', checked: true,
+                                label: 'QR Code [TOP RIGHT]', type: 'radio',
+                                checked: menuState.qrCode === 'top_right',
                                 click(item, focusedWindow) {
+                                    menuState.qrCode = 'top_right';
                                     console.log(item, focusedWindow);
                                     win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
                                         .then(result => {
@@ -571,7 +587,9 @@ app.whenReady().then(() => {
                     },
                     {
                         label: '投稿制限解除', type: 'checkbox',
+                        checked: menuState.commentControl,
                         click(item, focusedWindow) {
+                            menuState.commentControl = item.checked;
                             win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
                                 .then(result => {
                                 }).catch(console.error);
@@ -579,7 +597,9 @@ app.whenReady().then(() => {
                     },
                     {
                         label: 'サウンドコメントのミュート', type: 'checkbox',
+                        checked: menuState.soundMute,
                         click(item, focusedWindow) {
+                            menuState.soundMute = item.checked;
                             win.webContents.executeJavaScript(`toggleSoundMute();`, true)
                                 .then(result => {
                                 }).catch(console.error);
@@ -587,7 +607,9 @@ app.whenReady().then(() => {
                     },
                     {
                         label: 'メッセージ表示', type: 'checkbox',
+                        checked: menuState.message,
                         click(item, focusedWindow) {
+                            menuState.message = item.checked;
                             if (item.checked == true) {
                                 prompt({
                                     title: 'Commentable',
@@ -611,6 +633,7 @@ app.whenReady().then(() => {
                                         if (r === null) {
                                             //console.log('user cancelled');
                                             item.checked = false;
+                                            menuState.message = false;
                                             return;
                                         } else {
                                             admin_message = r;
@@ -632,8 +655,9 @@ app.whenReady().then(() => {
                     },
                     {
                         label: '時刻表示', type: 'checkbox',
+                        checked: menuState.clock,
                         click(item, focusedWindow) {
-
+                            menuState.clock = item.checked;
                             win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
                                 .then(result => {
                                 }).catch(console.error)
@@ -737,7 +761,7 @@ app.whenReady().then(() => {
                             {
                                 label: 'カメラON/OFF',
                                 type: 'checkbox',
-                                checked: false,
+                                checked: cameraEnabled,
                                 click: (menuItem) => {
                                     cameraEnabled = menuItem.checked;
                                     toggleCamera(menuItem.checked);
