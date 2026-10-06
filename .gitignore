@@ -17,3 +17,5 @@ public/inappropriate-words-ja/Sexual.txt
 public/inappropriate-words-ja/Sexual_with_bopo.txt
 public/inappropriate-words-ja/Sexual_with_mask.txt
 public/chatlogs/*
+/electron/native/*/build
+/logs

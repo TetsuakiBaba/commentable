@@ -36,11 +36,8 @@ async function syncCommentsFromServer(showAlert = true) {
       return;
     }
 
-    // ファイル名として安全な文字列に変換（サーバー側と同じロジック）
-    const safeRoomName = roomName.replace(/[^a-zA-Z0-9_-]/g, '_');
-
-    // サーバーからチャットログを取得（静的ファイルとして直接アクセス）
-    const response = await fetch(`/chatlogs/${safeRoomName}.log`);
+    // サーバーからチャットログを取得
+    const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/comments`, { cache: 'no-store' });
 
     if (!response.ok) {
       if (response.status === 404) {

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理者ダッシュボード - Commentable</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="/assets/css/custom.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .dashboard-container {
+            display: none;
+            padding: 0;
+        }
+
+        .card {
+            margin-bottom: 1.5rem;
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .log-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .log-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .badge-custom {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error-message {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .log-detail-modal .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .comment-entry {
+            padding: 0.5rem;
+            border-left: 3px solid #1FB8CC;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fa;
+        }
+
+        .comment-username {
+            font-weight: bold;
+            color: #1FB8CC;
+        }
+
+        .comment-timestamp {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ログインフォーム -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-card">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-lock"></i> 管理者ログイン
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="adminPassword" class="form-label">管理者パスワード</label>
+                            <input type="password" class="form-control" id="adminPassword" required
+                                autocomplete="current-password" placeholder="パスワードを入力してください">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-box-arrow-in-right"></i> ログイン
+                        </button>
+                        <div id="loginError" class="alert alert-danger error-message">
+                            <i class="bi bi-exclamation-triangle"></i> パスワードが正しくありません
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ダッシュボード -->
+    <div id="dashboardContainer" class="dashboard-container">
+        <!-- ナビゲーションバー -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-speedometer2"></i> Commentable 管理ダッシュボード
+                </a>
+                <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right"></i> ログアウト
+                </button>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <!-- 統計情報カード -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <i class="bi bi-file-text text-primary" style="font-size: 2rem;"></i>
+                            <div class="stat-number text-primary" id="totalLogs">-</div>
+                            <div class="text-muted">総ログファイル数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body text-center">
+                            <i class="bi bi-chat-dots text-success" style="font-size: 2rem;"></i>
+                            <div class="stat-number text-success" id="totalComments">-</div>
+                            <div class="text-muted">総コメント数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <i class="bi bi-hdd text-info" style="font-size: 2rem;"></i>
+                            <div class="stat-number text-info" id="totalSize">-</div>
+                            <div class="text-muted">総ファイルサイズ</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clock-history text-warning" style="font-size: 2rem;"></i>
+                            <div class="stat-number text-warning" id="latestUpdate">-</div>
+                            <div class="text-muted">最終更新</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- チャットログ一覧 -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-list-ul"></i> チャットログ一覧
+                                </h6>
+                                <button class="btn btn-sm btn-primary" id="refreshBtn">
+                                    <i class="bi bi-arrow-clockwise"></i> 更新
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="logListContainer" class="log-list">
+                                <div class="loading">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">読み込み中...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作パネル -->
+                <div class="col-lg-4">
+                    <!-- システム情報 -->
+                    <div class="card border-info">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="bi bi-info-circle"></i> システム情報
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <small class="text-muted">自動削除設定</small>
+                                <div id="retentionInfo">読み込み中...</div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">チェック間隔</small>
+                                <div id="checkIntervalInfo">読み込み中...</div>
+                            </div>
+                            <div>
+                                <small class="text-muted">次回チェック</small>
+                                <div id="nextCheckInfo">読み込み中...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- クイックアクション -->
+                    <div class="card border-success">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightning"></i> クイックアクション
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-success w-100 mb-2" id="downloadAllBtn">
+                                <i class="bi bi-download"></i> 全ログダウンロード
+                            </button>
+                            <button class="btn btn-warning w-100 mb-2" id="cleanupOldLogsBtn">
+                                <i class="bi bi-trash"></i> 古いログ削除実行
+                            </button>
+                            <button class="btn btn-info w-100" id="exportStatsBtn">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> 統計CSVエクスポート
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ヘルプ -->
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="bi bi-question-circle"></i> ヘルプ
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small>
+                                <ul class="mb-0 ps-3">
+                                    <li>ログファイル名をクリックで詳細表示</li>
+                                    <li>自動削除は設定された間隔で実行</li>
+                                    <li>古いログは手動でも削除可能</li>
+                                </ul>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ログ詳細モーダル -->
+    <div class="modal fade" id="logDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-text"></i> <span id="modalLogName"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body log-detail-modal">
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">ファイルサイズ:</small>
+                                <div id="modalFileSize">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">最終更新:</small>
+                                <div id="modalLastModified">-</div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <small class="text-muted">コメント数:</small>
+                                <div id="modalCommentCount">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">ユニークユーザー数:</small>
+                                <div id="modalUniqueUsers">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="mb-0 text-nowrap">コメント履歴 <small class="text-muted" id="modalCommentListCount"></small></h6>
+                        <input type="search" class="form-control form-control-sm ms-auto" id="modalCommentFilter"
+                            placeholder="名前・コメントで絞り込み" style="max-width: 240px;">
+                    </div>
+                    <div id="modalCommentList">
+                        <div class="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">読み込み中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="downloadLogBtn">
+                        <i class="bi bi-download"></i> このログをダウンロード
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteLogBtn">
+                        <i class="bi bi-trash"></i> このログを削除
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('--- Dashboard Script Start ---');
+        console.log('🚀 Dashboard script loaded!');
+        console.log('📍 Current URL:', window.location.href);
+        console.log('📍 Document ready state:', document.readyState);
+
+        // グローバル変数
+        let currentLogFile = null;
+        let authToken = null;
+        let allLogs = [];
+
+        // ページ読み込み時に認証状態を確認
+        async function checkAuthStatus() {
+            console.log('🔍 Checking auth status...');
+            try {
+                const response = await fetch('/api/dashboard/auth/status');
+                console.log('📡 Response status:', response.status);
+                const data = await response.json();
+                console.log('📦 Response data:', data);
+
+                if (data.skipAuth) {
+                    console.log('✅ skipAuth is enabled, auto-logging in...');
+                    // skipAuthが有効な場合は自動的にログイン
+                    authToken = 'dev-mode'; // ダミートークン
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboardContainer').style.display = 'block';
+                    loadDashboard();
+                } else {
+                    console.log('❌ skipAuth is disabled, showing login form');
+                }
+            } catch (error) {
+                console.error('⚠️ Auth status check error:', error);
+                // エラーの場合は通常のログイン画面を表示
+            }
+        }
+
+        // ページ読み込み時に実行（複数の方法で確実に実行）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        } else {
+            // DOMがすでに読み込まれている場合は即座に実行
+            checkAuthStatus();
+        }
+        // さらに、window.onloadでも実行（保険）
+        window.addEventListener('load', function () {
+            console.log('🔄 window.load event fired');
+        });
+
+        // ログイン処理
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                const response = await fetch('/api/dashboard/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    authToken = password;
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboardContainer').style.display = 'block';
+                    document.getElementById('loginError').style.display = 'none';
+                    loadDashboard();
+                } else {
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+
+        // ログアウト処理
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            authToken = null;
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('dashboardContainer').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        });
+
+        // APIリクエストヘルパー
+        async function apiRequest(url, options = {}) {
+            const headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${authToken}`
+            };
+
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            if (response.status === 401) {
+                // 認証エラーの場合はログアウト
+                document.getElementById('logoutBtn').click();
+                throw new Error('Unauthorized');
+            }
+
+            return response;
+        }
+
+        // ダッシュボードデータ読み込み
+        async function loadDashboard() {
+            try {
+                // ログ一覧を取得
+                const logsResponse = await apiRequest('/api/dashboard/logs');
+                const logsData = await logsResponse.json();
+                allLogs = logsData.logs;
+
+                // 統計情報を取得
+                const statsResponse = await apiRequest('/api/dashboard/stats');
+                const statsData = await statsResponse.json();
+
+                // システム情報を取得
+                const systemResponse = await apiRequest('/api/dashboard/system-info');
+                const systemData = await systemResponse.json();
+
+                // UIを更新
+                updateStatistics(statsData, allLogs);
+                updateSystemInfo(systemData);
+                displayLogList(allLogs);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('logListContainer').innerHTML = `
+                    <div class="alert alert-danger m-3">
+                        <i class="bi bi-exclamation-triangle"></i> データの読み込みに失敗しました
+                    </div>
+                `;
+            }
+        }
+
+        // 統計情報を更新
+        function updateStatistics(stats, logs) {
+            document.getElementById('totalLogs').textContent = stats.totalLogs;
+            document.getElementById('totalComments').textContent = stats.totalComments.toLocaleString();
+            document.getElementById('totalSize').textContent = formatFileSize(stats.totalSize);
+
+            // 最新の更新日時を取得
+            let latestUpdate = null;
+            logs.forEach(log => {
+                const logDate = new Date(log.lastModified);
+                if (!latestUpdate || logDate > latestUpdate) {
+                    latestUpdate = logDate;
+                }
+            });
+
+            if (latestUpdate) {
+                const timeAgo = getTimeAgo(latestUpdate);
+                document.getElementById('latestUpdate').textContent = timeAgo;
+                document.getElementById('latestUpdate').style.fontSize = '1rem';
+            } else {
+                document.getElementById('latestUpdate').textContent = '-';
+            }
+        }
+
+        // システム情報を更新
+        function updateSystemInfo(systemInfo) {
+            document.getElementById('retentionInfo').textContent = `${systemInfo.retentionDays}日間`;
+            document.getElementById('checkIntervalInfo').textContent = `${systemInfo.checkIntervalHours}時間ごと`;
+
+            // 次回チェック時刻は概算
+            const nextCheckHours = Math.floor(Math.random() * systemInfo.checkIntervalHours);
+            document.getElementById('nextCheckInfo').textContent = `約${nextCheckHours}時間後`;
+        }
+
+        // ログ一覧を表示
+        function displayLogList(logs) {
+            const container = document.getElementById('logListContainer');
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <div>ログファイルがありません</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = logs.map(log => `
+                <div class="log-item" onclick="showLogDetail('${log.name}')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">
+                                <i class="bi bi-file-text text-primary"></i> ${log.name}
+                            </div>
+                            <div class="small text-muted">
+                                <i class="bi bi-chat-dots"></i> ${log.commentCount.toLocaleString()}件 | 
+                                <i class="bi bi-people"></i> ${log.uniqueUsers}人 | 
+                                <i class="bi bi-hdd"></i> ${formatFileSize(log.size)}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge badge-custom bg-secondary">
+                                ${getTimeAgo(new Date(log.lastModified))}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ログ詳細を表示
+        async function showLogDetail(logName) {
+            currentLogFile = logName;
+            document.getElementById('modalLogName').textContent = logName;
+
+            const modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
+            modal.show();
+
+            // ローディング表示
+            document.getElementById('modalCommentList').innerHTML = `
+                <div class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">読み込み中...</span>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await apiRequest(`/api/dashboard/logs/${logName}`);
+                const logData = await response.json();
+
+                document.getElementById('modalFileSize').textContent = formatFileSize(logData.size);
+                document.getElementById('modalLastModified').textContent =
+                    new Date(logData.lastModified).toLocaleString('ja-JP');
+                document.getElementById('modalCommentCount').textContent = logData.commentCount.toLocaleString();
+                document.getElementById('modalUniqueUsers').textContent = logData.uniqueUsers;
+
+                // コメント一覧を全件表示（新しい順）
+                currentLogComments = [...logData.comments].reverse();
+                document.getElementById('modalCommentFilter').value = '';
+                renderLogComments();
+
+            } catch (error) {
+                console.error('Error loading log detail:', error);
+                document.getElementById('modalCommentList').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> ログの読み込みに失敗しました
+                    </div>
+                `;
+            }
+        }
+
+        // 表示中のログのコメント（新しい順）
+        let currentLogComments = [];
+
+        // 絞り込み条件に合うコメントを表示する
+        function renderLogComments() {
+            const keyword = document.getElementById('modalCommentFilter').value.trim().toLowerCase();
+            const comments = keyword
+                ? currentLogComments.filter(comment =>
+                    String(comment.username || '').toLowerCase().includes(keyword) ||
+                    String(comment.comment || '').toLowerCase().includes(keyword))
+                : currentLogComments;
+            document.getElementById('modalCommentListCount').textContent = keyword
+                ? `（${comments.length.toLocaleString()} / ${currentLogComments.length.toLocaleString()}件・新しい順）`
+                : `（全${currentLogComments.length.toLocaleString()}件・新しい順）`;
+            document.getElementById('modalCommentList').innerHTML = comments.map(comment => `
+                    <div class="comment-entry">
+                        <div class="comment-username">${escapeHtml(comment.username || 'Anonymous')}</div>
+                        <div>${escapeHtml(comment.comment || '')}</div>
+                        <div class="comment-timestamp">
+                            <i class="bi bi-clock"></i> ${new Date(comment.timestamp).toLocaleString('ja-JP')}
+                            ${comment.emoji ? '<span class="badge bg-warning ms-2">😊</span>' : ''}
+                            ${comment.sound ? '<span class="badge bg-info ms-2">🔊</span>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        document.getElementById('modalCommentFilter').addEventListener('input', renderLogComments);
+
+        // ログのダウンロード
+        document.getElementById('downloadLogBtn').addEventListener('click', () => {
+            if (currentLogFile) {
+                window.location.href = `/chatlogs/${currentLogFile}`;
+            }
+        });
+
+        // ログの削除
+        document.getElementById('deleteLogBtn').addEventListener('click', async () => {
+            if (!currentLogFile) return;
+
+            if (confirm(`本当に "${currentLogFile}" を削除しますか？\nこの操作は取り消せません。`)) {
+                try {
+                    const response = await apiRequest(`/api/dashboard/logs/${currentLogFile}`, {
+                        method: 'DELETE'
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('ログファイルを削除しました');
+                        bootstrap.Modal.getInstance(document.getElementById('logDetailModal')).hide();
+                        loadDashboard();
+                    } else {
+                        alert('削除に失敗しました: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alert('削除中にエラーが発生しました');
+                }
+            }
+        });
+
+        // 全ログダウンロード
+        document.getElementById('downloadAllBtn').addEventListener('click', () => {
+            alert('全ログダウンロード機能は現在開発中です。\n各ログを個別にダウンロードしてください。');
+            // TODO: 複数ファイルをZIPでダウンロードする機能を実装
+        });
+
+        // 古いログ削除実行
+        document.getElementById('cleanupOldLogsBtn').addEventListener('click', async () => {
+            if (!confirm('古いログファイルを削除しますか？\nこの操作は取り消せません。')) {
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/dashboard/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ retentionDays: 21 })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`${result.deletedCount}個のログファイルを削除しました`);
+                    loadDashboard();
+                } else {
+                    alert('削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('Cleanup error:', error);
+                alert('削除中にエラーが発生しました');
+            }
+        });
+
+        // 統計CSVエクスポート
+        document.getElementById('exportStatsBtn').addEventListener('click', async () => {
+            try {
+                const response = await apiRequest('/api/dashboard/export/stats');
+                const blob = await response.blob();
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'chatlog_stats.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('エクスポート中にエラーが発生しました');
+            }
+        });
+
+        // 更新ボタン
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            loadDashboard();
+        });
+
+        // ユーティリティ関数
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return '今';
+            if (seconds < 3600) return Math.floor(seconds / 60) + '分前';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + '時間前';
+            if (seconds < 2592000) return Math.floor(seconds / 86400) + '日前';
+            if (seconds < 31536000) return Math.floor(seconds / 2592000) + 'ヶ月前';
+            return Math.floor(seconds / 31536000) + '年前';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

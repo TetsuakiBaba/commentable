@@ -1,8 +1,9 @@
 require('update-electron-app')()
 
-const { app, BrowserWindow, Menu, Tray, screen, MenuItem, shell, clipboard, globalShortcut } = require('electron')
-const { ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, Tray, screen, shell, clipboard, globalShortcut, ipcMain } = require('electron')
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 const prompt = require('electron-prompt');
 
@@ -12,9 +13,9 @@ const copyrightYear = packageJson.year;
 
 const is_windows = process.platform === 'win32'
 const is_mac = process.platform === 'darwin'
-const is_linux = process.platform === 'linux'
 
-const path = require('path');
+const PRELOAD = path.join(__dirname, 'preload.js');
+const PROMPT_STYLESHEET = path.join(__dirname, '/css/prompt.css');
 
 // グローバルエラーハンドリング - サンドボックス関連のエラーを無視
 process.on('uncaughtException', (error) => {
@@ -27,82 +28,82 @@ process.on('uncaughtException', (error) => {
 });
 
 // サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
-const USE_LOCAL_SERVER = false;
-// const USE_LOCAL_SERVER = true;
+// const USE_LOCAL_SERVER = false;
+const USE_LOCAL_SERVER = true;
 
 // デバッグモードフラグ（true: DevTools表示 + マウス操作可能, false: DevTools非表示 + マウス操作不可）
 const DEBUG_MODE = false;
 
-// ベースURL設定
-function getBaseUrl() {
-    if (USE_LOCAL_SERVER) {
-        console.log('Using local development server');
-        return 'http://localhost:3000';
-    } else {
-        console.log('Using production server');
-        // return 'https://bbcommentable.herokuapp.com';
-        return 'https://commentable.onrender.com';
-    }
-}
-
-// 現在のベースURL（手動切り替え可能）
-let currentBaseUrl = getBaseUrl();
+const currentBaseUrl = USE_LOCAL_SERVER ? 'http://localhost:3000' : 'https://commentable.onrender.com';
 console.log(`Commentable will use server: ${currentBaseUrl}`);
 
-// サーバーURL切り替え関数
-function switchServerUrl(newUrl) {
-    currentBaseUrl = newUrl;
-    console.log(`Server URL switched to: ${currentBaseUrl}`);
-}
-
-var admin_message = "15:00から再開します";
 var win;
-var contextMenu; // グローバル変数として定義
-var g_room; // 部屋名をグローバルに保存
-var tray; // trayをグローバルに保存
-var cameraEnabled = false; // カメラのON/OFF状態
+var contextMenu;
+var g_room; // 部屋名
+var tray;
+var cameraEnabled = false; // カメラのON/OFF状態（起動時は常にOFF）
+
+// 人物切り抜き（macOS Vision の VNGeneratePersonSegmentationRequest を使用）
+let personSegmentation = null;
+if (is_mac) {
+    try {
+        personSegmentation = require('./native/person-segmentation');
+        if (!personSegmentation.isSupported()) {
+            personSegmentation = null;
+        }
+    } catch (error) {
+        console.warn('Person segmentation is not available:', error.message);
+    }
+}
+var cameraSegmentationQuality = 'balanced'; // 'fast', 'balanced', 'accurate'
 
 // メニューの状態管理用変数
 var menuState = {
     qrCode: 'top_right', // 'none', 'center', 'top_right'
     commentControl: false,
     soundMute: false,
-    message: false,
     clock: false
 };
 
+// ========== レンダラー呼び出し ==========
+// 引数は JSON として埋め込むので、引用符や改行を含む文字列でも安全に渡せる
+function runInWindow(targetWindow, fn, ...args) {
+    if (!targetWindow || targetWindow.isDestroyed()) return Promise.resolve();
+    const code = `${fn}(${args.map(arg => JSON.stringify(arg)).join(', ')});`;
+    return targetWindow.webContents.executeJavaScript(code, true).catch(console.error);
+}
+
+function callRenderer(fn, ...args) {
+    return runInWindow(win, fn, ...args);
+}
+
+// メインウィンドウの中央に子ウィンドウを開く
+function openCenteredWindow(file, { width, height, ...options }) {
+    const [mainWidth, mainHeight] = win.getSize();
+    const [mainX, mainY] = win.getPosition();
+    const child = new BrowserWindow({
+        width,
+        height,
+        x: Math.round(mainX + (mainWidth - width) / 2),
+        y: Math.round(mainY + (mainHeight - height) / 2),
+        ...options,
+        webPreferences: {
+            preload: PRELOAD,
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+    child.loadFile(path.join(__dirname, file));
+    return child;
+}
+
+// ========== カメラ設定 ==========
 const settingsPath = path.join(app.getPath('userData'), 'camera-settings.json');
 
-// カメラ設定を保存
-function saveCameraSettings(settings) {
-    try {
-        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-        console.log('Camera settings saved:', settings);
-    } catch (error) {
-        console.error('Error saving camera settings:', error);
-    }
-}
-
-// カメラ位置を保存
-function saveCameraPosition(position) {
-    const settings = loadCameraSettings();
-    settings.position = position;
-    saveCameraSettings(settings);
-}
-
-// カメラサイズを保存
-function saveCameraSize(size) {
-    const settings = loadCameraSettings();
-    settings.size = size;
-    saveCameraSettings(settings);
-}
-
-// カメラ設定を読み込み
 function loadCameraSettings() {
     try {
         if (fs.existsSync(settingsPath)) {
-            const data = fs.readFileSync(settingsPath, 'utf8');
-            return JSON.parse(data);
+            return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         }
     } catch (error) {
         console.error('Error loading camera settings:', error);
@@ -115,69 +116,54 @@ function loadCameraSettings() {
     };
 }
 
-// カメラON/OFF切り替え
-function toggleCamera(enabled) {
-    console.log('Toggle camera:', enabled);
-
-    if (enabled) {
-        const settings = loadCameraSettings();
-        if (settings.deviceId) {
-            // 保存されたカメラデバイスIDで起動
-            win.webContents.send('select-camera', settings.deviceId);
-
-            // 保存された位置とサイズを適用
-            if (settings.position) {
-                win.webContents.executeJavaScript(`setCameraPosition('${settings.position}');`)
-                    .catch(console.error);
-            }
-            if (settings.size) {
-                win.webContents.executeJavaScript(`setCameraSize('${settings.size}');`)
-                    .catch(console.error);
-            }
-        } else {
-            // デバイスIDがない場合は設定画面を開く
-            openCameraSettings();
-        }
-    } else {
-        // カメラを停止
-        win.webContents.send('stop-camera');
+function saveCameraSettings(settings) {
+    try {
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    } catch (error) {
+        console.error('Error saving camera settings:', error);
     }
 }
 
-// カメラ設定ウィンドウを開く
+// 既存の設定に一部の項目だけ上書きして保存
+function updateCameraSettings(patch) {
+    saveCameraSettings({ ...loadCameraSettings(), ...patch });
+}
+
+// 保存済みの表示位置・サイズ・切り抜き設定を画面に反映
+function applyCameraDisplaySettings(settings) {
+    if (settings.position) callRenderer('setCameraPosition', settings.position);
+    if (settings.size) callRenderer('setCameraSize', settings.size);
+    callRenderer('setCameraSegmentation', !!(personSegmentation && settings.segmentation));
+}
+
+function toggleCamera(enabled) {
+    if (!enabled) {
+        win.webContents.send('stop-camera');
+        return;
+    }
+    const settings = loadCameraSettings();
+    if (settings.deviceId) {
+        win.webContents.send('select-camera', settings.deviceId);
+        applyCameraDisplaySettings(settings);
+    } else {
+        // デバイスIDがない場合は設定画面を開く
+        openCameraSettings();
+    }
+}
+
 function openCameraSettings() {
-    const mainWindowSize = win.getSize();
-    const mainWindowPos = win.getPosition();
-
-    const settingsWindowWidth = 600;
-    const settingsWindowHeight = 500;
-
-    const settingsWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - settingsWindowWidth) / 2;
-    const settingsWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - settingsWindowHeight) / 2;
-
-    const settingsWindow = new BrowserWindow({
+    const settingsWindow = openCenteredWindow('camera-settings.html', {
         title: "カメラ設定",
-        width: settingsWindowWidth,
-        height: settingsWindowHeight,
-        x: settingsWindowPosX,
-        y: settingsWindowPosY,
+        width: 600,
+        height: 500,
         hasShadow: true,
         alwaysOnTop: true,
         resizable: false,
-        frame: true,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false,
-            contextIsolation: true
-        }
+        frame: true
     });
 
-    settingsWindow.loadFile(path.join(__dirname, 'camera-settings.html'));
-
-    // 設定ウィンドウが閉じられた時の処理
+    // 閉じたときにカメラがONなら選び直したカメラで再起動
     settingsWindow.on('closed', () => {
-        console.log('Camera settings window closed');
-        // カメラがONの場合、設定を再読み込みして適用
         if (cameraEnabled) {
             const settings = loadCameraSettings();
             if (settings.deviceId) {
@@ -187,40 +173,37 @@ function openCameraSettings() {
     });
 }
 
+// ========== メインウィンドウ ==========
+function sendWindowMetrics() {
+    if (!win || win.isDestroyed()) return;
+    const { scaleFactor } = screen.getDisplayMatching(win.getBounds());
+    const [width, height] = win.getContentSize();
+    win.webContents.send('window-resized', {
+        width,
+        height,
+        scaleFactor,
+        physicalWidth: Math.round(width * scaleFactor),
+        physicalHeight: Math.round(height * scaleFactor)
+    });
+}
+
 function createWindow() {
+    const activeScreen = screen.getPrimaryDisplay();
+    const { x, y, width, height } = activeScreen.workArea;
 
-    console.log('All displays:', screen.getAllDisplays());
-    //let active_screen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    let active_screen = screen.getPrimaryDisplay();
-    console.log("Active screen:", active_screen);
-    console.log("Scale factor:", active_screen.scaleFactor);
-
-    let { width, height } = active_screen.workAreaSize
-    const x = active_screen.workArea.x;
-    const y = active_screen.workArea.y;
-
-    console.log("Logical window size:", width, 'x', height);
-    console.log("Physical window size:", Math.round(width * active_screen.scaleFactor), 'x', Math.round(height * active_screen.scaleFactor));
-
-    //width = 1200;
-    //height = 800;
-    //console.log(x, y);
     win = new BrowserWindow({
         title: "commentable-desktop",
-        width: width,
-        height: height,
-        x: x,
-        y: y,
-        // nodeIntegration: false,
-        // contextIsolation: true,
+        width,
+        height,
+        x,
+        y,
         hasShadow: false,
         transparent: true,
         frame: false,
-        resizable: true, // ウィンドウのリサイズを許可
+        resizable: true,
         alwaysOnTop: true,
-        //focusable: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: PRELOAD,
             nodeIntegration: false,
             contextIsolation: true,
             sandbox: true,
@@ -228,129 +211,48 @@ function createWindow() {
         }
     })
 
-    // レンダラープロセスのエラーを表示（デバッグ用）
+    // レンダラーのコンソール出力をターミナルに表示（デバッグ用）
     win.webContents.on('console-message', (event, level, message, line, sourceId) => {
-        // 全てのメッセージを表示
         console.log(`[Renderer] Level ${level}: ${message}`);
         if (line && sourceId) {
             console.log(`  at ${sourceId}:${line}`);
         }
     });
 
-    // クラッシュハンドリング
     win.webContents.on('render-process-gone', (event, details) => {
         console.log('Render process gone:', details);
     });
 
-    // ウィンドウリサイズイベントのリスナー
-    win.on('resize', () => {
-        const bounds = win.getBounds();
-        const display = screen.getDisplayMatching(bounds);
-        const scaleFactor = display.scaleFactor;
+    // リサイズ時はレンダラーに論理サイズと倍率を通知
+    win.on('resize', sendWindowMetrics);
 
-        // 論理ピクセルサイズ
-        const [logicalWidth, logicalHeight] = win.getContentSize();
-
-        // 物理ピクセルサイズ（DPIスケーリング考慮）
-        const physicalWidth = Math.round(logicalWidth * scaleFactor);
-        const physicalHeight = Math.round(logicalHeight * scaleFactor);
-
-        console.log('Window resized:');
-        console.log('  Logical size:', logicalWidth, 'x', logicalHeight);
-        console.log('  Scale factor:', scaleFactor);
-        console.log('  Physical size:', physicalWidth, 'x', physicalHeight);
-
-        // レンダラープロセスにリサイズイベントを送信（論理サイズを使用）
-        if (win.webContents) {
-            win.webContents.send('window-resized', {
-                width: logicalWidth,
-                height: logicalHeight,
-                scaleFactor: scaleFactor,
-                physicalWidth: physicalWidth,
-                physicalHeight: physicalHeight
-            });
-        }
-    });
-
-    // デバッグモードのログ出力
-    if (DEBUG_MODE) {
-        console.log('DEBUG_MODE: DevTools will open after page load, mouse events enabled');
-    } else {
-        console.log('DEBUG_MODE: DevTools disabled, mouse events disabled');
-    }
-
-    // ディスプレイ変更イベントのリスナー
-    screen.on('display-added', (event, newDisplay) => {
-        console.log('Display added:', newDisplay);
+    // ディスプレイ構成が変わったらウィンドウを合わせ、メニューの一覧も更新
+    const onDisplayChanged = () => {
         adjustWindowToCurrentDisplay();
-        rebuildTrayMenu(); // メニューを再構築
-    });
-
-    screen.on('display-removed', (event, oldDisplay) => {
-        console.log('Display removed:', oldDisplay);
-        adjustWindowToCurrentDisplay();
-        rebuildTrayMenu(); // メニューを再構築
-    });
-
-    screen.on('display-metrics-changed', (event, display, changedMetrics) => {
-        console.log('Display metrics changed:', display.id, changedMetrics);
-        adjustWindowToCurrentDisplay();
-        rebuildTrayMenu(); // メニューを再構築
-    });
+        rebuildTrayMenu();
+    };
+    screen.on('display-added', onDisplayChanged);
+    screen.on('display-removed', onDisplayChanged);
+    screen.on('display-metrics-changed', onDisplayChanged);
 
     // ウィンドウが別のディスプレイに移動した時
+    win.lastDisplayId = activeScreen.id;
     win.on('move', () => {
-        const bounds = win.getBounds();
-        const currentDisplay = screen.getDisplayMatching(bounds);
-        const primaryDisplay = screen.getPrimaryDisplay();
-
-        // ウィンドウが存在するディスプレイが変わった場合
+        const currentDisplay = screen.getDisplayMatching(win.getBounds());
         if (win.lastDisplayId !== currentDisplay.id) {
-            console.log('Window moved to different display:', currentDisplay.id);
             win.lastDisplayId = currentDisplay.id;
             adjustWindowToCurrentDisplay();
         }
     });
-
-    // 初期ディスプレイIDを記録
-    win.lastDisplayId = active_screen.id;
-
 }
 
-// 現在のディスプレイに合わせてウィンドウサイズを調整
+// 現在のディスプレイの作業領域いっぱいにウィンドウを合わせる
+// （resize イベントでレンダラーに通知される）
 function adjustWindowToCurrentDisplay() {
     if (!win) return;
-
-    const bounds = win.getBounds();
-    const currentDisplay = screen.getDisplayMatching(bounds);
-    const { width, height } = currentDisplay.workAreaSize;
-    const { x, y } = currentDisplay.workArea;
-
-    console.log('Adjusting window to display:', currentDisplay.id);
-    console.log('  New logical size:', width, 'x', height);
-    console.log('  Scale factor:', currentDisplay.scaleFactor);
-    console.log('  New physical size:', Math.round(width * currentDisplay.scaleFactor), 'x', Math.round(height * currentDisplay.scaleFactor));
-
-    // ウィンドウサイズと位置を更新
-    win.setBounds({
-        x: x,
-        y: y,
-        width: width,
-        height: height
-    });
-
-    // リサイズイベントが自動的に発火され、レンダラープロセスに通知される
+    const currentDisplay = screen.getDisplayMatching(win.getBounds());
+    win.setBounds(currentDisplay.workArea);
 }
-
-// トレイメニューを再構築する関数
-function rebuildTrayMenu() {
-    if (typeof global.rebuildTrayMenu === 'function') {
-        global.rebuildTrayMenu();
-    } else {
-        console.warn('rebuildTrayMenu is not yet defined');
-    }
-}
-
 
 function capFirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -363,37 +265,436 @@ function getRandomInt(min, max) {
 function generateName() {
     var name1 = ["computer", "design", "art", "human", "410", "interface", "tmu"];
     var name2 = ["room", "class", "conference", "event", "area", "place"];
-    var name = capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]);
-    return name;
+    return capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]);
 }
 
-// In main process.
-// trayとg_roomはグローバルで既に宣言済み
-
-// IPCハンドラーを設定
+// ========== IPC ==========
 ipcMain.handle('save-camera-setting', async (event, deviceId) => {
-    const settings = { deviceId, enabled: cameraEnabled };
-    saveCameraSettings(settings);
+    updateCameraSettings({ deviceId, enabled: cameraEnabled });
     return true;
 });
 
-ipcMain.handle('get-camera-setting', async () => {
-    const settings = loadCameraSettings();
-    return settings.deviceId;
+ipcMain.handle('get-camera-setting', async () => loadCameraSettings().deviceId);
+
+// カメラフレーム（RGBA）から人物マスクを生成
+ipcMain.handle('segment-person', async (event, { data, width, height }) => {
+    if (!personSegmentation) {
+        throw new Error('Person segmentation is not available');
+    }
+    return personSegmentation.segment(data, width, height, cameraSegmentationQuality);
 });
 
 // レンダラープロセスからのログをメインプロセスのコンソールに出力
-ipcMain.on('console-log', (event, ...args) => {
-    console.log('[Renderer]', ...args);
+ipcMain.on('console-log', (event, ...args) => console.log('[Renderer]', ...args));
+ipcMain.on('console-warn', (event, ...args) => console.warn('[Renderer]', ...args));
+ipcMain.on('console-error', (event, ...args) => console.error('[Renderer]', ...args));
+
+// ========== 授業ログの保存 ==========
+// サーバーの授業ログは保持期間を過ぎると消えるので、配信中に受け取ったものをこの Mac にも保存する
+// 保存先: 書類/Commentable/logs/<部屋キー>/<授業回ID>.jsonl（サーバーと同じ形式）
+const LOG_ARCHIVE_DIR = path.join(app.getPath('documents'), 'Commentable', 'logs');
+const archivedEventIds = new Map(); // ファイル → 保存済みの event_id
+
+// サーバーの event-log.js と同じ規則で部屋名からフォルダ名を作る
+function logRoomKey(room) {
+    const safe = String(room).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+    if (safe === room) return safe;
+    return `${safe}_${crypto.createHash('sha1').update(String(room)).digest('hex').slice(0, 8)}`;
+}
+
+function archiveLogEvents(events) {
+    for (const event of Array.isArray(events) ? events : []) {
+        if (!event || typeof event.room !== 'string' || !/^\d{8}-\d{6}$/.test(event.session_id || '')) continue;
+        const dir = path.join(LOG_ARCHIVE_DIR, logRoomKey(event.room));
+        const file = path.join(dir, `${event.session_id}.jsonl`);
+        let ids = archivedEventIds.get(file);
+        if (!ids) {
+            // 既存のファイルに保存済みのものは書かない（再接続で同じログが届くため）
+            ids = new Set();
+            try {
+                fs.readFileSync(file, 'utf8').split('\n').forEach(line => {
+                    try { if (line) ids.add(JSON.parse(line).event_id); } catch (e) { /* 壊れた行は無視 */ }
+                });
+            } catch (error) { /* まだファイルがない */ }
+            archivedEventIds.set(file, ids);
+        }
+        if (ids.has(event.event_id)) continue;
+        try {
+            fs.mkdirSync(dir, { recursive: true });
+            fs.appendFileSync(file, JSON.stringify(event) + '\n', 'utf8');
+            ids.add(event.event_id);
+        } catch (error) {
+            console.error('Error archiving log event:', error);
+        }
+    }
+}
+
+ipcMain.on('archive-log-events', (event, events) => archiveLogEvents(events));
+
+function openLogArchiveFolder() {
+    fs.mkdirSync(LOG_ARCHIVE_DIR, { recursive: true });
+    shell.openPath(LOG_ARCHIVE_DIR);
+}
+
+// ========== アンケート ==========
+// 集計はメインプロセスで保持する（集計ウィンドウを閉じても結果が残る）
+let surveyState = null; // { id, question, choices, multiple, counts, voters, active }
+let surveyWindow = null;
+
+function getSurveySnapshot() {
+    if (!surveyState) return null;
+    return {
+        id: surveyState.id,
+        question: surveyState.question,
+        choices: surveyState.choices,
+        multiple: surveyState.multiple,
+        counts: surveyState.counts,
+        respondents: surveyState.voters.size,
+        active: surveyState.active
+    };
+}
+
+function notifySurveyUpdate() {
+    if (surveyWindow && !surveyWindow.isDestroyed()) {
+        surveyWindow.webContents.send('survey-update', getSurveySnapshot());
+    }
+}
+
+function endSurvey() {
+    if (surveyState && surveyState.active) {
+        surveyState.active = false;
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('survey-end', { id: surveyState.id });
+        }
+        notifySurveyUpdate();
+    }
+}
+
+// アンケート作成・集計ウィンドウを開く
+function openSurveyWindow() {
+    if (surveyWindow && !surveyWindow.isDestroyed()) {
+        surveyWindow.show();
+        surveyWindow.focus();
+        return;
+    }
+    surveyWindow = openCenteredWindow('survey.html', {
+        title: "アンケート",
+        width: 560,
+        height: 640,
+        hasShadow: true,
+        alwaysOnTop: true,
+        resizable: true,
+        frame: true
+    });
+    surveyWindow.on('closed', () => {
+        surveyWindow = null;
+    });
+}
+
+ipcMain.handle('survey-start', async (event, { question, choices, multiple }) => {
+    question = String(question || '').trim();
+    choices = (Array.isArray(choices) ? choices : []).map(c => String(c).trim()).filter(c => c !== '');
+    if (question === '' || choices.length < 2) {
+        throw new Error('質問と2つ以上の選択肢を入力してください');
+    }
+    endSurvey();
+
+    surveyState = {
+        id: crypto.randomUUID(),
+        question,
+        choices,
+        multiple: !!multiple,
+        counts: choices.map(() => 0),
+        voters: new Set(),
+        active: true
+    };
+    win.webContents.send('survey-start', {
+        id: surveyState.id,
+        question: surveyState.question,
+        choices: surveyState.choices,
+        multiple: surveyState.multiple
+    });
+    notifySurveyUpdate();
+    return getSurveySnapshot();
 });
 
-ipcMain.on('console-warn', (event, ...args) => {
-    console.warn('[Renderer]', ...args);
+ipcMain.handle('survey-end', async () => {
+    endSurvey();
+    return getSurveySnapshot();
 });
 
-ipcMain.on('console-error', (event, ...args) => {
-    console.error('[Renderer]', ...args);
+ipcMain.handle('survey-get-state', async () => getSurveySnapshot());
+
+// 回答を集計（サーバーでも重複は弾いているが念のためここでも確認）
+ipcMain.on('survey-answer', (event, data) => {
+    if (!surveyState || !surveyState.active || !data || data.id !== surveyState.id) return;
+    if (surveyState.voters.has(data.voterId)) return;
+    surveyState.voters.add(data.voterId);
+    for (const i of data.choices || []) {
+        if (Number.isInteger(i) && i >= 0 && i < surveyState.counts.length) {
+            surveyState.counts[i]++;
+        }
+    }
+    notifySurveyUpdate();
 });
+
+// ========== トレイメニュー ==========
+const QR_POSITIONS = [
+    ['非表示', 'none'],
+    ['QR Code [CENTER]', 'center'],
+    ['QR Code [TOP RIGHT]', 'top_right']
+];
+const CAMERA_POSITIONS = [
+    ['左上', 'top-left'],
+    ['右上', 'top-right'],
+    ['左下', 'bottom-left'],
+    ['右下', 'bottom-right'],
+    ['中央', 'center']
+];
+const CAMERA_SIZES = [
+    ['小', 'small'],
+    ['中', 'medium'],
+    ['大', 'large']
+];
+const SEGMENTATION_QUALITIES = [
+    ['高速', 'fast'],
+    ['標準', 'balanced'],
+    ['高精度', 'accurate']
+];
+
+// [label, value] の一覧からラジオボタンのメニュー項目を作る
+function radioItems(items, currentValue, onSelect) {
+    return items.map(([label, value]) => ({
+        label,
+        type: 'radio',
+        checked: currentValue === value,
+        click: () => onSelect(value)
+    }));
+}
+
+function postPageUrl() {
+    return `${currentBaseUrl}/?room=${g_room}&v=${version}`;
+}
+
+async function openExternalUrl(url) {
+    try {
+        await shell.openExternal(url);
+    } catch (error) {
+        console.error('Error opening URL:', url, error);
+    }
+}
+
+function buildDisplayMenu() {
+    const currentDisplayId = win ? screen.getDisplayMatching(win.getBounds()).id : null;
+    return {
+        label: '表示ディスプレイ選択',
+        submenu: screen.getAllDisplays().map(sc => ({
+            label: `Display-${sc.id} [${sc.bounds.x}, ${sc.bounds.y}] ${sc.bounds.width}x${sc.bounds.height} (Scale: ${sc.scaleFactor})`,
+            type: 'radio',
+            checked: sc.id === currentDisplayId,
+            click: () => {
+                win.setPosition(sc.workArea.x, sc.workArea.y, true);
+                win.setSize(sc.workArea.width, sc.workArea.height, true);
+            }
+        }))
+    };
+}
+
+function buildCameraMenu() {
+    const settings = loadCameraSettings();
+    return {
+        label: 'カメラ',
+        submenu: [
+            {
+                label: 'カメラON/OFF',
+                type: 'checkbox',
+                checked: cameraEnabled,
+                click: (menuItem) => {
+                    cameraEnabled = menuItem.checked;
+                    toggleCamera(cameraEnabled);
+                    updateCameraSettings({ enabled: cameraEnabled });
+                }
+            },
+            { type: 'separator' },
+            {
+                label: 'カメラ設定...',
+                click: () => openCameraSettings()
+            },
+            {
+                label: '人物切り抜き',
+                visible: !!personSegmentation,
+                submenu: [
+                    {
+                        label: '人物切り抜きON/OFF',
+                        type: 'checkbox',
+                        checked: !!settings.segmentation,
+                        click: (menuItem) => {
+                            callRenderer('setCameraSegmentation', menuItem.checked);
+                            updateCameraSettings({ segmentation: menuItem.checked });
+                        }
+                    },
+                    { type: 'separator' },
+                    ...radioItems(SEGMENTATION_QUALITIES, cameraSegmentationQuality, (value) => {
+                        cameraSegmentationQuality = value;
+                        updateCameraSettings({ segmentationQuality: value });
+                    })
+                ]
+            },
+            { type: 'separator' },
+            {
+                label: '表示位置',
+                submenu: radioItems(CAMERA_POSITIONS, settings.position || 'top-right', (value) => {
+                    callRenderer('setCameraPosition', value);
+                    updateCameraSettings({ position: value });
+                })
+            },
+            {
+                label: 'サイズ',
+                submenu: radioItems(CAMERA_SIZES, settings.size || 'small', (value) => {
+                    callRenderer('setCameraSize', value);
+                    updateCameraSettings({ size: value });
+                })
+            }
+        ]
+    };
+}
+
+function openAboutWindow() {
+    const winAbout = openCenteredWindow('about.html', {
+        title: "About Commentable",
+        width: 300,
+        height: 300,
+        hasShadow: false,
+        alwaysOnTop: true,
+        resizable: false,
+        frame: false
+    });
+    winAbout.webContents.once('did-finish-load', () => {
+        runInWindow(winAbout, 'setVersion', version);
+        runInWindow(winAbout, 'setCopyrightYear', copyrightYear);
+    });
+    // リンクは外部ブラウザで開く
+    winAbout.webContents.setWindowOpenHandler(({ url }) => {
+        if (url.startsWith('http')) {
+            openExternalUrl(url);
+        }
+        return { action: 'deny' }
+    });
+}
+
+function buildTrayMenu() {
+    return Menu.buildFromTemplate([
+        {
+            label: "投稿ページを開く",
+            click: () => openExternalUrl(postPageUrl())
+        },
+        {
+            label: '投稿ページURLをコピー',
+            click: () => clipboard.writeText(postPageUrl())
+        },
+        { type: 'separator' },
+        buildDisplayMenu(),
+        {
+            label: `サーバー: ${currentBaseUrl}`,
+            enabled: false, // 表示のみ、クリック不可
+        },
+        { type: 'separator' },
+        {
+            label: "QR Code表示",
+            submenu: radioItems(QR_POSITIONS, menuState.qrCode, (value) => {
+                menuState.qrCode = value;
+                callRenderer('toggleQR', true, value, g_room);
+            })
+        },
+        { type: 'separator' },
+        {
+            label: '投稿制限解除', type: 'checkbox',
+            checked: menuState.commentControl,
+            click: (item) => {
+                menuState.commentControl = item.checked;
+                callRenderer('toggleCommentControl', item.checked);
+            }
+        },
+        {
+            label: 'サウンドコメントのミュート', type: 'checkbox',
+            checked: menuState.soundMute,
+            click: (item) => {
+                menuState.soundMute = item.checked;
+                callRenderer('toggleSoundMute');
+            }
+        },
+        {
+            label: '時刻表示', type: 'checkbox',
+            checked: menuState.clock,
+            click: (item) => {
+                menuState.clock = item.checked;
+                callRenderer('toggleClock', item.checked);
+            }
+        },
+        {
+            label: 'クリップボード内容を配布資料欄に送信',
+            accelerator: is_mac ? 'Command+Alt+V' : 'Control+Alt+V',
+            click: sendClipText2CodeSnippet
+        },
+        {
+            label: 'アンケート...',
+            click: openSurveyWindow
+        },
+        {
+            label: '授業ログのフォルダを開く',
+            click: openLogArchiveFolder
+        },
+        {
+            label: "ダッシュボード",
+            click: () => openExternalUrl(`${currentBaseUrl}/dashboard/?room=${encodeURIComponent(g_room)}&v=${version}`)
+        },
+        buildCameraMenu(),
+        { type: 'separator' },
+        {
+            label: 'About',
+            click: openAboutWindow
+        },
+        { label: 'Quit', role: 'quit' },
+    ]);
+}
+
+function rebuildTrayMenu() {
+    if (!tray) return;
+    contextMenu = buildTrayMenu();
+    tray.setContextMenu(contextMenu);
+}
+
+// ========== 起動 ==========
+// 部屋に入ったらオーバーレイ表示を開始する
+function enterRoom(room) {
+    g_room = room;
+
+    win.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true
+    });
+    win.setFullScreenable(false);
+    win.setAlwaysOnTop(true, "screen-saver")
+
+    // デバッグモードでない場合はマウスイベントを無視
+    if (!DEBUG_MODE) {
+        win.setIgnoreMouseEvents(true);
+    }
+
+    // 接続先・部屋名・バージョンはクエリで渡す（レンダラーの setup で接続を開始する）
+    win.loadFile(path.join(__dirname, 'index.html'), {
+        query: { server: currentBaseUrl, room, v: version }
+    });
+
+    tray = new Tray(path.join(__dirname, is_windows ? 'images/icon.ico' : 'images/icon.png'));
+    tray.setToolTip('commentable-desktop')
+    cameraSegmentationQuality = loadCameraSettings().segmentationQuality || 'balanced';
+    rebuildTrayMenu();
+
+    // クリック時にメニューを表示
+    tray.on('click', () => {
+        tray.popUpContextMenu(contextMenu)
+    })
+}
 
 app.whenReady().then(() => {
 
@@ -410,36 +711,36 @@ app.whenReady().then(() => {
     // macOS特有のInput Methodエラーを抑制
     if (is_mac) {
         app.commandLine.appendSwitch('--disable-features', 'IOSurfaceCapturer');
-    }
-
-    if (process.platform === 'darwin') {
         app.dock.hide();
     }
 
     createWindow()
 
-    let menu = Menu.buildFromTemplate(
-        [
-            {
-                label: app.name,
-                submenu: [
-                    { role: 'quit', label: `${app.name} を終了` }
-                ]
-            }
-        ]);
-    Menu.setApplicationMenu(menu);
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+        {
+            label: app.name,
+            submenu: [
+                { role: 'quit', label: `${app.name} を終了` }
+            ]
+        }
+    ]));
 
     // グローバルショートカットの登録
-    const ret = globalShortcut.register('Alt+CommandOrControl+V', () => {
-        // console.log('Shift+CommandOrControl+V is pressed');
-        sendClipText2CodeSnippet();
-    });
-    if (!ret) {
-        console.log('registration failed');
+    if (!globalShortcut.register('Alt+CommandOrControl+V', sendClipText2CodeSnippet)) {
+        console.log('Global shortcut registration failed');
     }
-    // ショートカットが登録されているか確認
-    console.log(globalShortcut.isRegistered('Alt+CommandOrControl+V'));
 
+    win.webContents.on('did-finish-load', () => {
+        win.show();
+
+        // デバッグモードの場合はページ読み込み後にDevToolsを開く
+        if (DEBUG_MODE) {
+            win.webContents.openDevTools();
+        }
+
+        // 起動時は常にカメラOFF（トレイメニューからONにする）
+        cameraEnabled = false;
+    });
 
     prompt({
         title: 'Commentable',
@@ -456,680 +757,17 @@ app.whenReady().then(() => {
             required: true
         },
         type: 'input',
-        //resizable: true,
-        customStylesheet: path.join(__dirname, '/css/prompt.css')
+        customStylesheet: PROMPT_STYLESHEET
     })
         .then((r) => {
-            //win.setAlwaysOnTop(true, 'floating');
-            win.setVisibleOnAllWorkspaces(true, {
-                visibleOnFullScreen: true
-            });
-            win.setFullScreenable(false);
-            win.setAlwaysOnTop(true, "screen-saver")
-
-            // デバッグモードでない場合はマウスイベントを無視
-            if (!DEBUG_MODE) {
-                win.setIgnoreMouseEvents(true);
-            }
-
-            //win.webContents.openDevTools();
-            win.loadFile('index.html')
-
-            var room = "";
             if (r === null) {
                 console.log('user cancelled');
-                room = "";
                 app.quit();
-            } else {
-                console.log('result', r);
-                room = r;
+                return;
             }
-            g_room = room;
-            if (is_windows) tray = new Tray(`${__dirname}/images/icon.ico`);
-            else if (is_mac) tray = new Tray(`${__dirname}/images/icon.png`);
-
-            win.webContents.executeJavaScript(`setVersion("${version}");`, true)
-                .then(result => {
-
-                }).catch(console.error)
-
-            // サーバーURLをレンダラープロセスに渡す
-            win.webContents.executeJavaScript(`window.SOCKET_SERVER_URL = "${currentBaseUrl}";`, true)
-                .then(result => {
-                    console.log('Server URL set in renderer process:', currentBaseUrl);
-                }).catch(console.error)
-
-            // 部屋名をレンダラープロセスに渡す
-            win.webContents.executeJavaScript(`window.ROOM_NAME = "${room}";`, true)
-                .then(result => {
-                    console.log('Room name set in renderer process:', room);
-                }).catch(console.error)
-
-            // 保存された設定を読み込む
-            const savedSettings = loadCameraSettings();
-            const savedPosition = savedSettings.position || 'top-right';
-            const savedSize = savedSettings.size || 'small';
-            cameraEnabled = savedSettings.enabled || false;
-
-            // メニューを構築する関数
-            function buildTrayMenu() {
-                const screens = screen.getAllDisplays();
-
-                return Menu.buildFromTemplate([
-                    {
-                        label: "投稿ページを開く", click: async () => {
-                            try {
-                                const { shell } = require('electron')
-                                await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                            } catch (error) {
-                                console.error('Error opening post page:', error);
-                            }
-                        }
-                    },
-                    {
-                        label: '投稿ページURLをコピー',
-                        click(item, focusedWindows) {
-                            clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                            console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                        }
-                    },
-
-                    {
-                        type: 'separator',
-                    },
-                    {
-                        label: `サーバー: ${currentBaseUrl}`,
-                        enabled: false, // 表示のみ、クリック不可
-                    },
-                    {
-                        type: 'separator',
-                    },
-                    {
-                        label: "QR Code表示",
-                        submenu: [
-                            {
-                                label: '非表示', type: 'radio',
-                                checked: menuState.qrCode === 'none',
-                                click(item, focusedWindow) {
-                                    menuState.qrCode = 'none';
-                                    console.log(item, focusedWindow);
-                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "none", "${g_room}");`, true)
-                                        .then(result => {
-                                        }).catch(console.error);
-                                }
-                            },
-                            {
-                                label: 'QR Code [CENTER]', type: 'radio',
-                                checked: menuState.qrCode === 'center',
-                                click(item, focusedWindow) {
-                                    menuState.qrCode = 'center';
-                                    console.log(item, focusedWindow);
-                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "center", "${g_room}");`, true)
-                                        .then(result => {
-                                        }).catch(console.error);
-                                }
-                            },
-                            {
-                                label: 'QR Code [TOP RIGHT]', type: 'radio',
-                                checked: menuState.qrCode === 'top_right',
-                                click(item, focusedWindow) {
-                                    menuState.qrCode = 'top_right';
-                                    console.log(item, focusedWindow);
-                                    win.webContents.executeJavaScript(`toggleQR(${item.checked}, "top_right", "${g_room}");`, true)
-                                        .then(result => {
-                                        }).catch(console.error);
-                                }
-                            },
-                        ]
-                    },
-                    {
-                        type: 'separator',
-                    },
-                    {
-                        label: '投稿制限解除', type: 'checkbox',
-                        checked: menuState.commentControl,
-                        click(item, focusedWindow) {
-                            menuState.commentControl = item.checked;
-                            win.webContents.executeJavaScript(`toggleCommentControl(${item.checked});`, true)
-                                .then(result => {
-                                }).catch(console.error);
-                        }
-                    },
-                    {
-                        label: 'サウンドコメントのミュート', type: 'checkbox',
-                        checked: menuState.soundMute,
-                        click(item, focusedWindow) {
-                            menuState.soundMute = item.checked;
-                            win.webContents.executeJavaScript(`toggleSoundMute();`, true)
-                                .then(result => {
-                                }).catch(console.error);
-                        }
-                    },
-                    {
-                        label: 'メッセージ表示', type: 'checkbox',
-                        checked: menuState.message,
-                        click(item, focusedWindow) {
-                            menuState.message = item.checked;
-                            if (item.checked == true) {
-                                prompt({
-                                    title: 'Commentable',
-                                    alwaysOnTop: true,
-                                    label: '表示テキストを入力してください',
-                                    value: admin_message,
-                                    menuBarVisible: true,
-                                    buttonLabels: {
-                                        ok: '表示する',
-                                        cancel: 'キャンセル'
-                                    },
-                                    inputAttrs: {
-                                        type: 'text',
-                                        required: true
-                                    },
-                                    type: 'input',
-                                    //resizable: true,
-                                    customStylesheet: path.join(__dirname, '/css/prompt.css')
-                                })
-                                    .then((r) => {
-                                        if (r === null) {
-                                            //console.log('user cancelled');
-                                            item.checked = false;
-                                            menuState.message = false;
-                                            return;
-                                        } else {
-                                            admin_message = r;
-                                            win.webContents.executeJavaScript(`toggleMessage(${item.checked},'${r}');`, true)
-                                                .then(result => {
-
-                                                }).catch(console.error)
-
-                                        }
-                                    }).catch(console.error);
-                            }
-                            else {
-                                win.webContents.executeJavaScript(`toggleMessage(${item.checked},'');`, true)
-                                    .then(result => {
-
-                                    }).catch(console.error)
-                            }
-                        }
-                    },
-                    {
-                        label: '時刻表示', type: 'checkbox',
-                        checked: menuState.clock,
-                        click(item, focusedWindow) {
-                            menuState.clock = item.checked;
-                            win.webContents.executeJavaScript(`toggleClock(${item.checked});`, true)
-                                .then(result => {
-                                }).catch(console.error)
-
-                        }
-                    },
-
-                    {
-                        label: 'クリップボード内容を配布資料欄に送信',
-                        accelerator: process.platform === 'darwin' ? 'Command+Alt+V' : 'Control+Alt+V',
-                        click: () => {
-                            sendClipText2CodeSnippet();
-                        }
-
-                    },
-                    {
-                        label: "ツール",
-                        submenu: [
-                            {
-                                label: '効果音セット',
-                                click: () => {
-                                    //mainWindow.loadFile(path.join(__dirname, 'about.html'));
-                                    const mainWindowSize = win.getSize();
-                                    const mainWindowPos = win.getPosition();
-
-                                    const aboutWindowWidth = 400;
-                                    const aboutWindowHeight = 900;
-
-                                    const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
-                                    const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
-
-                                    let win_sepad = new BrowserWindow({
-                                        title: "効果音",
-                                        width: aboutWindowWidth,
-                                        height: aboutWindowHeight,
-                                        x: aboutWindowPosX,
-                                        y: aboutWindowPosY,
-                                        hasShadow: true,
-                                        alwaysOnTop: false,
-                                        resizable: false,
-                                        frame: true,
-                                        webPreferences: {
-                                            preload: path.join(__dirname, 'preload.js'),
-                                            nodeIntegration: false,
-                                            contextIsolation: true
-                                        }
-                                    });
-                                    win_sepad.loadFile(path.join(__dirname, `sepad.html`)).then(() => {
-                                        win_sepad.webContents.executeJavaScript(`setVersion("${version}");`, true)
-                                            .then(result => {
-                                            }).catch(console.error);
-
-                                        ipcMain.on('set-volume', (event, value) => {
-                                            // arg には 'yourVariableHere' が格納されています。
-                                            console.log(value, win_sepad);
-                                            win.webContents.executeJavaScript(`setVolume("${value}");`, true)
-                                                .then(result => {
-                                                }).catch(console.error);
-                                        });
-                                    });
-
-                                }
-                            },
-                            {
-                                label: "AIアシスタント", click: async () => {
-                                    try {
-                                        console.log(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`${currentBaseUrl}/assistant/?room=${g_room}&v=${version}`);
-                                    } catch (error) {
-                                        console.error('Error opening AI assistant:', error);
-                                    }
-                                }
-                            },
-                            {
-                                label: "チャレンジブル", click: async () => {
-                                    try {
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
-                                    } catch (error) {
-                                        console.error('Error opening challengeable:', error);
-                                    }
-                                }
-                            },
-                            {
-                                label: "アクセシブルスピーチトレーニング", click: async () => {
-                                    try {
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`https://tetsuakibaba.github.io/AccessibleSpeechTraining/`);
-                                    } catch (error) {
-                                        console.error('Error opening speech training:', error);
-                                    }
-                                }
-                            },
-
-                        ]
-                    },
-                    {
-                        label: 'カメラ',
-                        submenu: [
-                            {
-                                label: 'カメラON/OFF',
-                                type: 'checkbox',
-                                checked: cameraEnabled,
-                                click: (menuItem) => {
-                                    cameraEnabled = menuItem.checked;
-                                    toggleCamera(menuItem.checked);
-                                    // 設定を保存
-                                    const settings = loadCameraSettings();
-                                    settings.enabled = cameraEnabled;
-                                    saveCameraSettings(settings);
-                                }
-                            },
-                            {
-                                type: 'separator'
-                            },
-                            {
-                                label: 'カメラ設定...',
-                                click: () => {
-                                    openCameraSettings();
-                                }
-                            },
-                            {
-                                type: 'separator'
-                            },
-                            {
-                                label: '表示位置',
-                                submenu: [
-                                    {
-                                        label: '左上',
-                                        type: 'radio',
-                                        checked: savedPosition === 'top-left',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraPosition('top-left');`)
-                                                .catch(console.error);
-                                            saveCameraPosition('top-left');
-                                        }
-                                    },
-                                    {
-                                        label: '右上',
-                                        type: 'radio',
-                                        checked: savedPosition === 'top-right',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraPosition('top-right');`)
-                                                .catch(console.error);
-                                            saveCameraPosition('top-right');
-                                        }
-                                    },
-                                    {
-                                        label: '左下',
-                                        type: 'radio',
-                                        checked: savedPosition === 'bottom-left',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraPosition('bottom-left');`)
-                                                .catch(console.error);
-                                            saveCameraPosition('bottom-left');
-                                        }
-                                    },
-                                    {
-                                        label: '右下',
-                                        type: 'radio',
-                                        checked: savedPosition === 'bottom-right',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraPosition('bottom-right');`)
-                                                .catch(console.error);
-                                            saveCameraPosition('bottom-right');
-                                        }
-                                    },
-                                    {
-                                        label: '中央',
-                                        type: 'radio',
-                                        checked: savedPosition === 'center',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraPosition('center');`)
-                                                .catch(console.error);
-                                            saveCameraPosition('center');
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                label: 'サイズ',
-                                submenu: [
-                                    {
-                                        label: '小',
-                                        type: 'radio',
-                                        checked: savedSize === 'small',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraSize('small');`)
-                                                .catch(console.error);
-                                            saveCameraSize('small');
-                                        }
-                                    },
-                                    {
-                                        label: '中',
-                                        type: 'radio',
-                                        checked: savedSize === 'medium',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraSize('medium');`)
-                                                .catch(console.error);
-                                            saveCameraSize('medium');
-                                        }
-                                    },
-                                    {
-                                        label: '大',
-                                        type: 'radio',
-                                        checked: savedSize === 'large',
-                                        click: () => {
-                                            win.webContents.executeJavaScript(`setCameraSize('large');`)
-                                                .catch(console.error);
-                                            saveCameraSize('large');
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        type: 'separator',
-                    },
-
-
-                    {
-                        label: 'About',
-                        click: () => {
-                            //mainWindow.loadFile(path.join(__dirname, 'about.html'));
-                            const mainWindowSize = win.getSize();
-                            const mainWindowPos = win.getPosition();
-
-                            const aboutWindowWidth = 300;
-                            const aboutWindowHeight = 300;
-
-                            const aboutWindowPosX = mainWindowPos[0] + (mainWindowSize[0] - aboutWindowWidth) / 2;
-                            const aboutWindowPosY = mainWindowPos[1] + (mainWindowSize[1] - aboutWindowHeight) / 2;
-
-                            const win_about = new BrowserWindow({
-                                title: "About Commentable",
-                                width: aboutWindowWidth,
-                                height: aboutWindowHeight,
-                                x: aboutWindowPosX,
-                                y: aboutWindowPosY,
-                                hasShadow: false,
-                                alwaysOnTop: true,
-                                resizable: false,
-                                frame: false,
-                                webPreferences: {
-                                    preload: path.join(__dirname, 'preload.js'),
-                                },
-                                show: true,
-                            });
-                            win_about.loadFile(path.join(__dirname, `about.html`)).then(() => {
-
-                                win_about.webContents.executeJavaScript(`setVersion("${version}");`, true)
-                                    .then(result => {
-
-                                    }).catch(console.error);
-
-                                win_about.webContents.executeJavaScript(`setCopyrightYear("${copyrightYear}");`, true)
-                                    .then(result => {
-
-                                    }).catch(console.error);
-                            });
-                            // 以下を追加
-                            win_about.webContents.setWindowOpenHandler(({ url }) => {
-                                if (url.startsWith('http')) {
-                                    shell.openExternal(url).catch(error => {
-                                        console.error('Error opening external URL:', error);
-                                    });
-                                }
-                                return { action: 'deny' }
-                            })
-                        }
-                    },
-
-                    { label: 'Quit', role: 'quit' },
-                ]);
-            }
-
-            // 初回メニュー構築
-            contextMenu = buildTrayMenu();
-
-            // ディスプレイ選択メニューを追加
-            function addDisplaySelectionMenu(menu) {
-                const allScreens = screen.getAllDisplays();
-
-                const displayMenuItem = {
-                    label: '表示ディスプレイ選択',
-                    submenu: []
-                };
-
-                let sc_count = 0;
-                for (const sc of allScreens) {
-                    displayMenuItem.submenu[sc_count] = {
-                        label: 'Display-' + sc.id + " [" + sc.bounds.x + ", " + sc.bounds.y + "] " + sc.bounds.width + "x" + sc.bounds.height + " (Scale: " + sc.scaleFactor + ")",
-                        type: 'radio',
-                        x: sc.workArea.x,
-                        y: sc.workArea.y,
-                        w: sc.workArea.width,
-                        h: sc.workArea.height,
-                        click: function (item) {
-                            win.setPosition(item.x, item.y, true);
-                            win.setSize(item.w, item.h, true);
-                        }
-                    };
-                    sc_count++;
-                }
-                menu.insert(3, new MenuItem(displayMenuItem));
-                return menu;
-            }
-
-            contextMenu = addDisplaySelectionMenu(contextMenu);
-
-            tray.setToolTip('commentable-desktop')
-
-            tray.setContextMenu(contextMenu)
-
-            //クリック時の操作を設定  
-            tray.on('click', () => {
-                // メニューを表示
-                tray.popUpContextMenu(contextMenu)
-            })
-
-            // メニューを再構築する関数をグローバルに定義
-            global.rebuildTrayMenu = function () {
-                if (!tray) return;
-
-                console.log('Rebuilding tray menu...');
-
-                // メニューを再構築
-                contextMenu = buildTrayMenu();
-                contextMenu = addDisplaySelectionMenu(contextMenu);
-
-                // トレイメニューを更新
-                tray.setContextMenu(contextMenu);
-
-                console.log('Tray menu rebuilt successfully');
-            };
-
-            // メニューを更新する関数をグローバルに定義（後方互換性のため残す）
-            global.updateTrayMenu = function () {
-                if (!tray) return;
-
-                // 現在のメニューと同じ構造でcontextMenuを再構築
-                var newContextMenu = Menu.buildFromTemplate([
-                    {
-                        label: "投稿ページを開く", click: async () => {
-                            try {
-                                const { shell } = require('electron')
-                                await shell.openExternal(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                            } catch (error) {
-                                console.error('Error opening post page:', error);
-                            }
-                        }
-                    },
-                    {
-                        label: '投稿ページURLをコピー',
-                        click(item, focusedWindows) {
-                            clipboard.writeText(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                            console.log(`${currentBaseUrl}/?room=${g_room}&v=${version}`);
-                        }
-                    },
-                    {
-                        type: 'separator',
-                    },
-                    {
-                        label: `サーバー: ${currentBaseUrl}`,
-                        enabled: false, // 表示のみ、クリック不可
-                    },
-                    {
-                        type: 'separator',
-                    },
-                    // QRコード設定部分は省略して、重要な部分のみ再作成
-                    {
-                        label: "ユーティリティ",
-                        submenu: [
-                            {
-                                label: "米太郎AIアシスタント", click: async () => {
-                                    try {
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`${currentBaseUrl}/kometaro/?room=${g_room}&v=${version}`);
-                                    } catch (error) {
-                                        console.error('Error opening Kometaro AI assistant:', error);
-                                    }
-                                }
-                            },
-                            {
-                                label: "チャレンジブル", click: async () => {
-                                    try {
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`https://tetsuakibaba.github.io/challengeable/`);
-                                    } catch (error) {
-                                        console.error('Error opening challengeable:', error);
-                                    }
-                                }
-                            },
-                            {
-                                label: "アクセシブルスピーチトレーニング", click: async () => {
-                                    try {
-                                        const { shell } = require('electron')
-                                        await shell.openExternal(`https://bttb.sakura.ne.jp/accessibleSpeech/`);
-                                    } catch (error) {
-                                        console.error('Error opening speech training:', error);
-                                    }
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        type: 'separator',
-                    },
-                    {
-                        label: 'Quit',
-                        click: () => {
-                            app.quit()
-                        }
-                    }
-                ]);
-
-                tray.setContextMenu(newContextMenu);
-                console.log(`Tray menu updated with server: ${currentBaseUrl}`);
-            }
-
-            win.webContents.executeJavaScript(`startSocketConnection("${room}");`, true)
-                .then(result => {
-                }).catch(console.error);
+            enterRoom(r);
         })
         .catch(console.error);
-
-
-    win.webContents.on('did-finish-load', () => {
-        win.show();
-
-        // デバッグモードの場合はページ読み込み後にDevToolsを開く
-        if (DEBUG_MODE) {
-            win.webContents.openDevTools();
-        }
-
-        // QRコードの表示
-        win.webContents.executeJavaScript(`toggleQR(true, "top_right", "${g_room}");`, true)
-            .then(result => {
-
-            }).catch(console.error);
-
-        // 保存されたカメラ設定を読み込んで適用
-        const settings = loadCameraSettings();
-        cameraEnabled = settings.enabled || false;
-
-        if (cameraEnabled && settings.deviceId) {
-            console.log('Auto-starting camera with saved settings:', settings.deviceId);
-            win.webContents.send('select-camera', settings.deviceId);
-
-            // 少し待ってから位置とサイズを適用
-            setTimeout(() => {
-                if (settings.position) {
-                    win.webContents.executeJavaScript(`setCameraPosition('${settings.position}');`)
-                        .catch(console.error);
-                }
-                if (settings.size) {
-                    win.webContents.executeJavaScript(`setCameraSize('${settings.size}');`)
-                        .catch(console.error);
-                }
-            }, 500);
-        }
-    });
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            //createWindow()
-        }
-    })
-
-
 })
 
 app.on('will-quit', () => {
@@ -1144,12 +782,5 @@ app.on('window-all-closed', () => {
 })
 
 function sendClipText2CodeSnippet() {
-    const clip_text = clipboard.readText();
-    // clip_text内の改行コード、コーテーションをエスケープ処理する
-    const clip_text_escaped = clip_text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    //const clip_text_escaped = clip_text.replace(/\r?\n/g, '\\n');
-    win.webContents.executeJavaScript(`sendCodeSnippet("${clip_text_escaped}");`, true)
-        .then(result => {
-        }).catch(console.error);
+    callRenderer('sendCodeSnippet', clipboard.readText());
 }
-

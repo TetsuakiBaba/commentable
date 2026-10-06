@@ -36,5 +36,10 @@
     "comment_ranking_title": "Comment Top 10",
     "no_data_yet": "No data yet",
     "times_suffix": " times",
-    "total_comments": "Total Comments"
+    "total_comments": "Total Comments",
+    "survey_title": "Survey",
+    "survey_submit": "Submit",
+    "survey_thanks": "Thank you for your answer",
+    "survey_single_hint": "Choose one",
+    "survey_multiple_hint": "You can choose multiple options"
 }
