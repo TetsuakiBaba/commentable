@@ -1,738 +1,3545 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 
 <head>
+    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>管理者ダッシュボード - Commentable</title>
 
     <!-- Bootstrap CSS -->
-    <link href="/assets/css/custom.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/custom.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+
+    <!-- Packery for draggable grid layout -->
+    <script src="https://unpkg.com/packery@2.1.2/dist/packery.pkgd.min.js"></script>
+    <script src="https://unpkg.com/draggabilly@2.4.1/dist/draggabilly.pkgd.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <meta charset="utf-8">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-card {
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .dashboard-container {
-            display: none;
-            padding: 0;
-        }
-
         .card {
-            margin-bottom: 1.5rem;
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            transition: transform 0.2s, box-shadow 0.2s;
+            animation: fadeIn 1.0s ease 0.0s 1 normal;
+            transition: all 0.5s;
         }
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        @keyframes fadeIn {
+            0% {
+                opacity: 0
+            }
+
+            100% {
+                opacity: 1
+            }
         }
 
-        .log-item {
-            padding: 0.75rem;
-            border-bottom: 1px solid #dee2e6;
-            cursor: pointer;
-            transition: background-color 0.2s;
+        .transition_all {
+            transition: all 0.5s;
         }
 
-        .log-item:hover {
-            background-color: #f8f9fa;
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
         }
 
-        .log-item:last-child {
-            border-bottom: none;
+        .status-connected {
+            background-color: #28a745;
         }
 
-        .log-list {
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+
+        .status-processing {
+            background-color: #ffc107;
+        }
+
+        .survey-log-container {
             max-height: 400px;
             overflow-y: auto;
         }
 
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
+        .survey-log-item+.survey-log-item {
+            border-top: 1px solid #dee2e6;
+            padding-top: 0.75rem;
+            margin-top: 0.75rem;
         }
 
-        .badge-custom {
-            font-size: 0.875rem;
-            padding: 0.25rem 0.5rem;
+        .survey-question {
+            white-space: pre-wrap;
         }
 
-        .navbar-brand {
-            font-weight: bold;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .error-message {
-            display: none;
-            margin-top: 1rem;
-        }
-
-        .log-detail-modal .modal-body {
-            max-height: 60vh;
+        .log-container {
+            max-height: 300px;
             overflow-y: auto;
-        }
-
-        .comment-entry {
-            padding: 0.5rem;
-            border-left: 3px solid #1FB8CC;
-            margin-bottom: 0.5rem;
             background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
         }
 
-        .comment-username {
-            font-weight: bold;
-            color: #1FB8CC;
+        .log-entry {
+            margin-bottom: 5px;
+            white-space: pre-wrap;
         }
 
-        .comment-timestamp {
-            font-size: 0.875rem;
+        .log-received {
+            color: #0066cc;
+        }
+
+        .log-sent {
+            color: #28a745;
+        }
+
+        .log-error {
+            color: #dc3545;
+        }
+
+        .log-info {
             color: #6c757d;
+        }
+
+        /* ドラッグ可能なカードハンドルのスタイル */
+        .card-handle {
+            cursor: move;
+            user-select: none;
+        }
+
+        .card-handle:active {
+            cursor: grabbing;
+        }
+
+        /* ドラッグ中のカードスタイル */
+        .is-dragging {
+            opacity: 0.7;
+            z-index: 1000;
+        }
+
+        /* アコーディオンボタンのスタイル */
+        .accordion-toggle {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: inherit;
+            transition: transform 0.3s ease;
+            margin-right: 8px;
+        }
+
+        .accordion-toggle:hover {
+            opacity: 0.7;
+        }
+
+        .accordion-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* 最小化時のカードボディ */
+        .card-body.collapsed {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <!-- ログインフォーム -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-card">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-shield-lock"></i> 管理者ログイン
+    <!-- ブラウザ警告モーダル -->
+    <div class="modal fade" id="browserWarningModal" tabindex="-1" aria-labelledby="browserWarningModalLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="browserWarningModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> ブラウザの互換性警告
                     </h5>
                 </div>
-                <div class="card-body">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label for="adminPassword" class="form-label">管理者パスワード</label>
-                            <input type="password" class="form-control" id="adminPassword" required
-                                autocomplete="current-password" placeholder="パスワードを入力してください">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-box-arrow-in-right"></i> ログイン
-                        </button>
-                        <div id="loginError" class="alert alert-danger error-message">
-                            <i class="bi bi-exclamation-triangle"></i> パスワードが正しくありません
-                        </div>
-                    </form>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        <strong>Google Chrome以外のブラウザをご利用されています。</strong>
+                    </p>
+                    <p class="mb-2">このアプリケーションは以下の機能でChromeブラウザが必要です:</p>
+                    <ul>
+                        <li>音声認識機能（Web Speech API）</li>
+                        <li>LM Studioへのデータ送信</li>
+                    </ul>
+                    <p class="text-danger mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        正常に動作しない可能性があります。Google Chromeのご利用を強く推奨します。
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        このまま続ける
+                    </button>
+                    <a href="https://www.google.com/chrome/" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Chromeをダウンロード
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ダッシュボード -->
-    <div id="dashboardContainer" class="dashboard-container">
-        <!-- ナビゲーションバー -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <i class="bi bi-speedometer2"></i> Commentable 管理ダッシュボード
-                </a>
-                <button class="btn btn-outline-light btn-sm" id="logoutBtn">
-                    <i class="bi bi-box-arrow-right"></i> ログアウト
-                </button>
-            </div>
-        </nav>
+    <div class="container-fluid">
+        <p><img class="mt-3 mb-1" src="../assets/logo_text.png" height="50px"><span class="badge bg-secondary">dashboard</span></p>
 
-        <div class="container-fluid">
-            <!-- 統計情報カード -->
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="card border-primary">
-                        <div class="card-body text-center">
-                            <i class="bi bi-file-text text-primary" style="font-size: 2rem;"></i>
-                            <div class="stat-number text-primary" id="totalLogs">-</div>
-                            <div class="text-muted">総ログファイル数</div>
-                        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span id="status-indicator" class="status-indicator status-disconnected"></span>
+                        <span class="small">接続状態: <strong id="status-text">接続待機中</strong></span>
+                        <button class="btn btn-sm btn-outline-secondary ms-auto" id="button_reset_settings"
+                            title="このページで保存している設定をすべて消して既定に戻します">
+                            <i class="bi bi-arrow-counterclockwise"></i> 設定を既定に戻す
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text">部屋名</span>
+                        <input class="form-control" type="text" id="text_room_name" placeholder="配信中の部屋名が自動入力されます"
+                            value="">
+                        <button class="btn btn-outline-primary" id="button_connect">接続</button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-chat-dots text-success" style="font-size: 2rem;"></i>
-                            <div class="stat-number text-success" id="totalComments">-</div>
-                            <div class="text-muted">総コメント数</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-info">
-                        <div class="card-body text-center">
-                            <i class="bi bi-hdd text-info" style="font-size: 2rem;"></i>
-                            <div class="stat-number text-info" id="totalSize">-</div>
-                            <div class="text-muted">総ファイルサイズ</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-warning">
-                        <div class="card-body text-center">
-                            <i class="bi bi-clock-history text-warning" style="font-size: 2rem;"></i>
-                            <div class="stat-number text-warning" id="latestUpdate">-</div>
-                            <div class="text-muted">最終更新</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <!-- チャットログ一覧 -->
-                <div class="col-lg-8">
-                    <div class="card">
-                        <div class="card-header bg-primary bg-opacity-10">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">
-                                    <i class="bi bi-list-ul"></i> チャットログ一覧
-                                </h6>
-                                <button class="btn btn-sm btn-primary" id="refreshBtn">
-                                    <i class="bi bi-arrow-clockwise"></i> 更新
-                                </button>
+
+                <div class="row" id="dashboard-grid">
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <div class="card border-info mb-3">
+                            <div class="card-header card-handle bg-info bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-robot"></i> AI設定</h6>
                             </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="logListContainer" class="log-list">
-                                <div class="loading">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">読み込み中...</span>
+
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="checkbox_auto_response" checked>
+                                    <label class="small form-check-label" for="checkbox_auto_response"
+                                        id="label_auto_response">
+                                        「米太郎」を含むコメントに自動応答
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">LM Studio URL</span>
+                                    <input class="form-control" type="text" id="text_lm_studio_url"
+                                        value="http://127.0.0.1:1234/v1">
+                                    <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
+                                </div>
+
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">AIアシスタント名</span>
+                                    <input class="form-control" type="text" id="text_ai_name"
+                                        placeholder="AIアシスタント名を入力">
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">文字移動方向</span>
+                                    <select class="form-select" id="select_text_direction">
+                                        <option value="still">静止</option>
+                                        <option value="up">↑</option>
+                                        <option value="down">↓</option>
+                                        <option value="left" selected>←</option>
+                                        <option value="right">→</option>
+                                    </select>
+                                    <span class="input-group-text">文字色</span>
+                                    <input type="color" class="form-control form-control-color" id="input_text_color"
+                                        value="#FFD700" title="文字色を選択">
+                                </div>
+
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Max History</span>
+                                    <input type="number" class="form-control" id="input_conversation_history_limit"
+                                        value="50" min="0" max="200">
+                                    <span class="input-group-text bg-light">
+                                        <span id="span_current_history_count">0</span>件
+                                    </span>
+                                    <button class="btn btn-outline-secondary btn-sm" id="button_clear_history">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            id="button_reset_system_prompt">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
                                     </div>
+                                    <textarea class="form-control" id="textarea_system_prompt" rows="4"
+                                        placeholder="AIの役割や振る舞い、事前知識を入力してください">あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。コメント画面に流れるため、返答は必ず120文字以内の短い一文でお答えください。</textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <div class="card border-success mb-3">
+                            <div class="card-header card-handle bg-success bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-mic-fill"></i> 音声認識</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_ai_name_auto_response"
+                                        checked>
+                                    <label class="form-check-label small" for="checkbox_ai_name_auto_response"
+                                        id="label_ai_name_auto_response">
+                                        「米太郎」を含む音声認識を自動でAIに送信
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">マイク選択</span>
+                                    <select class="form-select" id="select_microphone">
+                                        <option value="">マイクを選択してください</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" id="button_refresh_mics">更新</button>
+                                </div>
 
-                <!-- 操作パネル -->
-                <div class="col-lg-4">
-                    <!-- システム情報 -->
-                    <div class="card border-info">
-                        <div class="card-header bg-info bg-opacity-10">
-                            <h6 class="mb-0">
-                                <i class="bi bi-info-circle"></i> システム情報
-                            </h6>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">言語</span>
+                                    <select class="form-select" id="select_speech_language">
+                                        <option value="ja-JP">日本語</option>
+                                        <option value="en-US">English (US)</option>
+                                        <option value="en-GB">English (UK)</option>
+                                        <option value="zh-CN">中文 (简体)</option>
+                                        <option value="ko-KR">한국어</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="input_speech_interim" class="form-label mb-0">
+                                            リアルタイム認識
+                                            <small class="text-muted">(暫定結果)</small>
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-success" id="button_start_speech">
+                                                <i class="bi bi-mic"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" id="button_stop_speech" disabled>
+                                                <i class="bi bi-mic-mute"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control bg-light" id="input_speech_interim"
+                                        placeholder="音声認識中の暫定結果がここに表示されます" readonly>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="textarea_speech_result" class="form-label mb-0">
+                                            確定結果
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" id="button_download_speech">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" id="button_clear_speech">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea class="form-control" id="textarea_speech_result" rows="4"
+                                        placeholder="確定した音声認識の結果がここに表示されます" readonly></textarea>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_continuous_speech"
+                                        checked>
+                                    <label class="form-check-label" for="checkbox_continuous_speech">
+                                        連続認識モード
+                                    </label>
+                                </div>
+
+
+
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-2">
-                                <small class="text-muted">自動削除設定</small>
-                                <div id="retentionInfo">読み込み中...</div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <div class="card border-warning mb-3">
+                            <div class="card-header card-handle bg-warning bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-send-fill"></i> 自動投稿機能（授業盛り上げ）</h6>
                             </div>
-                            <div class="mb-2">
-                                <small class="text-muted">チェック間隔</small>
-                                <div id="checkIntervalInfo">読み込み中...</div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_auto_posting">
+                                    <label class="small form-check-label" for="checkbox_auto_posting">
+                                        定期的に自動でコメントを投稿
+                                    </label>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_min" class="form-label">最小間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_min" min="1"
+                                            max="10" value="2">
+                                        <small class="text-muted"><span id="span_interval_min">2</span>分</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="range_posting_interval_max" class="form-label">最大間隔（分）</label>
+                                        <input type="range" class="form-range" id="range_posting_interval_max" min="5"
+                                            max="20" value="8">
+                                        <small class="text-muted"><span id="span_interval_max">8</span>分</small>
+                                    </div>
+                                </div>
+                                <hr>
+
+                                <div class="mb-2">
+                                    <label for="select_posting_style" class="form-label">投稿スタイル</label>
+                                    <select class="form-select form-select-sm" id="select_posting_style">
+                                        <option value="mixed">ミックス（授業関連＋雑談）</option>
+                                        <option value="academic">授業関連のみ</option>
+                                        <option value="casual">雑談のみ</option>
+                                        <option value="reaction">リアクションのみ</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-sm btn-outline-success" id="button_test_auto_posting">
+                                    テスト投稿
+                                </button>
                             </div>
-                            <div>
-                                <small class="text-muted">次回チェック</small>
-                                <div id="nextCheckInfo">読み込み中...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- コメント・リアクション送信カード -->
+                        <div class="card border-primary mb-3">
+                            <div class="card-header card-handle bg-primary bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-send-fill"></i> コメント・リアクション</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text">名前</span>
+                                    <input type="text" class="form-control" id="post_name" value="管理人" maxlength="20">
+                                </div>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="post_comment" maxlength="80"
+                                        placeholder="コメント（最大80字）">
+                                    <button class="btn btn-primary" id="button_post_comment" title="送信（Enter）">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2 align-items-center small mb-2">
+                                    <div class="col-auto d-flex align-items-center">
+                                        <label for="post_color_text" class="me-1">文字</label>
+                                        <input type="color" class="form-control form-control-color form-control-sm"
+                                            id="post_color_text" value="#EEEEEE">
+                                    </div>
+                                    <div class="col-auto d-flex align-items-center">
+                                        <label for="post_color_stroke" class="me-1">縁取り</label>
+                                        <input type="color" class="form-control form-control-color form-control-sm"
+                                            id="post_color_stroke" value="#111111">
+                                    </div>
+                                    <div class="col-auto">
+                                        <select class="form-select form-select-sm" id="post_text_direction" title="文字移動方向">
+                                            <option value="still">静止</option>
+                                            <option value="left" selected>←</option>
+                                            <option value="right">→</option>
+                                            <option value="up">↑</option>
+                                            <option value="down">↓</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <select class="form-select form-select-sm" id="post_font_size" title="文字サイズ">
+                                            <option value="small">小</option>
+                                            <option value="medium" selected>中</option>
+                                            <option value="large">大</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-auto form-check form-switch mb-0 ms-1">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="post_speech">
+                                        <label class="form-check-label" for="post_speech">読み上げ</label>
+                                    </div>
+                                </div>
+                                <hr class="my-2">
+                                <div class="small text-muted mb-1">リアクション（緑：音なし／赤：効果音つき）</div>
+                                <div class="d-flex flex-wrap gap-1" id="post_reactions">
+                                    <button class="btn btn-sm btn-outline-success post-reaction">👍</button>
+                                    <button class="btn btn-sm btn-outline-success post-reaction">🙏</button>
+                                    <button class="btn btn-sm btn-outline-success post-reaction">🙋</button>
+                                    <button class="btn btn-sm btn-outline-success post-reaction">🥺</button>
+                                    <button class="btn btn-sm btn-outline-success post-reaction">🤫</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="0" title="カシャ（カメラ）">📸</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="1" title="パチン（手を叩く音）">👏</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="2" title="パーン（クラッカーの音）">🎉</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="3" title="大歓声">🥳</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="4" title="へぇ〜">😮</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="5" title="ちょっとまって">🤔</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="6" title="OK">👌</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="7" title="パンチ音">👊</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="8" title="大笑い">🤣</button>
+                                    <button class="btn btn-sm btn-outline-danger post-reaction" data-sound="9" title="w">😏</button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- クイックアクション -->
-                    <div class="card border-success">
-                        <div class="card-header bg-success bg-opacity-10">
-                            <h6 class="mb-0">
-                                <i class="bi bi-lightning"></i> クイックアクション
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <button class="btn btn-success w-100 mb-2" id="downloadAllBtn">
-                                <i class="bi bi-download"></i> 全ログダウンロード
-                            </button>
-                            <button class="btn btn-warning w-100 mb-2" id="cleanupOldLogsBtn">
-                                <i class="bi bi-trash"></i> 古いログ削除実行
-                            </button>
-                            <button class="btn btn-info w-100" id="exportStatsBtn">
-                                <i class="bi bi-file-earmark-spreadsheet"></i> 統計CSVエクスポート
-                            </button>
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- メッセージ表示カード（配信画面の中央にメッセージを出す） -->
+                        <div class="card border-dark mb-3">
+                            <div class="card-header card-handle bg-dark bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-megaphone-fill"></i> メッセージ表示</h6>
+                                <span class="badge bg-secondary ms-auto" id="admin_message_status">非表示</span>
+                            </div>
+                            <div class="card-body">
+                                <input type="text" class="form-control mb-2" id="text_admin_message" maxlength="100"
+                                    value="15:00から再開します" placeholder="配信画面の中央に表示するメッセージ">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-dark flex-fill" id="button_show_admin_message">
+                                        <i class="bi bi-eye"></i> 表示
+                                    </button>
+                                    <button class="btn btn-outline-secondary flex-fill" id="button_hide_admin_message">
+                                        <i class="bi bi-eye-slash"></i> 非表示
+                                    </button>
+                                </div>
+                                <p class="small text-muted mt-2 mb-0">表示中に内容を変えて「表示」を押すと差し替わります。</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- ヘルプ -->
-                    <div class="card border-secondary">
-                        <div class="card-header bg-secondary bg-opacity-10">
-                            <h6 class="mb-0">
-                                <i class="bi bi-question-circle"></i> ヘルプ
-                            </h6>
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- コメントログカード -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-chat-left-text-fill"></i> コメントログ</h6>
+                                <div class="ms-auto">
+                                    <button class="btn btn-sm btn-outline-primary me-1" id="button_sync_comments"
+                                        title="サーバーから授業ログを読み込み直す">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary me-1" id="button_download_comments"
+                                        title="授業ログ（JSON Lines）をダウンロード">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success me-1" id="button_download_csv"
+                                        title="ユーザー別集計CSVをダウンロード">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments"
+                                        title="表示をクリア（記録は消えません）">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <select class="form-select form-select-sm mb-2" id="select_log_session"
+                                    title="表示・ダウンロードする授業回">
+                                    <option value="current">現在の授業回</option>
+                                    <option value="all">すべての授業回（合計）</option>
+                                </select>
+                                <textarea id="textarea_comment_log" readonly class="form-control" rows="6"
+                                    placeholder="コメント・リアクション・音声認識・アンケートなどがここに表示されます"></textarea>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <small>
-                                <ul class="mb-0 ps-3">
-                                    <li>ログファイル名をクリックで詳細表示</li>
-                                    <li>自動削除は設定された間隔で実行</li>
-                                    <li>古いログは手動でも削除可能</li>
-                                </ul>
-                            </small>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- アンケート結果カード -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-bar-chart-fill"></i> アンケート結果</h6>
+                                <div class="ms-auto">
+                                    <button class="btn btn-sm btn-outline-primary me-1" id="button_sync_surveys"
+                                        title="サーバーからアンケート結果を同期">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" id="button_download_surveys_csv"
+                                        title="アンケート結果CSVをダウンロード">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="survey_log_container" class="survey-log-container">
+                                    <p class="small text-muted mb-0">アンケートが実施されるとここに結果が表示されます</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 効果音パネル -->
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <div class="card border-danger mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-volume-up-fill"></i> 効果音パネル
+                                </h6>
+                                <div class="form-check form-switch ms-auto">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_sound_trigger" checked>
+                                    <label class="form-check-label small" for="checkbox_sound_trigger">音声認識連動</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- 音量調整 -->
+                                <div class="mb-3">
+                                    <label for="range_sound_volume" class="form-label">音量: <span
+                                            id="sound_volume_label">50</span>%</label>
+                                    <input type="range" class="form-range" id="range_sound_volume" min="0" max="100"
+                                        value="50">
+                                </div>
+
+                                <!-- 効果音ボタン -->
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="クイズ.mp3">クイズ</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="クイズ.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="チャイム.mp3">チャイム</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="チャイム.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ドラ.mp3">ドラ</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ドラ.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ドラムロール.mp3">ドラムロール</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ドラムロール.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="ピンポン.mp3">ピンポン</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="ピンポン.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="太鼓.mp3">太鼓</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="太鼓.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-danger btn-sm w-100 sound-btn"
+                                            data-sound="拍手.mp3">拍手</button>
+                                        <button class="btn btn-outline-secondary btn-sm w-100 mt-1 edit-trigger-btn"
+                                            data-sound="拍手.mp3">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 自動チャイム -->
+                                <hr>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="fw-bold small"><i class="bi bi-bell-fill"></i> 自動チャイム</span>
+                                    <div class="form-check form-switch ms-auto mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                            id="checkbox_auto_chime">
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="time" class="form-control" id="time_chime_start" value="14:50">
+                                            <label for="time_chime_start">開始時間</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="time" class="form-control" id="time_chime_end" value="18:10">
+                                            <label for="time_chime_end">終了時間</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="mt-2 mb-0 small text-muted">
+                                    授業の開始時間と終了時間を設定すると、自動的にチャイムが鳴ります。
+                                </p>
+
+                                <!-- 音声プレイヤー(非表示) -->
+                                <audio id="sound_player" preload="metadata"></audio>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- 参加者数グラフ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-people-fill"></i> 参加者数の推移
+                                </h6>
+                                <button class="btn btn-sm btn-outline-primary ms-auto" id="button_download_user_stats">
+                                    <i class="bi bi-download"></i> CSV
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="userStatsChart" style="max-height: 300px;"></canvas>
+                                <div class="text-muted small mt-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    参加者の入退室がリアルタイムで記録されます
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- コンテキスト長グラフ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-chat-dots"></i> AIトークン数の推移
+                                </h6>
+                                <button class="btn btn-sm btn-outline-primary ms-auto"
+                                    id="button_download_context_stats">
+                                    <i class="bi bi-download"></i> CSV
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="contextStatsChart" style="max-height: 300px;"></canvas>
+                                <div class="text-muted small mt-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    LM Studioに送信するトークン数（推定）がリアルタイムで記録されます
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- 活動ログ -->
+                        <div class="card mb-3">
+                            <div class="card-header card-handle d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-list-ul"></i> 活動ログ</h6>
+                                <button class="btn btn-sm btn-outline-secondary ms-auto" id="button_clear_log">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="log-container" class="log-container"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+
+    </div>
     </div>
 
-    <!-- ログ詳細モーダル -->
-    <div class="modal fade" id="logDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-file-text"></i> <span id="modalLogName"></span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body log-detail-modal">
-                    <div class="mb-3">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <small class="text-muted">ファイルサイズ:</small>
-                                <div id="modalFileSize">-</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">最終更新:</small>
-                                <div id="modalLastModified">-</div>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-md-6">
-                                <small class="text-muted">コメント数:</small>
-                                <div id="modalCommentCount">-</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">ユニークユーザー数:</small>
-                                <div id="modalUniqueUsers">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr>
-                    <h6>コメント履歴</h6>
-                    <div id="modalCommentList">
-                        <div class="loading">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">読み込み中...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="downloadLogBtn">
-                        <i class="bi bi-download"></i> このログをダウンロード
-                    </button>
-                    <button type="button" class="btn btn-danger" id="deleteLogBtn">
-                        <i class="bi bi-trash"></i> このログを削除
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                </div>
-            </div>
+    <hr>
+
+    <footer class="page-footer font-small">
+        <div class="footer-copyright small text-center">
+            Commentable Kometaro AI Assistant<br>
+            &copy; 2025 <a href="https://tetsuakibaba.jp">Tetsuaki Baba</a>
         </div>
+    </footer>
     </div>
+
+    <!-- Scripts -->
+    <!-- <script src="../p5.min.js"></script> -->
+    <script src="/socket.io/socket.io.js"></script>
 
     <script>
-        console.log('--- Dashboard Script Start ---');
-        console.log('🚀 Dashboard script loaded!');
-        console.log('📍 Current URL:', window.location.href);
-        console.log('📍 Document ready state:', document.readyState);
+        // デフォルトのシステムプロンプト
+        const DEFAULT_SYSTEM_PROMPT = 'あなたの名前は{AI_NAME}です。親しみやすく親切なAIアシスタントです。あなたのコメントは配信者表示に流れるため、返答は必ず120文字以内の短い一文でお答えください。';
 
         // グローバル変数
-        let currentLogFile = null;
-        let authToken = null;
-        let allLogs = [];
+        let socket;
+        let isConnected = false;
+        let isAutoResponse = true;
+        let isAutoPosting = false;
+        let autoPostingTimer = null;
+        let lmStudioUrl = 'http://127.0.0.1:1234/v1';
+        let aiName = localStorage.getItem('aiAssistantName') || '米太郎';
+        let aiTextDirection = 'left';
+        let aiTextColor = '#FFD700';
+        let roomName = '';
+        let postingIntervalMin = 2; // 分
+        let postingIntervalMax = 8; // 分
+        let postingStyle = 'mixed';
 
-        // ページ読み込み時に認証状態を確認
-        async function checkAuthStatus() {
-            console.log('🔍 Checking auth status...');
-            try {
-                const response = await fetch('/api/dashboard/auth/status');
-                console.log('📡 Response status:', response.status);
-                const data = await response.json();
-                console.log('📦 Response data:', data);
+        // 音声認識関連の変数
+        let speechRecognition = null;
+        let isRecognizing = false;
+        let recognitionLanguage = 'ja-JP';
+        let isContinuous = true;
+        // isAutoSendSpeech removed per user request
+        let isAiNameAutoResponse = true; // AIアシスタント名を含む音声認識の自動応答
+        let selectedMicrophoneId = null;
+        let conversationHistory = []; // 会話履歴を保存
+        let conversationHistoryLimit = 50; // 履歴保存数の上限
+        // 授業ログ（サーバーの記録そのもの。表示・ダウンロード・集計はすべてこれを使う）
+        let sessionEvents = [];
+        let sessionEventIds = new Set();
+        let viewingSession = 'current'; // 'current' | 'all' | 授業回ID
 
-                if (data.skipAuth) {
-                    console.log('✅ skipAuth is enabled, auto-logging in...');
-                    // skipAuthが有効な場合は自動的にログイン
-                    authToken = 'dev-mode'; // ダミートークン
-                    document.getElementById('loginContainer').style.display = 'none';
-                    document.getElementById('dashboardContainer').style.display = 'block';
-                    loadDashboard();
-                } else {
-                    console.log('❌ skipAuth is disabled, showing login form');
-                }
-            } catch (error) {
-                console.error('⚠️ Auth status check error:', error);
-                // エラーの場合は通常のログイン画面を表示
+        // 参加者数統計関連の変数
+        let userStatsChart = null;
+        let userStatsHistory = []; // { timestamp, count } の配列
+
+        // トークン数統計関連の変数
+        let contextStatsChart = null;
+        let contextStatsHistory = []; // { timestamp, tokens } の配列
+
+        // 効果音パネル関連
+        let soundPlayer = null;
+        let soundVolume = 0.5; // 0.0-1.0
+        let soundTriggers = {}; // {filename: [triggers]}
+        let isSoundTriggerEnabled = true; // 音声認識連動フラグ（デフォルトON）
+
+        // 自動チャイム関連
+        const AUTO_CHIME_SOUND = 'チャイム.mp3';
+        const AUTO_CHIME_STORAGE_KEY = 'autoChimeSettings';
+        let autoChimeTimer = null;
+        let lastChimeKey = ''; // 同じ時刻に二重に鳴らさないための記録
+
+        // DOM要素
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const logContainer = document.getElementById('log-container');
+        const textRoomName = document.getElementById('text_room_name');
+        const textLmStudioUrl = document.getElementById('text_lm_studio_url');
+        const textAiName = document.getElementById('text_ai_name');
+        const selectTextDirection = document.getElementById('select_text_direction');
+        const inputTextColor = document.getElementById('input_text_color');
+        const textareaSystemPrompt = document.getElementById('textarea_system_prompt');
+        const buttonResetSystemPrompt = document.getElementById('button_reset_system_prompt');
+        const checkboxAutoResponse = document.getElementById('checkbox_auto_response');
+        const buttonConnect = document.getElementById('button_connect');
+        const buttonClearLog = document.getElementById('button_clear_log');
+        const buttonTestLMStudio = document.getElementById('button_test_lm_studio');
+
+        // 自動投稿関連のDOM要素
+        const checkboxAutoPosting = document.getElementById('checkbox_auto_posting');
+        const rangePostingIntervalMin = document.getElementById('range_posting_interval_min');
+        const rangePostingIntervalMax = document.getElementById('range_posting_interval_max');
+        const spanIntervalMin = document.getElementById('span_interval_min');
+        const spanIntervalMax = document.getElementById('span_interval_max');
+        const selectPostingStyle = document.getElementById('select_posting_style');
+        const buttonTestAutoPosting = document.getElementById('button_test_auto_posting');
+
+        // 音声認識関連のDOM要素
+        const selectMicrophone = document.getElementById('select_microphone');
+        const buttonRefreshMics = document.getElementById('button_refresh_mics');
+        const selectSpeechLanguage = document.getElementById('select_speech_language');
+        const buttonStartSpeech = document.getElementById('button_start_speech');
+        const buttonStopSpeech = document.getElementById('button_stop_speech');
+        const buttonClearSpeech = document.getElementById('button_clear_speech');
+        const buttonDownloadSpeech = document.getElementById('button_download_speech');
+        const inputSpeechInterim = document.getElementById('input_speech_interim');
+        const textareaSpeechResult = document.getElementById('textarea_speech_result');
+        const checkboxContinuousSpeech = document.getElementById('checkbox_continuous_speech');
+        const checkboxAiNameAutoResponse = document.getElementById('checkbox_ai_name_auto_response');
+        const labelAiNameAutoResponse = document.getElementById('label_ai_name_auto_response');
+        const inputConversationHistoryLimit = document.getElementById('input_conversation_history_limit');
+        const spanCurrentHistoryCount = document.getElementById('span_current_history_count');
+        const buttonClearHistory = document.getElementById('button_clear_history');
+
+        // コメントログ関連のDOM要素
+        const textareaCommentLog = document.getElementById('textarea_comment_log');
+        const buttonDownloadComments = document.getElementById('button_download_comments');
+        const buttonDownloadCsv = document.getElementById('button_download_csv');
+        const buttonClearComments = document.getElementById('button_clear_comments');
+
+        // URL パラメータを取得してルーム名を設定
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const result = {};
+            for (const [key, value] of params) {
+                result[key] = value;
+            }
+            return result;
+        }
+
+        // AIアシスタント名をlocalStorageに保存
+        function saveAiName(name) {
+            if (name && name.trim() !== '') {
+                localStorage.setItem('aiAssistantName', name.trim());
+                addLog(`AI名「${name.trim()}」を保存しました`, 'info');
             }
         }
 
-        // ページ読み込み時に実行（複数の方法で確実に実行）
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', checkAuthStatus);
-        } else {
-            // DOMがすでに読み込まれている場合は即座に実行
-            checkAuthStatus();
+        // AIアシスタント名をlocalStorageから取得
+        function loadAiName() {
+            const savedName = localStorage.getItem('aiAssistantName');
+            if (savedName) {
+                addLog(`保存されたAI名「${savedName}」を読み込みました`, 'info');
+                return savedName;
+            }
+            return '米太郎'; // デフォルト値
         }
-        // さらに、window.onloadでも実行（保険）
-        window.addEventListener('load', function () {
-            console.log('🔄 window.load event fired');
-        });
 
-        // ログイン処理
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('adminPassword').value;
+        // システムプロンプトをlocalStorageに保存
+        function saveSystemPrompt(prompt) {
+            if (prompt && prompt.trim() !== '') {
+                localStorage.setItem('systemPrompt', prompt.trim());
+                addLog('システムプロンプトを保存しました', 'info');
+            }
+        }
 
-            try {
-                const response = await fetch('/api/dashboard/auth', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+        // システムプロンプトをlocalStorageから取得
+        function loadSystemPrompt() {
+            const savedPrompt = localStorage.getItem('systemPrompt');
+            if (savedPrompt) {
+                addLog('保存されたシステムプロンプトを読み込みました', 'info');
+                return savedPrompt;
+            }
+            return DEFAULT_SYSTEM_PROMPT; // デフォルト値
+        }
+
+        // システムプロンプトをデフォルトにリセット
+        function resetSystemPrompt() {
+            textareaSystemPrompt.value = DEFAULT_SYSTEM_PROMPT;
+            localStorage.removeItem('systemPrompt');
+            addLog('システムプロンプトをデフォルトにリセットしました', 'info');
+        }
+
+        // 参加者数グラフの初期化
+        function initUserStatsChart() {
+            const ctx = document.getElementById('userStatsChart').getContext('2d');
+            userStatsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '参加者数',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
                     },
-                    body: JSON.stringify({ password })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    authToken = password;
-                    document.getElementById('loginContainer').style.display = 'none';
-                    document.getElementById('dashboardContainer').style.display = 'block';
-                    document.getElementById('loginError').style.display = 'none';
-                    loadDashboard();
-                } else {
-                    document.getElementById('loginError').style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                document.getElementById('loginError').style.display = 'block';
-            }
-        });
-
-        // ログアウト処理
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            authToken = null;
-            document.getElementById('loginContainer').style.display = 'flex';
-            document.getElementById('dashboardContainer').style.display = 'none';
-            document.getElementById('adminPassword').value = '';
-        });
-
-        // APIリクエストヘルパー
-        async function apiRequest(url, options = {}) {
-            const headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${authToken}`
-            };
-
-            const response = await fetch(url, {
-                ...options,
-                headers
-            });
-
-            if (response.status === 401) {
-                // 認証エラーの場合はログアウト
-                document.getElementById('logoutBtn').click();
-                throw new Error('Unauthorized');
-            }
-
-            return response;
-        }
-
-        // ダッシュボードデータ読み込み
-        async function loadDashboard() {
-            try {
-                // ログ一覧を取得
-                const logsResponse = await apiRequest('/api/dashboard/logs');
-                const logsData = await logsResponse.json();
-                allLogs = logsData.logs;
-
-                // 統計情報を取得
-                const statsResponse = await apiRequest('/api/dashboard/stats');
-                const statsData = await statsResponse.json();
-
-                // システム情報を取得
-                const systemResponse = await apiRequest('/api/dashboard/system-info');
-                const systemData = await systemResponse.json();
-
-                // UIを更新
-                updateStatistics(statsData, allLogs);
-                updateSystemInfo(systemData);
-                displayLogList(allLogs);
-
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                document.getElementById('logListContainer').innerHTML = `
-                    <div class="alert alert-danger m-3">
-                        <i class="bi bi-exclamation-triangle"></i> データの読み込みに失敗しました
-                    </div>
-                `;
-            }
-        }
-
-        // 統計情報を更新
-        function updateStatistics(stats, logs) {
-            document.getElementById('totalLogs').textContent = stats.totalLogs;
-            document.getElementById('totalComments').textContent = stats.totalComments.toLocaleString();
-            document.getElementById('totalSize').textContent = formatFileSize(stats.totalSize);
-
-            // 最新の更新日時を取得
-            let latestUpdate = null;
-            logs.forEach(log => {
-                const logDate = new Date(log.lastModified);
-                if (!latestUpdate || logDate > latestUpdate) {
-                    latestUpdate = logDate;
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
                 }
             });
+        }
 
-            if (latestUpdate) {
-                const timeAgo = getTimeAgo(latestUpdate);
-                document.getElementById('latestUpdate').textContent = timeAgo;
-                document.getElementById('latestUpdate').style.fontSize = '1rem';
-            } else {
-                document.getElementById('latestUpdate').textContent = '-';
+        // トークン数グラフの初期化
+        function initContextStatsChart() {
+            const ctx = document.getElementById('contextStatsChart').getContext('2d');
+            contextStatsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'トークン数（推定）',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 200
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 参加者数の更新
+        function updateUserStats(count) {
+            const timestamp = new Date();
+            const timeString = timestamp.toLocaleTimeString('ja-JP');
+
+            // 履歴に追加
+            userStatsHistory.push({
+                timestamp: timestamp.toISOString(),
+                count: count
+            });
+
+            // グラフに追加
+            if (userStatsChart) {
+                userStatsChart.data.labels.push(timeString);
+                userStatsChart.data.datasets[0].data.push(count);
+
+                // 最大50ポイントに制限
+                if (userStatsChart.data.labels.length > 50) {
+                    userStatsChart.data.labels.shift();
+                    userStatsChart.data.datasets[0].data.shift();
+                }
+
+                userStatsChart.update();
             }
         }
 
-        // システム情報を更新
-        function updateSystemInfo(systemInfo) {
-            document.getElementById('retentionInfo').textContent = `${systemInfo.retentionDays}日間`;
-            document.getElementById('checkIntervalInfo').textContent = `${systemInfo.checkIntervalHours}時間ごと`;
+        // トークン数の更新
+        function updateContextStats(tokens) {
+            const timestamp = new Date();
+            const timeString = timestamp.toLocaleTimeString('ja-JP');
 
-            // 次回チェック時刻は概算
-            const nextCheckHours = Math.floor(Math.random() * systemInfo.checkIntervalHours);
-            document.getElementById('nextCheckInfo').textContent = `約${nextCheckHours}時間後`;
+            // 履歴に追加
+            contextStatsHistory.push({
+                timestamp: timestamp.toISOString(),
+                tokens: tokens
+            });
+
+            // グラフに追加
+            if (contextStatsChart) {
+                contextStatsChart.data.labels.push(timeString);
+                contextStatsChart.data.datasets[0].data.push(tokens);
+
+                // 最大50ポイントに制限
+                if (contextStatsChart.data.labels.length > 50) {
+                    contextStatsChart.data.labels.shift();
+                    contextStatsChart.data.datasets[0].data.shift();
+                }
+
+                contextStatsChart.update();
+            }
         }
 
-        // ログ一覧を表示
-        function displayLogList(logs) {
-            const container = document.getElementById('logListContainer');
-            if (logs.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center p-4 text-muted">
-                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                        <div>ログファイルがありません</div>
-                    </div>
-                `;
+        // 参加者数統計のCSVダウンロード
+        function downloadUserStatsCSV() {
+            if (userStatsHistory.length === 0) {
+                alert('ダウンロードするデータがありません');
                 return;
             }
 
-            container.innerHTML = logs.map(log => `
-                <div class="log-item" onclick="showLogDetail('${log.name}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="fw-bold">
-                                <i class="bi bi-file-text text-primary"></i> ${log.name}
-                            </div>
-                            <div class="small text-muted">
-                                <i class="bi bi-chat-dots"></i> ${log.commentCount.toLocaleString()}件 | 
-                                <i class="bi bi-people"></i> ${log.uniqueUsers}人 | 
-                                <i class="bi bi-hdd"></i> ${formatFileSize(log.size)}
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge badge-custom bg-secondary">
-                                ${getTimeAgo(new Date(log.lastModified))}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            // CSVヘッダー
+            let csvContent = 'タイムスタンプ,参加者数\n';
+
+            // データ行
+            userStatsHistory.forEach(item => {
+                const timestamp = new Date(item.timestamp).toLocaleString('ja-JP');
+                csvContent += `${timestamp},${item.count}\n`;
+            });
+
+            // BOMを追加してExcelで正しく開けるようにする
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `参加者数統計_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            addLog('参加者数統計をCSVでダウンロードしました', 'info');
         }
 
-        // ログ詳細を表示
-        async function showLogDetail(logName) {
-            currentLogFile = logName;
-            document.getElementById('modalLogName').textContent = logName;
+        // トークン数統計のCSVダウンロード
+        function downloadContextStatsCSV() {
+            if (contextStatsHistory.length === 0) {
+                alert('ダウンロードするデータがありません');
+                return;
+            }
 
-            const modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
-            modal.show();
+            // CSVヘッダー
+            let csvContent = 'タイムスタンプ,トークン数（推定）\n';
 
-            // ローディング表示
-            document.getElementById('modalCommentList').innerHTML = `
-                <div class="loading">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">読み込み中...</span>
-                    </div>
-                </div>
-            `;
+            // データ行
+            contextStatsHistory.forEach(item => {
+                const timestamp = new Date(item.timestamp).toLocaleString('ja-JP');
+                csvContent += `${timestamp},${item.tokens}\n`;
+            });
 
-            try {
-                const response = await apiRequest(`/api/dashboard/logs/${logName}`);
-                const logData = await response.json();
+            // BOMを追加してExcelで正しく開けるようにする
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `トークン数統計_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
 
-                document.getElementById('modalFileSize').textContent = formatFileSize(logData.size);
-                document.getElementById('modalLastModified').textContent =
-                    new Date(logData.lastModified).toLocaleString('ja-JP');
-                document.getElementById('modalCommentCount').textContent = logData.commentCount.toLocaleString();
-                document.getElementById('modalUniqueUsers').textContent = logData.uniqueUsers;
+            addLog('トークン数統計をCSVでダウンロードしました', 'info');
+        }
 
-                // コメント一覧を表示（最新20件）
-                const recentComments = logData.comments.slice(-20).reverse();
-                document.getElementById('modalCommentList').innerHTML = recentComments.map(comment => `
-                    <div class="comment-entry">
-                        <div class="comment-username">${escapeHtml(comment.username || 'Anonymous')}</div>
-                        <div>${escapeHtml(comment.comment || '')}</div>
-                        <div class="comment-timestamp">
-                            <i class="bi bi-clock"></i> ${new Date(comment.timestamp).toLocaleString('ja-JP')}
-                            ${comment.emoji ? '<span class="badge bg-warning ms-2">😊</span>' : ''}
-                            ${comment.sound ? '<span class="badge bg-info ms-2">🔊</span>' : ''}
-                        </div>
-                    </div>
-                `).join('');
+        // 会話履歴を文字列として整形
+        function formatConversationHistory() {
+            if (conversationHistory.length === 0) {
+                return "これまでの会話履歴はありません。";
+            }
+            const recentHistory = conversationHistory; // 全ての履歴を使用
+            const formattedHistory = recentHistory.map(item => {
+                const time = new Date(item.timestamp).toLocaleTimeString();
+                if (item.type === 'user') {
+                    return `[${time}] ${item.content}`;
+                } else {
+                    return `[${time}] ${aiName}: ${item.content}`;
+                }
+            }).join('\n');
 
-            } catch (error) {
-                console.error('Error loading log detail:', error);
-                document.getElementById('modalCommentList').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> ログの読み込みに失敗しました
-                    </div>
-                `;
+            return `これまでの会話履歴:\n${formattedHistory}`;
+        }
+
+        // ========== 授業ログ（コメントログ） ==========
+        function pad2(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        // 授業ログの時刻（UTC）をこのパソコンの時刻で表示する
+        function formatLocalTime(iso, withDate = false) {
+            const d = new Date(iso);
+            const time = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+            return withDate ? `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${time}` : time;
+        }
+
+        // 参加者IDから表示名を引けるようにする（アンケート回答には名前が含まれないため）
+        function buildNameIndex(events) {
+            const names = {};
+            events.forEach(ev => {
+                if (ev.participant_id && ev.name) names[ev.participant_id] = ev.name;
+            });
+            return names;
+        }
+
+        // 授業ログの1件を表示用の1行にする（入退室は件数が多いので表示しない）
+        function describeLogEvent(ev, names) {
+            const name = ev.name || (ev.participant_id && names[ev.participant_id]) || '匿名';
+            switch (ev.type) {
+                case 'session_start':
+                    return `──── 授業回 ${ev.session_id} ────`;
+                case 'comment': {
+                    const label = ev.actor === 'ai' ? '[AI]' : ev.actor === 'host' ? '[配信者]' : '[コメント]';
+                    return `${label} ${name}: ${ev.text}`;
+                }
+                case 'reaction':
+                    return `[リアクション${ev.sound_id !== null && ev.sound_id !== undefined ? '・効果音' : ''}] ${name}: ${ev.emoji}`;
+                case 'material':
+                    return `[配布資料] ${name}: ${ev.text.length > 60 ? ev.text.slice(0, 60) + '…' : ev.text}`;
+                case 'speech':
+                    return `[音声] ${ev.text}`;
+                case 'survey_start':
+                    return `[アンケート開始] ${ev.question}`;
+                case 'survey_answer':
+                    return `[アンケート回答] ${name}: ${(ev.choice_labels || []).join(' / ')}`;
+                case 'survey_end':
+                    return `[アンケート終了] 回答者 ${ev.respondents} 人`;
+                case 'admin_message':
+                    return ev.show ? `[メッセージ表示] ${ev.text}` : '[メッセージ非表示]';
+                case 'comment_control':
+                    return `[投稿制限解除] ${ev.unrestricted ? 'ON' : 'OFF'}`;
+                case 'delete_comment':
+                    return '[コメント削除]';
+                default:
+                    return null;
             }
         }
 
-        // ログのダウンロード
-        document.getElementById('downloadLogBtn').addEventListener('click', () => {
-            if (currentLogFile) {
-                window.location.href = `/chatlogs/${currentLogFile}`;
+        function formatLogLine(ev, names) {
+            const text = describeLogEvent(ev, names);
+            return text === null ? null : `[${formatLocalTime(ev.t, viewingSession === 'all')}] ${text}`;
+        }
+
+        function renderCommentLog() {
+            const names = buildNameIndex(sessionEvents);
+            textareaCommentLog.value = sessionEvents.map(ev => formatLogLine(ev, names)).filter(Boolean).join('\n');
+            textareaCommentLog.scrollTop = textareaCommentLog.scrollHeight;
+        }
+
+        function setSessionEvents(events) {
+            sessionEvents = [...events].sort((a, b) => a.t.localeCompare(b.t));
+            sessionEventIds = new Set(sessionEvents.map(ev => ev.event_id));
+            renderCommentLog();
+        }
+
+        // サーバーから1件届いたとき（現在の授業回を表示中のときだけ追加）
+        function onLogEvent(ev) {
+            if (viewingSession !== 'current' || sessionEventIds.has(ev.event_id)) return;
+            if (ev.type === 'session_start' && sessionEvents.length > 0 && sessionEvents[0].session_id !== ev.session_id) {
+                // 新しい授業回が始まった
+                setSessionEvents([ev]);
+                loadLogSessions();
+                return;
+            }
+            sessionEvents.push(ev);
+            sessionEventIds.add(ev.event_id);
+            const line = formatLogLine(ev, buildNameIndex(sessionEvents));
+            if (line) {
+                textareaCommentLog.value += (textareaCommentLog.value ? '\n' : '') + line;
+                textareaCommentLog.scrollTop = textareaCommentLog.scrollHeight;
+            }
+        }
+
+        // 表示だけを消す（サーバーの記録とダウンロード・集計の対象は消えない）
+        function clearCommentLog() {
+            textareaCommentLog.value = '';
+            addLog('コメントログの表示をクリアしました（記録は残っています）', 'info');
+        }
+
+        function sessionLabelForFile() {
+            if (viewingSession === 'all') return 'all_sessions';
+            return sessionEvents[0] ? sessionEvents[0].session_id : viewingSession;
+        }
+
+        function downloadBlob(content, filename, type) {
+            const blob = new Blob(content, { type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // 授業ログをダウンロード（サーバーの記録と同じ JSON Lines）
+        function downloadCommentLog() {
+            if (sessionEvents.length === 0) {
+                addLog('ダウンロードする授業ログがありません', 'info');
+                return;
+            }
+            const jsonLines = sessionEvents.map(ev => JSON.stringify(ev)).join('\n') + '\n';
+            const filename = `${roomName ? roomName + '_' : ''}${sessionLabelForFile()}.jsonl`;
+            downloadBlob([jsonLines], filename, 'application/x-ndjson;charset=utf-8');
+            addLog(`授業ログをダウンロードしました: ${filename}`, 'info');
+        }
+
+        // ========== 設定の保存・リセット ==========
+        // 入力欄の値は localStorage に保存し、次に開いたときに復元する
+        const SETTINGS_STORAGE_KEY = 'dashboardSettings';
+        // [要素ID, 値の変更を既存の処理に知らせるイベント]
+        // ※ 自動投稿・自動チャイムのON/OFFは「動作」なので保存しない（開いた瞬間に動き出さないように）
+        const PERSISTED_CONTROLS = [
+            ['text_room_name', 'change'],
+            ['checkbox_auto_response', 'change'],
+            ['text_lm_studio_url', 'change'],
+            ['select_text_direction', 'change'],
+            ['input_text_color', 'change'],
+            ['input_conversation_history_limit', 'change'],
+            ['checkbox_ai_name_auto_response', 'change'],
+            ['select_speech_language', 'change'],
+            ['checkbox_continuous_speech', 'change'],
+            ['range_posting_interval_min', 'input'],
+            ['range_posting_interval_max', 'input'],
+            ['select_posting_style', 'change'],
+            ['checkbox_sound_trigger', 'change'],
+            ['text_admin_message', 'change']
+        ];
+        // このページが使っている localStorage のキー（リセット時に消す。参加者ページのキーは消さない）
+        const DASHBOARD_STORAGE_KEYS = [
+            SETTINGS_STORAGE_KEY,
+            'aiAssistantName',
+            'systemPrompt',
+            'soundEffectVolume',
+            'soundTriggers',
+            'autoChimeSettings',
+            'dashboardPostSettings',
+            'dashboard_card_order',
+            'dashboard_card_collapse_state'
+        ];
+
+        function readControlValue(el) {
+            return el.type === 'checkbox' ? el.checked : el.value;
+        }
+
+        function writeControlValue(el, value) {
+            if (el.type === 'checkbox') {
+                el.checked = !!value;
+            } else {
+                el.value = value;
+            }
+        }
+
+        function saveDashboardSettings() {
+            try {
+                const settings = {};
+                for (const [id] of PERSISTED_CONTROLS) {
+                    settings[id] = readControlValue(document.getElementById(id));
+                }
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+            } catch (error) {
+                // 保存できなくても動作には影響しない
+            }
+        }
+
+        // 保存された値を入力欄に戻し、既存の change/input 処理を通して内部の状態も合わせる
+        function restoreDashboardSettings() {
+            let settings = null;
+            try {
+                settings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY));
+            } catch (error) {
+                // 壊れた設定は無視して既定値を使う
+            }
+            for (const [id, eventName] of PERSISTED_CONTROLS) {
+                const el = document.getElementById(id);
+                if (settings && id in settings && readControlValue(el) !== settings[id]) {
+                    writeControlValue(el, settings[id]);
+                    el.dispatchEvent(new Event(eventName));
+                }
+                // 以降の変更を保存
+                el.addEventListener('input', saveDashboardSettings);
+                el.addEventListener('change', saveDashboardSettings);
+            }
+        }
+
+        function resetDashboardSettings() {
+            if (!confirm('このページの設定（AI設定、効果音のトリガー、自動チャイムの時刻、カードの並びなど）をすべて既定に戻します。よろしいですか？')) {
+                return;
+            }
+            try {
+                DASHBOARD_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
+            } catch (error) {
+                addLog(`設定のリセットに失敗しました: ${error.message}`, 'error');
+                return;
+            }
+            location.reload();
+        }
+
+        // ========== メッセージ表示 ==========
+        // 配信画面（Electron）の中央に出すメッセージ。状態はサーバーが部屋ごとに保持している
+        function setAdminMessageStatus(message) {
+            const badge = document.getElementById('admin_message_status');
+            const shown = !!(message && message.show);
+            badge.textContent = shown ? '表示中' : '非表示';
+            badge.className = 'badge ms-auto ' + (shown ? 'bg-success' : 'bg-secondary');
+            badge.title = shown ? message.text : '';
+        }
+
+        function sendAdminMessage(show) {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていません', 'error');
+                return;
+            }
+            const text = document.getElementById('text_admin_message').value.trim();
+            if (show && text === '') {
+                addLog('表示するメッセージを入力してください', 'error');
+                return;
+            }
+            const message = { show, text: show ? text : '' };
+            socket.emit('admin message', message);
+            setAdminMessageStatus(message);
+            addLog(show ? `メッセージを表示: ${text}` : 'メッセージを非表示にしました', 'sent');
+        }
+
+        function initializeAdminMessageCard() {
+            document.getElementById('button_show_admin_message').addEventListener('click', () => sendAdminMessage(true));
+            document.getElementById('button_hide_admin_message').addEventListener('click', () => sendAdminMessage(false));
+            document.getElementById('text_admin_message').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.isComposing) {
+                    e.preventDefault();
+                    sendAdminMessage(true);
+                }
+            });
+        }
+
+        // ========== コメント・リアクション送信 ==========
+        const POST_SETTINGS_KEY = 'dashboardPostSettings';
+        const POST_SETTING_FIELDS = {
+            name: 'post_name',
+            colorText: 'post_color_text',
+            colorStroke: 'post_color_stroke',
+            textDirection: 'post_text_direction',
+            fontSize: 'post_font_size'
+        };
+
+        function savePostSettings() {
+            try {
+                const settings = { speech: document.getElementById('post_speech').checked };
+                for (const [key, id] of Object.entries(POST_SETTING_FIELDS)) {
+                    settings[key] = document.getElementById(id).value;
+                }
+                localStorage.setItem(POST_SETTINGS_KEY, JSON.stringify(settings));
+            } catch (error) {
+                // 保存できなくても送信には影響しない
+            }
+        }
+
+        function loadPostSettings() {
+            try {
+                const settings = JSON.parse(localStorage.getItem(POST_SETTINGS_KEY));
+                if (!settings) return;
+                for (const [key, id] of Object.entries(POST_SETTING_FIELDS)) {
+                    if (settings[key]) document.getElementById(id).value = settings[key];
+                }
+                document.getElementById('post_speech').checked = !!settings.speech;
+            } catch (error) {
+                // 壊れた設定は無視して既定値を使う
+            }
+        }
+
+        // 参加者ページと同じ形式でコメントを送る（配信者用なので連投制限はなし）
+        function postComment(comment, { emoji = false, sound = false, idSound = 0 } = {}) {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていません', 'error');
+                return false;
+            }
+            const data = {
+                my_name: document.getElementById('post_name').value.trim() || '管理人',
+                comment,
+                flg_speech: document.getElementById('post_speech').checked,
+                color_text: document.getElementById('post_color_text').value,
+                color_text_stroke: document.getElementById('post_color_stroke').value,
+                text_direction: document.getElementById('post_text_direction').value,
+                font_size: document.getElementById('post_font_size').value,
+                flg_emoji: emoji,
+                flg_sound: sound,
+                id_sound: idSound,
+                hidden: -1,
+                origin: 'host'
+            };
+            socket.emit('comment', data);
+            addLog(`${emoji ? 'リアクション' : 'コメント'}送信: ${comment}`, 'sent');
+            return true;
+        }
+
+        function initializePostCard() {
+            loadPostSettings();
+
+            const input = document.getElementById('post_comment');
+            const send = () => {
+                const comment = input.value.trim();
+                if (comment === '') return;
+                if (postComment(comment)) input.value = '';
+            };
+            document.getElementById('button_post_comment').addEventListener('click', send);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.isComposing) {
+                    e.preventDefault();
+                    send();
+                }
+            });
+
+            document.querySelectorAll('.post-reaction').forEach(button => {
+                button.addEventListener('click', () => {
+                    const idSound = button.dataset.sound;
+                    postComment(button.textContent.trim(), {
+                        emoji: true,
+                        sound: idSound !== undefined,
+                        idSound: idSound !== undefined ? Number(idSound) : 0
+                    });
+                });
+            });
+
+            [...Object.values(POST_SETTING_FIELDS), 'post_speech'].forEach(id => {
+                document.getElementById(id).addEventListener('change', savePostSettings);
+            });
+        }
+
+        // ========== アンケート結果 ==========
+        let surveyLog = []; // サーバーに保存されたアンケート結果（開始順）
+
+        function formatSurveyTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function renderSurveyLog() {
+            const container = document.getElementById('survey_log_container');
+            container.innerHTML = '';
+            if (surveyLog.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'small text-muted mb-0';
+                empty.textContent = 'アンケートが実施されるとここに結果が表示されます';
+                container.appendChild(empty);
+            }
+
+            // 新しいものを上に表示
+            [...surveyLog].reverse().forEach(record => {
+                const item = document.createElement('div');
+                item.className = 'survey-log-item';
+
+                const meta = document.createElement('div');
+                meta.className = 'd-flex align-items-center small text-muted mb-1';
+                const badge = document.createElement('span');
+                badge.className = 'badge me-2 ' + (record.active ? 'bg-success' : 'bg-secondary');
+                badge.textContent = record.active ? '実施中' : '終了';
+                const time = document.createElement('span');
+                time.textContent = formatSurveyTime(record.startedAt) + (record.endedAt ? ` 〜 ${formatSurveyTime(record.endedAt)}` : '');
+                const respondents = document.createElement('span');
+                respondents.className = 'ms-auto';
+                respondents.textContent = `回答者 ${record.respondents} 人`;
+                meta.append(badge, time, respondents);
+
+                const question = document.createElement('div');
+                question.className = 'survey-question fw-bold mb-2';
+                question.textContent = record.question + (record.multiple ? '（複数選択）' : '');
+
+                item.append(meta, question);
+
+                record.choices.forEach((choice, i) => {
+                    const count = record.counts[i] || 0;
+                    const percent = record.respondents > 0 ? Math.round(count / record.respondents * 100) : 0;
+                    const head = document.createElement('div');
+                    head.className = 'd-flex justify-content-between small';
+                    const label = document.createElement('span');
+                    label.textContent = choice;
+                    const value = document.createElement('span');
+                    value.className = 'fw-bold text-nowrap ms-2';
+                    value.textContent = `${count} 票（${percent}%）`;
+                    head.append(label, value);
+                    const progress = document.createElement('div');
+                    progress.className = 'progress mb-2';
+                    progress.style.height = '10px';
+                    const bar = document.createElement('div');
+                    bar.className = 'progress-bar';
+                    bar.style.width = `${percent}%`;
+                    progress.appendChild(bar);
+                    item.append(head, progress);
+                });
+
+                container.appendChild(item);
+            });
+
+            // カードの高さが変わるので並びを更新（Packery は textarea しか監視していない）
+            if (window.packeryInstance) {
+                requestAnimationFrame(() => window.packeryInstance.layout());
+            }
+        }
+
+        function setSurveyLog(log) {
+            surveyLog = Array.isArray(log) ? log : [];
+            renderSurveyLog();
+        }
+
+        function upsertSurveyRecord(record) {
+            const index = surveyLog.findIndex(r => r.id === record.id);
+            if (index >= 0) {
+                if (surveyLog[index].active && !record.active) {
+                    addLog(`アンケート終了: ${record.question}（回答者 ${record.respondents} 人）`, 'info');
+                }
+                surveyLog[index] = record;
+            } else {
+                surveyLog.push(record);
+                addLog(`アンケート開始: ${record.question}`, 'info');
+            }
+            renderSurveyLog();
+        }
+
+        // サーバーに保存されたアンケート結果を取得
+        async function syncSurveysFromServer(showAlert = true) {
+            const room = textRoomName.value.trim();
+            if (!room) {
+                if (showAlert) alert('部屋名が設定されていません。');
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(room)}/surveys`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                setSurveyLog(await response.json());
+                if (surveyLog.length === 0 && showAlert) alert('まだこの部屋のアンケート結果はありません。');
+                addLog(`アンケート結果を同期しました（${surveyLog.length} 件）`, 'info');
+            } catch (error) {
+                addLog(`アンケート結果の同期に失敗しました: ${error.message}`, 'error');
+            }
+        }
+
+        // アンケート結果をCSVでダウンロード（1行 = 1選択肢）
+        function downloadSurveyCsv() {
+            if (surveyLog.length === 0) {
+                addLog('ダウンロードするアンケート結果がありません', 'info');
+                return;
+            }
+            const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const rows = [['開始日時', '終了日時', '質問', '複数選択', '回答者数', '選択肢', '票数', '割合(%)']];
+            surveyLog.forEach(record => {
+                record.choices.forEach((choice, i) => {
+                    const count = record.counts[i] || 0;
+                    const percent = record.respondents > 0 ? Math.round(count / record.respondents * 1000) / 10 : 0;
+                    rows.push([record.startedAt, record.endedAt || '', record.question, record.multiple ? 'はい' : 'いいえ',
+                        record.respondents, choice, count, percent]);
+                });
+            });
+            const csv = '\uFEFF' + rows.map(r => r.map(escape).join(',')).join('\r\n');
+
+            const currentTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const roomPrefix = roomName ? `${roomName}_` : '';
+            const filename = `${roomPrefix}surveys_${currentTime}.csv`;
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            addLog(`アンケート結果をダウンロードしました: ${filename}`, 'info');
+        }
+
+        // ユーザー別集計（授業参画度の評価用）
+        // 名前欄に入力された学修番号ごとに、コメント・リアクション・アンケート回答の数を数える（参加者のみ。配信者・AIは除く）
+        function buildParticipationStats(events) {
+            const names = buildNameIndex(events);
+            const stats = {};
+            const get = (key) => stats[key] || (stats[key] = {
+                comments: [], textCount: 0, silentCount: 0, soundCount: 0, surveyCount: 0,
+                firstTimestamp: null, lastTimestamp: null, participantIds: new Set(), sessions: new Set()
+            });
+
+            events.forEach(ev => {
+                if (ev.actor !== 'participant') return;
+                if (ev.type === 'comment' || ev.type === 'reaction') {
+                    const entry = get(ev.name || '匿名');
+                    if (ev.type === 'comment') {
+                        entry.comments.push(ev.text);
+                        entry.textCount++;
+                    } else {
+                        entry.comments.push(ev.emoji);
+                        if (ev.sound_id !== null && ev.sound_id !== undefined) entry.soundCount++;
+                        else entry.silentCount++;
+                    }
+                    if (!entry.firstTimestamp || ev.t < entry.firstTimestamp) entry.firstTimestamp = ev.t;
+                    if (!entry.lastTimestamp || ev.t > entry.lastTimestamp) entry.lastTimestamp = ev.t;
+                    if (ev.participant_id) entry.participantIds.add(ev.participant_id);
+                    entry.sessions.add(ev.session_id);
+                } else if (ev.type === 'survey_answer') {
+                    const key = names[ev.participant_id] || `（名前未入力）${String(ev.participant_id).slice(0, 8)}`;
+                    const entry = get(key);
+                    entry.surveyCount++;
+                    if (ev.participant_id) entry.participantIds.add(ev.participant_id);
+                    entry.sessions.add(ev.session_id);
+                }
+            });
+            return stats;
+        }
+
+        // ユーザー別集計CSVをダウンロード（従来の列のあとに、内訳などの列を追加）
+        function downloadCommentCsv() {
+            const stats = buildParticipationStats(sessionEvents);
+            if (Object.keys(stats).length === 0) {
+                addLog('集計する参加者の投稿がありません', 'info');
+                return;
+            }
+
+            const escapeCsv = (value) => {
+                const str = String(value ?? '');
+                return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+            };
+            const header = ['学修番号/投稿者', 'コメント内容（カンマ区切り）', 'コメント数', '絵文字数', 'テキスト数',
+                '最初の投稿時刻', '最後の投稿時刻', '効果音リアクション数', '音なしリアクション数', 'アンケート回答数',
+                '参加した授業回数', '参加者ID（匿名）'];
+            const rows = Object.entries(stats).map(([name, st]) => {
+                const reactions = st.silentCount + st.soundCount;
+                return [
+                    name,
+                    st.comments.join(', '),
+                    st.textCount + reactions,
+                    reactions,
+                    st.textCount,
+                    st.firstTimestamp ? formatLocalTime(st.firstTimestamp, true) : '',
+                    st.lastTimestamp ? formatLocalTime(st.lastTimestamp, true) : '',
+                    st.soundCount,
+                    st.silentCount,
+                    st.surveyCount,
+                    st.sessions.size,
+                    [...st.participantIds].join(' ')
+                ];
+            });
+            const csvContent = [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\r\n') + '\r\n';
+
+            const filename = `${roomName ? roomName + '_' : ''}user_stats_${sessionLabelForFile()}.csv`;
+            // BOM（Byte Order Mark）を追加してExcelで文字化けしないようにする
+            downloadBlob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], filename, 'text/csv;charset=utf-8');
+            addLog(`ユーザー別集計CSVをダウンロードしました: ${filename}`, 'info');
+        }
+
+        function logApiBase() {
+            return `/api/rooms/${encodeURIComponent(textRoomName.value.trim())}`;
+        }
+
+        async function fetchSessionEvents(sessionId) {
+            const response = await fetch(`${logApiBase()}/sessions/${encodeURIComponent(sessionId)}/events`, { cache: 'no-store' });
+            if (response.status === 404) return [];
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return (await response.text()).split('\n').filter(line => line.trim())
+                .map(line => { try { return JSON.parse(line); } catch (e) { return null; } })
+                .filter(Boolean);
+        }
+
+        // 授業回の一覧を選択欄に入れる
+        async function loadLogSessions() {
+            if (!textRoomName.value.trim()) return;
+            try {
+                const response = await fetch(`${logApiBase()}/sessions`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const list = await response.json();
+                const select = document.getElementById('select_log_session');
+                const selected = select.value;
+                select.innerHTML = '<option value="current">現在の授業回</option><option value="all">すべての授業回（合計）</option>';
+                list.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.session_id;
+                    option.textContent = `${item.started_at ? formatLocalTime(item.started_at, true) : item.session_id} 〜（${item.events}件）`;
+                    select.appendChild(option);
+                });
+                select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
+            } catch (error) {
+                addLog(`授業回の一覧の取得に失敗しました: ${error.message}`, 'error');
+            }
+        }
+
+        // 選択中の授業回のログをサーバーから読み込む
+        async function loadSelectedSession() {
+            if (!textRoomName.value.trim()) {
+                addLog('部屋名が設定されていません', 'error');
+                return;
+            }
+            viewingSession = document.getElementById('select_log_session').value;
+            try {
+                let events;
+                if (viewingSession === 'all') {
+                    const response = await fetch(`${logApiBase()}/sessions`, { cache: 'no-store' });
+                    const list = response.ok ? await response.json() : [];
+                    events = (await Promise.all(list.map(item => fetchSessionEvents(item.session_id)))).flat();
+                } else {
+                    events = await fetchSessionEvents(viewingSession);
+                }
+                setSessionEvents(events);
+                addLog(`授業ログを読み込みました（${events.length}件）`, 'info');
+            } catch (error) {
+                addLog(`授業ログの読み込みに失敗しました: ${error.message}`, 'error');
+            }
+        }
+
+        // 接続時などに現在の授業回のログを受け取ったとき（AIの会話履歴もここから作り直す）
+        function onLogSnapshot(events) {
+            rebuildConversationHistory(events);
+            if (viewingSession === 'current') {
+                setSessionEvents(events);
+            }
+        }
+
+        function rebuildConversationHistory(events) {
+            conversationHistory = [];
+            events.forEach(ev => {
+                if (ev.type === 'speech') {
+                    conversationHistory.push({ type: 'user', content: ev.text, timestamp: ev.t, speaker: '配信者' });
+                } else if (ev.type === 'comment' && ev.actor === 'ai') {
+                    conversationHistory.push({ type: 'assistant', content: ev.text, timestamp: ev.t });
+                } else if (ev.type === 'comment') {
+                    conversationHistory.push({
+                        type: 'user',
+                        content: `${ev.name || '匿名'}: ${ev.text}`,
+                        timestamp: ev.t,
+                        speaker: ev.actor === 'host' ? '配信者' : '参加者'
+                    });
+                }
+            });
+            if (conversationHistory.length > conversationHistoryLimit) {
+                conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+            }
+            updateCurrentHistoryCount();
+        }
+
+        // ログ出力関数
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // ステータス更新
+        function updateStatus(status, text) {
+            statusIndicator.className = `status-indicator status-${status}`;
+            statusText.textContent = text;
+        }
+
+        // 自動投稿用のプロンプト生成
+        function generateAutoPostPrompt(style) {
+            const prompts = {
+                mixed: [
+                    "授業の雰囲気を盛り上げるような短いコメントをしてください。",
+                    "学生が興味を持ちそうな雑談を120文字以内でしてください。",
+                    "授業に関連する面白い豆知識を短く教えてください。",
+                    "今日の気分や天気について軽くコメントしてください。",
+                    "勉強のモチベーションが上がるような応援コメントをしてください。"
+                ],
+                academic: [
+                    "授業に関連する興味深い話題を120文字以内で提供してください。",
+                    "学習に役立つ豆知識を短く教えてください。",
+                    "授業の内容に関連する質問を投げかけてください。",
+                    "学習のコツを短くアドバイスしてください。"
+                ],
+                casual: [
+                    "今日の気分について軽くコメントしてください。",
+                    "季節や天気について短く話してください。",
+                    "面白い雑談を120文字以内でしてください。",
+                    "学生生活の話題で軽く盛り上げてください。"
+                ],
+                reaction: "REACTION_MODE" // 特別なマーカー
+            };
+
+            if (style === 'reaction') {
+                return prompts.reaction;
+            }
+
+            const stylePrompts = prompts[style] || prompts.mixed;
+            const randomPrompt = stylePrompts[Math.floor(Math.random() * stylePrompts.length)];
+
+            // 指示のみを返す（会話履歴はbuildPrompt()で処理される）
+            return randomPrompt;
+        }
+
+        // リアクション専用の送信関数
+        function sendRandomReaction() {
+            // 絵文字リアクション（サイレント）
+            const emojiReactions = ['👍', '🙏', '🙋', '🥺', '🤫'];
+
+            // サウンドリアクション（音付き）
+            const soundReactions = [
+                { emoji: '📸', id: 0 },  // カメラ
+                { emoji: '👏', id: 1 },  // 拍手
+                { emoji: '🎉', id: 2 },  // クラッカー
+                { emoji: '🥳', id: 3 },  // 大歓声
+                { emoji: '😮', id: 4 },  // へぇ〜
+                { emoji: '🤔', id: 5 },  // ちょっとまって
+                { emoji: '👌', id: 6 },  // OK
+                { emoji: '👊', id: 7 },  // パンチ
+                { emoji: '🤣', id: 8 },  // 大笑い
+                { emoji: '😏', id: 9 }   // w
+            ];
+
+            // 70%の確率で絵文字リアクション、30%の確率でサウンドリアクション
+            const useSound = Math.random() < 0.3;
+
+            let data;
+            if (useSound) {
+                // サウンドリアクション
+                const reaction = soundReactions[Math.floor(Math.random() * soundReactions.length)];
+                data = {
+                    my_name: aiName,
+                    comment: reaction.emoji,
+                    flg_emoji: true,
+                    flg_sound: true,
+                    id_sound: reaction.id,
+                    color_text: aiTextColor,
+                    color_text_stroke: '#111111',
+                    text_direction: aiTextDirection,
+                    flg_speech: false,
+                    hidden: -1
+                };
+                addLog(`サウンドリアクション送信: ${reaction.emoji} (ID: ${reaction.id})`, 'sent');
+            } else {
+                // 絵文字リアクション
+                const emoji = emojiReactions[Math.floor(Math.random() * emojiReactions.length)];
+                data = {
+                    my_name: aiName,
+                    comment: emoji,
+                    flg_emoji: true,
+                    flg_sound: false,
+                    id_sound: 0,
+                    color_text: aiTextColor,
+                    color_text_stroke: '#111111',
+                    text_direction: aiTextDirection,
+                    flg_speech: false,
+                    hidden: -1
+                };
+                addLog(`絵文字リアクション送信: ${emoji}`, 'sent');
+            }
+
+            if (socket && isConnected) {
+                data.origin = 'ai'; // 授業ログではAIの投稿として記録される
+                socket.emit('comment', data);
+            }
+        }
+
+        // 自動投稿を実行
+        async function executeAutoPosting() {
+            if (!isConnected || !isAutoPosting) {
+                return;
+            }
+
+            try {
+                addLog('自動投稿を実行中...', 'info');
+
+                if (postingStyle === 'reaction') {
+                    // リアクションモードの場合は絵文字/サウンドリアクションを送信
+                    sendRandomReaction();
+                } else {
+                    // その他のモードの場合はテキストコメントを生成
+                    const prompt = generateAutoPostPrompt(postingStyle);
+                    const aiResponse = await sendToLMStudio(prompt);
+
+                    // 投稿
+                    setTimeout(() => {
+                        sendComment(aiResponse, 'auto'); // 自動投稿
+                        // 自動投稿されたコメントも会話履歴に追加
+                        addToConversationHistory('assistant', aiResponse);
+                        addLog(`自動投稿完了: ${aiResponse}`, 'info');
+                    }, 500);
+                }
+
+            } catch (error) {
+                addLog(`自動投稿エラー: ${error.message}`, 'error');
+            }
+
+            // 次の投稿をスケジュール
+            scheduleNextAutoPosting();
+        }        // ========================================
+        // 効果音パネル機能
+        // ========================================
+
+        // 効果音を再生
+        function playSoundEffect(filename) {
+            try {
+                if (!soundPlayer) {
+                    addLog('効果音プレイヤーが初期化されていません', 'error');
+                    return;
+                }
+
+                soundPlayer.src = `./sounds/${filename}`;
+                soundPlayer.volume = soundVolume;
+                soundPlayer.play().catch(err => {
+                    addLog(`効果音再生エラー: ${err.message}`, 'error');
+                });
+                addLog(`効果音再生: ${filename}`, 'info');
+            } catch (error) {
+                addLog(`効果音再生エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 自動チャイム：開始・終了時刻（HH:MM）になったらチャイムを鳴らす
+        function checkAutoChime() {
+            const now = new Date();
+            const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const start = document.getElementById('time_chime_start').value;
+            const end = document.getElementById('time_chime_end').value;
+            if (hhmm !== start && hhmm !== end) return;
+
+            const key = `${now.toDateString()} ${hhmm}`;
+            if (key === lastChimeKey) return;
+            lastChimeKey = key;
+            addLog(`自動チャイム: ${hhmm}`, 'info');
+            playSoundEffect(AUTO_CHIME_SOUND);
+        }
+
+        function setAutoChime(enabled) {
+            if (autoChimeTimer) {
+                clearInterval(autoChimeTimer);
+                autoChimeTimer = null;
+            }
+            if (enabled) {
+                // 設定した時刻ちょうどにONにした場合は鳴らさない
+                const now = new Date();
+                lastChimeKey = `${now.toDateString()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                autoChimeTimer = setInterval(checkAutoChime, 1000);
+            }
+        }
+
+        function saveAutoChimeSettings() {
+            try {
+                localStorage.setItem(AUTO_CHIME_STORAGE_KEY, JSON.stringify({
+                    start: document.getElementById('time_chime_start').value,
+                    end: document.getElementById('time_chime_end').value
+                }));
+            } catch (error) {
+                addLog(`自動チャイム設定の保存エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function initializeAutoChime() {
+            const checkbox = document.getElementById('checkbox_auto_chime');
+            const startInput = document.getElementById('time_chime_start');
+            const endInput = document.getElementById('time_chime_end');
+            try {
+                const saved = JSON.parse(localStorage.getItem(AUTO_CHIME_STORAGE_KEY));
+                if (saved) {
+                    if (saved.start) startInput.value = saved.start;
+                    if (saved.end) endInput.value = saved.end;
+                }
+            } catch (error) {
+                // 保存された設定が壊れている場合は既定値を使う
+            }
+            startInput.addEventListener('change', saveAutoChimeSettings);
+            endInput.addEventListener('change', saveAutoChimeSettings);
+            checkbox.addEventListener('change', function () {
+                setAutoChime(this.checked);
+                addLog(`自動チャイム: ${this.checked ? `ON（${startInput.value} / ${endInput.value}）` : 'OFF'}`, 'info');
+            });
+        }
+
+        // 音量を保存
+        function saveSoundVolume(volume) {
+            try {
+                localStorage.setItem('soundEffectVolume', volume.toString());
+            } catch (error) {
+                addLog(`音量保存エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 音量を読み込み
+        function loadSoundVolume() {
+            try {
+                const saved = localStorage.getItem('soundEffectVolume');
+                return saved !== null ? parseFloat(saved) : 0.5;
+            } catch (error) {
+                addLog(`音量読み込みエラー: ${error.message}`, 'error');
+                return 0.5;
+            }
+        }
+
+        // トリガー文字列を保存
+        function saveSoundTriggers() {
+            try {
+                localStorage.setItem('soundTriggers', JSON.stringify(soundTriggers));
+            } catch (error) {
+                addLog(`トリガー保存エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // トリガー文字列を読み込み
+        function loadSoundTriggers() {
+            try {
+                const saved = localStorage.getItem('soundTriggers');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (error) {
+                addLog(`トリガー読み込みエラー: ${error.message}`, 'error');
+            }
+
+            // デフォルトトリガー
+            return {
+                'クイズ.mp3': ['クイズ', '問題'],
+                'チャイム.mp3': ['チャイム', '始まり', '終わり'],
+                'ドラ.mp3': ['ドラ', 'どん'],
+                'ドラムロール.mp3': ['ドラムロール', '緊張'],
+                'ピンポン.mp3': ['正解', 'ピンポン', '正しい'],
+                '太鼓.mp3': ['太鼓', 'ドン'],
+                '拍手.mp3': ['拍手', 'すごい', 'おめでとう']
+            };
+        }
+
+        // トリガー文字列を編集
+        function editSoundTrigger(filename) {
+            try {
+                const currentTriggers = soundTriggers[filename] || [];
+                const currentText = currentTriggers.join(', ');
+
+                const result = prompt(`「${filename}」のトリガー文字列を入力してください（カンマ区切り）:`, currentText);
+
+                if (result !== null) {
+                    // カンマ区切りで分割し、空白をトリム
+                    const newTriggers = result.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    soundTriggers[filename] = newTriggers;
+                    saveSoundTriggers();
+                    addLog(`トリガー更新: ${filename} = [${newTriggers.join(', ')}]`, 'info');
+                }
+            } catch (error) {
+                addLog(`トリガー編集エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // トリガー文字列をチェックして効果音を再生
+        function checkSoundTriggers(text) {
+            try {
+                if (!text || !isSoundTriggerEnabled) return;
+
+                // 各効果音のトリガーをチェック
+                for (const [filename, triggers] of Object.entries(soundTriggers)) {
+                    if (triggers && Array.isArray(triggers)) {
+                        for (const trigger of triggers) {
+                            if (text.includes(trigger)) {
+                                playSoundEffect(filename);
+                                return; // 最初にマッチした効果音のみ再生
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                addLog(`トリガーチェックエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 次の自動投稿をスケジュール
+        function scheduleNextAutoPosting() {
+            if (!isAutoPosting) {
+                return;
+            }
+
+            // ランダムな間隔を計算（分単位をミリ秒に変換）
+            const minMs = postingIntervalMin * 60 * 1000;
+            const maxMs = postingIntervalMax * 60 * 1000;
+            const randomInterval = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+
+            const nextPostTime = new Date(Date.now() + randomInterval);
+            addLog(`次の自動投稿予定: ${nextPostTime.toLocaleTimeString()} (${Math.floor(randomInterval / 60000)}分後)`, 'info');
+
+            autoPostingTimer = setTimeout(executeAutoPosting, randomInterval);
+        }
+
+        // 自動投稿を開始
+        function startAutoPosting() {
+            if (!isConnected) {
+                addLog('サーバに接続してから自動投稿を開始してください', 'error');
+                checkboxAutoPosting.checked = false;
+                return;
+            }
+
+            isAutoPosting = true;
+            addLog('自動投稿を開始しました', 'info');
+            scheduleNextAutoPosting();
+        }
+
+        // 自動投稿を停止
+        function stopAutoPosting() {
+            isAutoPosting = false;
+            if (autoPostingTimer) {
+                clearTimeout(autoPostingTimer);
+                autoPostingTimer = null;
+            }
+            addLog('自動投稿を停止しました', 'info');
+        }
+
+        // テスト投稿
+        async function testAutoPosting() {
+            if (!isConnected) {
+                alert('サーバに接続してからテストしてください');
+                return;
+            }
+
+            try {
+                addLog('テスト投稿を実行中...', 'info');
+
+                if (postingStyle === 'reaction') {
+                    // リアクションモードの場合は絵文字/サウンドリアクションを送信
+                    sendRandomReaction();
+                } else {
+                    // その他のモードの場合はテキストコメントを生成
+                    const prompt = generateAutoPostPrompt(postingStyle);
+                    const aiResponse = await sendToLMStudio(prompt);
+
+                    setTimeout(() => {
+                        sendComment(aiResponse, 'auto'); // 自動投稿（テスト）
+                        addLog(`テスト投稿完了: ${aiResponse}`, 'info');
+                    }, 500);
+                }
+
+            } catch (error) {
+                addLog(`テスト投稿エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // マイクデバイス一覧を取得
+        // マイク一覧を取得する
+        // ページを開いただけでマイクを開くと、既定のマイク（iPhone の連係マイクなど）が毎回接続されてしまうので、
+        // 起動時は一覧の取得だけにし、名前を表示するための許可要求は「更新」ボタンを押したときだけ行う
+        async function refreshMicrophones({ requestPermission = false } = {}) {
+            // 音声認識がサポートされていない場合はスキップ
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                return;
+            }
+
+            try {
+                // デバイス一覧を取得（許可前は名前が空になる）
+                let devices = await navigator.mediaDevices.enumerateDevices();
+                const hasLabels = devices.some(device => device.kind === 'audioinput' && device.label);
+
+                if (!hasLabels && requestPermission) {
+                    // マイクへのアクセス許可を要求して、名前付きの一覧を取り直す
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop()); // ストリームを停止
+                    devices = await navigator.mediaDevices.enumerateDevices();
+                }
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+                // セレクトボックスをクリア
+                selectMicrophone.innerHTML = '<option value="">デフォルトマイク</option>';
+
+                // 許可前は名前もIDも取れないので「デフォルトマイク」だけにしておく
+                if (!audioInputs.some(device => device.label)) {
+                    addLog('マイク名を表示するには、マイク選択の「更新」を押してください', 'info');
+                    return;
+                }
+
+                // マイクデバイスを追加
+                audioInputs.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `マイク ${device.deviceId.substring(0, 8)}`;
+                    selectMicrophone.appendChild(option);
+                });
+
+                addLog(`${audioInputs.length}個のマイクデバイスを検出しました`, 'info');
+
+            } catch (error) {
+                addLog(`マイクアクセスエラー: ${error.message}`, 'error');
+                if (requestPermission) {
+                    alert('マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。');
+                }
+            }
+        }
+
+        // Web Speech APIの初期化
+        function initializeSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                // ブラウザの判定
+                const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+                if (isFirefox) {
+                    addLog('Firefoxで音声認識を有効にするには: about:config で「media.webspeech.recognition.enable」を true に設定してください。', 'error');
+
+                    // 情報メッセージも更新
+                    const infoMessage = document.getElementById('speech_info_message');
+                    if (infoMessage) {
+                        infoMessage.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i> ' +
+                            'Firefoxで音声認識を使用するには、<code>about:config</code>を開き、<code>media.webspeech.recognition.enable</code>を<strong>true</strong>に設定してください。' +
+                            '<br><small class="text-muted">設定後、ページを再読み込みしてください。</small>';
+                    }
+                } else {
+                    addLog('このブラウザは音声認識をサポートしていません。Chrome、Edge、またはSafariをご利用ください。', 'error');
+
+                    // 情報メッセージも更新
+                    const infoMessage = document.getElementById('speech_info_message');
+                    if (infoMessage) {
+                        infoMessage.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i> ' +
+                            '音声認識は現在のブラウザではサポートされていません。Chrome、Edge、またはSafariをご利用ください。';
+                    }
+                }
+
+                buttonStartSpeech.disabled = true;
+                return false;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            speechRecognition = new SpeechRecognition();
+
+            // 基本設定
+            speechRecognition.continuous = false; // 初期は単発モード
+            speechRecognition.interimResults = true; // 途中結果も表示
+            speechRecognition.maxAlternatives = 1;
+            speechRecognition.lang = recognitionLanguage;
+
+            // イベントリスナー設定
+            speechRecognition.onstart = function () {
+                isRecognizing = true;
+                buttonStartSpeech.disabled = true;
+                buttonStopSpeech.disabled = false;
+                addLog('音声認識を開始しました', 'info');
+            };
+
+            speechRecognition.onresult = function (event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // 暫定結果をinput要素に表示
+                if (interimTranscript) {
+                    inputSpeechInterim.value = interimTranscript;
+                } else {
+                    inputSpeechInterim.value = '';
+                }
+
+                // 確定結果をテキストエリアに追加
+                if (finalTranscript) {
+                    // 効果音トリガーをチェック（テキストエリア追加前）
+                    checkSoundTriggers(finalTranscript);
+
+                    // 暫定結果をクリア
+                    inputSpeechInterim.value = '';
+
+                    const currentText = textareaSpeechResult.value;
+                    const newText = currentText ? currentText + '\n' + finalTranscript : finalTranscript;
+                    textareaSpeechResult.value = newText;
+                    textareaSpeechResult.scrollTop = textareaSpeechResult.scrollHeight;
+
+                    addLog(`音声認識結果: ${finalTranscript}`, 'info');
+
+                    // 音声認識結果を授業ログに記録（配信者の発言として）
+                    if (socket && isConnected) {
+                        socket.emit('speech transcript', { text: finalTranscript });
+                    } else {
+                        addLog('サーバに接続されていないため、音声認識結果は授業ログに記録されません', 'error');
+                    }
+
+                    // 会話履歴に配信者の発言として追加（ユーザー名なし）
+                    addToConversationHistory('user', finalTranscript, '配信者');
+
+                    // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
+                    if (isAiNameAutoResponse && finalTranscript.includes(aiName)) {
+                        addLog(`音声認識で「${aiName}」を検出しました。AI処理を開始します。`, 'info');
+
+                        setTimeout(async () => {
+                            try {
+                                const aiResponse = await sendToLMStudio(finalTranscript);
+                                setTimeout(() => {
+                                    sendComment(aiResponse, 'speech'); // 音声認識由来であることを明示
+                                    // AIの応答も会話履歴に追加
+                                    addToConversationHistory('assistant', aiResponse);
+                                    addLog(`音声認識からのAI応答: ${aiResponse}`, 'info');
+                                }, 500);
+                            } catch (error) {
+                                addLog(`音声認識からのAI応答エラー: ${error.message}`, 'error');
+                            }
+                        }, 1000);
+                    }
+
+                    // 自動送信機能は削除されました
+                }
+            };
+
+            speechRecognition.onerror = function (event) {
+                // no-speechエラーの場合は特別な処理
+                if (event.error === 'no-speech') {
+                    addLog('無音のため音声認識が終了しました', 'info');
+                    resetSpeechRecognition();
+
+                    // 連続認識モードの場合は自動再開（no-speechは正常な動作として扱う）
+                    if (isContinuous) {
+                        setTimeout(() => {
+                            if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                                addLog('音声入力を再開しています...', 'info');
+                                startSpeechRecognition();
+                            }
+                        }, 1000); // 1秒待ってから再開
+                    }
+                    return;
+                }
+
+                addLog(`音声認識エラー: ${event.error}`, 'error');
+
+                // 回復可能なエラーかどうかを判定
+                const recoverableErrors = ['network', 'audio-capture', 'service-not-allowed'];
+                const isRecoverable = recoverableErrors.includes(event.error);
+
+                resetSpeechRecognition();
+
+                // 連続認識モードで回復可能なエラーの場合は自動再開
+                if (isContinuous && isRecoverable) {
+                    addLog('ネットワークエラーまたは音声取得エラーのため、3秒後に音声認識を再開します...', 'info');
+                    setTimeout(() => {
+                        if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                            addLog('音声認識を自動再開しています...', 'info');
+                            startSpeechRecognition();
+                        }
+                    }, 3000); // 3秒待ってから再開
+                } else if (isContinuous && !isRecoverable) {
+                    // 回復不可能なエラーでも連続モードは維持し、5秒後に再試行
+                    addLog(`回復不可能なエラー: ${event.error}。連続認識モードを維持し、5秒後に再試行します。`, 'error');
+                    setTimeout(() => {
+                        if (isContinuous) {
+                            addLog('音声認識を再試行しています...', 'info');
+                            startSpeechRecognition();
+                        }
+                    }, 5000); // 5秒待ってから再開
+                }
+            };
+
+            speechRecognition.onend = function () {
+                // 連続モードかどうかを先に確認（resetSpeechRecognition前に）
+                const shouldContinue = isContinuous;
+
+                resetSpeechRecognition();
+
+                // 連続モードの場合は自動的に再開
+                if (shouldContinue) {
+                    setTimeout(() => {
+                        if (isContinuous) { // 再度確認（ユーザーが停止していない場合のみ）
+                            addLog('音声認識を継続しています...', 'info');
+                            startSpeechRecognition();
+                        }
+                    }, 500);
+                }
+            };
+
+            return true;
+        }
+
+        // 音声認識のリセット
+        function resetSpeechRecognition() {
+            isRecognizing = false;
+            buttonStartSpeech.disabled = false;
+            buttonStopSpeech.disabled = true;
+            inputSpeechInterim.value = '';
+        }
+
+        // ========================================
+        // 効果音パネル初期化
+        // ========================================
+        function initializeSoundPanel() {
+            try {
+                // Audio要素取得
+                soundPlayer = document.getElementById('sound_player');
+                if (!soundPlayer) {
+                    addLog('効果音プレイヤー要素が見つかりません', 'error');
+                    return;
+                }
+
+                // 音量を読み込み
+                soundVolume = loadSoundVolume();
+                const rangeVolume = document.getElementById('range_sound_volume');
+                const labelVolume = document.getElementById('sound_volume_label');
+                if (rangeVolume && labelVolume) {
+                    rangeVolume.value = Math.round(soundVolume * 100);
+                    labelVolume.textContent = Math.round(soundVolume * 100);
+                }
+
+                // トリガー文字列を読み込み
+                soundTriggers = loadSoundTriggers();
+                addLog('効果音パネル初期化完了', 'info');
+
+                // 音声認識連動トグルのイベントリスナー
+                const checkboxSoundTrigger = document.getElementById('checkbox_sound_trigger');
+                if (checkboxSoundTrigger) {
+                    checkboxSoundTrigger.addEventListener('change', function () {
+                        isSoundTriggerEnabled = this.checked;
+                        addLog(`音声認識連動: ${isSoundTriggerEnabled ? 'ON' : 'OFF'}`, 'info');
+                    });
+                }
+
+                // 音量スライダーのイベントリスナー
+                if (rangeVolume) {
+                    rangeVolume.addEventListener('input', function () {
+                        const value = parseInt(this.value);
+                        soundVolume = value / 100.0;
+                        if (labelVolume) {
+                            labelVolume.textContent = value;
+                        }
+                        saveSoundVolume(soundVolume);
+                    });
+                }
+
+                // 効果音ボタンのイベントリスナー
+                document.querySelectorAll('.sound-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const filename = this.getAttribute('data-sound');
+                        if (filename) {
+                            playSoundEffect(filename);
+                        }
+                    });
+                });
+
+                // トリガー編集ボタンのイベントリスナー
+                document.querySelectorAll('.edit-trigger-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const filename = this.getAttribute('data-sound');
+                        if (filename) {
+                            editSoundTrigger(filename);
+                        }
+                    });
+                });
+            } catch (error) {
+                addLog(`効果音パネル初期化エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 音声認識開始
+        function startSpeechRecognition() {
+            // 既に認識中の場合は何もしない
+            if (isRecognizing) {
+                addLog('音声認識は既に開始されています', 'info');
+                return;
+            }
+
+            if (!speechRecognition) {
+                if (!initializeSpeechRecognition()) {
+                    return;
+                }
+            }
+
+            // 設定を更新
+            speechRecognition.lang = recognitionLanguage;
+            speechRecognition.continuous = isContinuous;
+            speechRecognition.interimResults = true; // 途中結果の表示を確実に有効化
+            speechRecognition.maxAlternatives = 1;
+
+            try {
+                speechRecognition.start();
+            } catch (error) {
+                addLog(`音声認識開始エラー: ${error.message}`, 'error');
+                resetSpeechRecognition();
+            }
+        }
+
+        // 音声認識停止
+        function stopSpeechRecognition() {
+            // 連続認識モードを無効化（自動再開を防ぐ）
+            isContinuous = false;
+            checkboxContinuousSpeech.checked = false;
+
+            if (speechRecognition && isRecognizing) {
+                speechRecognition.stop();
+                addLog('音声認識を停止しました', 'info');
+            }
+            resetSpeechRecognition();
+        }
+
+        // 音声認識結果のダウンロード
+        function downloadSpeechResult() {
+            const speechText = textareaSpeechResult.value.trim();
+
+            if (!speechText) {
+                alert('ダウンロードする音声認識結果がありません');
+                addLog('音声認識結果が空のため、ダウンロードできません', 'info');
+                return;
+            }
+
+            // テキストファイルを生成
+            const blob = new Blob([speechText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // ファイル名: 音声認識結果_YYYY-MM-DD_HHMMSS.txt
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+            const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHMMSS
+            link.download = `音声認識結果_${dateStr}_${timeStr}.txt`;
+
+            link.click();
+            URL.revokeObjectURL(url);
+
+            addLog('音声認識結果をダウンロードしました', 'info');
+        }
+
+        // 音声認識結果クリア
+        function clearSpeechResult() {
+            inputSpeechInterim.value = '';
+            textareaSpeechResult.value = '';
+            addLog('音声認識結果をクリアしました', 'info');
+        }
+
+        // 現在の会話履歴数を更新する関数
+        function updateCurrentHistoryCount() {
+            if (spanCurrentHistoryCount) {
+                spanCurrentHistoryCount.textContent = conversationHistory.length;
+            }
+        }
+
+        // 会話履歴に追加
+        function addToConversationHistory(type, content, speaker = null) {
+            const timestamp = new Date().toISOString();
+            conversationHistory.push({
+                type: type, // 'user' または 'assistant'
+                content: content,
+                timestamp: timestamp,
+                speaker: speaker // '配信者' または '参加者'
+            });
+
+            // 履歴数の上限を超えた場合、古いものから削除
+            if (conversationHistory.length > conversationHistoryLimit) {
+                conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+            }
+
+            // 現在の履歴数を更新
+            updateCurrentHistoryCount();
+
+            const speakerLabel = speaker ? `[${speaker}]` : '';
+            addLog(`会話履歴に追加: ${speakerLabel}[${type}] ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`, 'info');
+        }
+
+        // 会話履歴をクリア
+        function clearConversationHistory() {
+            conversationHistory = [];
+            updateCurrentHistoryCount();
+            addLog('会話履歴をクリアしました', 'info');
+        }
+
+        // プロンプトを構築（system, user, assistantを分離）
+        function buildPrompt() {
+            // システムプロンプト: 事前知識のみ
+            let systemPrompt = textareaSystemPrompt.value.trim();
+            if (systemPrompt) {
+                systemPrompt = systemPrompt.replace(/{AI_NAME}/g, aiName);
+            }
+
+            // アシスタントプロンプト: 過去の会話履歴
+            let assistantPrompt = '';
+
+            // ユーザープロンプト: 指示
+            let userPrompt = '';
+
+            if (conversationHistory.length > 0) {
+                // デバッグ: 会話履歴の内容を確認
+                console.log('=== 会話履歴デバッグ ===');
+                conversationHistory.forEach((entry, index) => {
+                    console.log(`[${index}] type: ${entry.type}, speaker: ${entry.speaker}, content: ${entry.content.substring(0, 50)}`);
+                });
+                console.log('===================');
+
+                const historyText = conversationHistory.map(entry => {
+                    if (entry.type === 'assistant') {
+                        // AIアシスタントの応答
+                        return `アシスタント(${aiName}): ${entry.content}`;
+                    } else {
+                        // ユーザーの発言
+                        if (entry.speaker) {
+                            // speaker フィールドがある場合（配信者 or 参加者）
+                            return `${entry.speaker}: ${entry.content}`;
+                        } else {
+                            // speaker フィールドがない場合（互換性のため）
+                            return `ユーザー: ${entry.content}`;
+                        }
+                    }
+                }).join('\n');
+
+                // 過去ログをアシスタントプロンプトとして設定
+                assistantPrompt = `【過去の会話履歴】\n${historyText}`;
+
+                // 指示をユーザープロンプトとして設定
+                userPrompt = 'これまでの会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。';
+            }
+
+            // デバッグ: 完成したプロンプトを確認
+            console.log('=== システムプロンプト ===');
+            console.log(systemPrompt);
+            console.log('=== アシスタントプロンプト（過去ログ） ===');
+            console.log(assistantPrompt);
+            console.log('=== ユーザープロンプト（指示） ===');
+            console.log(userPrompt);
+            console.log('================================');
+
+            return {
+                system: systemPrompt,
+                assistant: assistantPrompt,
+                user: userPrompt
+            };
+        }
+
+        // LM Studio 接続テスト
+        async function testLMStudioConnection() {
+            const testUrl = textLmStudioUrl.value.trim();
+            addLog(`LM Studio 接続テストを開始: ${testUrl}`, 'info');
+
+            try {
+                const response = await sendToLMStudio('テスト接続です。120文字以内で簡単に挨拶してください。');
+                addLog('LM Studio 接続テスト成功！', 'info');
+                alert('LM Studio への接続に成功しました！');
+            } catch (error) {
+                addLog(`LM Studio 接続テスト失敗: ${error.message}`, 'error');
+                alert(`LM Studio への接続に失敗しました: ${error.message}`);
+            }
+        }
+
+        // LM Studio に API リクエストを送信
+        async function sendToLMStudio(message) {
+            try {
+                addLog(`LM Studio にメッセージ送信: ${message}`, 'info');
+                updateStatus('processing', 'AI処理中...');
+
+                // LM Studio の接続テスト
+                addLog(`接続先: ${lmStudioUrl}`, 'info');
+
+                // プロンプトを構築（system, assistant, userを分離）
+                const prompts = buildPrompt();
+
+                // メッセージ配列を構築
+                const messages = [];
+
+                // システムプロンプト（事前知識）を追加
+                if (prompts.system) {
+                    messages.push({
+                        role: 'system',
+                        content: prompts.system
+                    });
+                }
+
+                // アシスタントプロンプト（過去ログ）を追加
+                if (prompts.assistant) {
+                    messages.push({
+                        role: 'assistant',
+                        content: prompts.assistant
+                    });
+                }
+
+                // ユーザープロンプト（指示 + 今回のメッセージ）を追加
+                let userContent = '';
+                if (prompts.user) {
+                    // 会話履歴がある場合は指示を含める
+                    userContent = prompts.user + '\n\n' + message;
+                } else {
+                    // 会話履歴がない場合は今回のメッセージのみ
+                    userContent = message;
+                }
+
+                messages.push({
+                    role: 'user',
+                    content: userContent
+                });
+
+                // トークン数を計算して記録（文字数 ÷ 0.75 で推定）
+                const totalCharLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+                const estimatedTokens = Math.round(totalCharLength / 0.75);
+                updateContextStats(estimatedTokens);
+                addLog(`推定トークン数: ${estimatedTokens} (文字数: ${totalCharLength})`, 'info');
+
+                addLog(`送信メッセージ数: ${messages.length}`, 'info');
+                console.log('=== LM Studioに送信するメッセージ ===');
+                console.log(JSON.stringify(messages, null, 2));
+                console.log('====================================');
+
+                const response = await fetch(`${textLmStudioUrl.value.trim()}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer lm-studio'
+                    },
+                    body: JSON.stringify({
+                        model: 'local-model',
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 4096
+                    })
+                });
+
+                addLog(`HTTP レスポンス状態: ${response.status}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addLog(`HTTP エラー詳細: ${errorText}`, 'error');
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const data = await response.json();
+                addLog(`レスポンスデータ: ${JSON.stringify(data)}`, 'info');
+
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    throw new Error('Invalid response format from LM Studio');
+                }
+
+                const aiResponse = data.choices[0].message.content;
+
+                addLog(`LM Studio からの応答: ${aiResponse}`, 'info');
+
+                // 文字数制限を適用（120文字以内に切り詰め）
+                let finalResponse = aiResponse.trim();
+                if (finalResponse.length > 120) {
+                    // 120文字で切り詰めて、句読点で自然に切れる位置を探す
+                    let truncated = finalResponse.substring(0, 120);
+                    const lastPunctuation = Math.max(
+                        truncated.lastIndexOf('。'),
+                        truncated.lastIndexOf('！'),
+                        truncated.lastIndexOf('？'),
+                        truncated.lastIndexOf('♪'),
+                        truncated.lastIndexOf('✨')
+                    );
+
+                    if (lastPunctuation > 60) { // 60文字以上の位置に句読点があれば、そこで切る
+                        finalResponse = truncated.substring(0, lastPunctuation + 1);
+                    } else {
+                        // 句読点がない場合は117文字で切って「...」を追加
+                        finalResponse = truncated.substring(0, 117) + '...';
+                    }
+
+                    addLog(`文字数制限により応答を短縮: ${finalResponse.length}文字`, 'info');
+                }
+
+                updateStatus('connected', '接続中');
+
+                return finalResponse;
+            } catch (error) {
+                addLog(`LM Studio エラー: ${error.message}`, 'error');
+
+                // CORS エラーの場合の特別なメッセージ
+                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+                    addLog('CORS エラーの可能性があります。LM Studio の設定を確認してください。', 'error');
+                    addLog('LM Studio で CORS を有効にするか、プロキシサーバを使用してください。', 'info');
+                }
+
+                updateStatus('connected', '接続中 (AI エラー)');
+
+                // 重要: 呼び出し元が接続失敗を検知できるよう例外を再スローする
+                throw error;
+            }
+        }
+
+        // コメントをサーバに送信
+        function sendComment(comment, source = 'comment') {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていません', 'error');
+                return;
+            }
+
+            const data = {
+                my_name: aiName,
+                comment: comment,
+                flg_speech: false,
+                color_text: aiTextColor,
+                color_text_stroke: '#111111',
+                text_direction: aiTextDirection,
+                flg_emoji: false,
+                flg_sound: false,
+                id_sound: 0,
+                hidden: -1,
+                origin: 'ai',
+                trigger: source // AIを呼び出したきっかけ（'speech' or 'comment'）
+            };
+
+            socket.emit('comment', data);
+            addLog(`コメント送信: ${comment}`, 'sent');
+        }
+
+        // 新しいコメントを受信したときの処理
+        async function onNewComment(data) {
+            addLog(`受信: [${data.my_name}] ${data.comment}`, 'received');
+
+            // すべてのコメントを会話履歴に追加（自分のコメント以外、絵文字のみは除外）
+            if (data.my_name !== aiName && !data.flg_emoji) {
+                const speaker = data.origin === 'host' ? '配信者' : '参加者';
+                addToConversationHistory('user', `${data.my_name}: ${data.comment}`, speaker);
+            }
+
+            // AI名前が含まれているかチェック
+            if (isAutoResponse && data.comment.includes(aiName)) {
+                addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
+
+                try {
+                    const aiResponse = await sendToLMStudio(data.comment);
+
+                    // AI の応答をサーバに送信
+                    setTimeout(() => {
+                        sendComment(aiResponse);
+                        // AIの応答も会話履歴に追加
+                        addToConversationHistory('assistant', aiResponse);
+                    }, 1000); // 1秒遅延
+
+                } catch (error) {
+                    addLog(`処理エラー: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Socket.IO 接続
+        function connectToServer() {
+            roomName = textRoomName.value.trim();
+            lmStudioUrl = textLmStudioUrl.value.trim();
+            aiName = textAiName.value.trim();
+            aiTextDirection = selectTextDirection.value;
+            aiTextColor = inputTextColor.value;
+            isAutoResponse = checkboxAutoResponse.checked;
+
+            if (!roomName) {
+                alert('部屋名を入力してください');
+                return;
+            }
+
+            addLog('サーバに接続しています...', 'info');
+            updateStatus('processing', '接続中...');
+
+            // Socket.IO 接続
+            socket = io.connect(window.location.origin);
+
+            // イベントリスナー設定
+            socket.on('connect', () => {
+                addLog('サーバに接続しました', 'info');
+                socket.emit('watcher', socket.id);
+            });
+
+            socket.on('you_are_connected', () => {
+                addLog(`部屋 "${roomName}" に参加しています...`, 'info');
+                socket.emit('join', roomName, { role: 'dashboard' });
+            });
+
+            socket.on('login', (data) => {
+                isConnected = true;
+                updateStatus('connected', '接続中');
+                addLog(`部屋 "${roomName}" に参加しました (参加者数: ${data.numUsers})`, 'info');
+                buttonConnect.textContent = '切断';
+                updateUserStats(data.numUsers);
+
+                // 授業ログを購読（現在の授業回のログが届き、以降はリアルタイムで追加される）
+                socket.emit('log watch');
+                loadLogSessions();
+
+                // アンケート結果の購読（保存済みの結果を受け取り、以降はリアルタイムで更新）
+                socket.emit('survey watch');
+            });
+
+            socket.on('log snapshot', onLogSnapshot);
+            socket.on('log event', onLogEvent);
+            socket.on('survey log', setSurveyLog);
+            socket.on('admin message', setAdminMessageStatus);
+            socket.on('survey update', upsertSurveyRecord);
+
+            socket.on('comment', onNewComment);
+
+            socket.on('user joined', (data) => {
+                addLog(`${data.username} が参加しました (参加者数: ${data.numUsers})`, 'info');
+                updateUserStats(data.numUsers);
+            });
+
+            socket.on('user left', (data) => {
+                addLog(`${data.username} が退出しました (参加者数: ${data.numUsers})`, 'info');
+                updateUserStats(data.numUsers);
+            });
+
+            socket.on('disconnect', () => {
+                isConnected = false;
+                stopAutoPosting(); // 自動投稿を停止
+                updateStatus('disconnected', '切断されました');
+                addLog('サーバから切断されました', 'error');
+                buttonConnect.textContent = '接続';
+            });
+
+            socket.on('reconnect', () => {
+                addLog('サーバに再接続しました', 'info');
+                socket.emit('join', roomName, { role: 'dashboard' });
+            });
+        }
+
+        // サーバから切断
+        function disconnectFromServer() {
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+            isConnected = false;
+            stopAutoPosting(); // 自動投稿を停止
+            updateStatus('disconnected', '切断されました');
+            addLog('サーバから切断しました', 'info');
+            buttonConnect.textContent = '接続';
+        }
+
+        // イベントリスナー設定
+        buttonConnect.addEventListener('click', () => {
+            if (isConnected) {
+                disconnectFromServer();
+            } else {
+                connectToServer();
             }
         });
 
-        // ログの削除
-        document.getElementById('deleteLogBtn').addEventListener('click', async () => {
-            if (!currentLogFile) return;
+        buttonClearLog.addEventListener('click', () => {
+            logContainer.innerHTML = '';
+        });
 
-            if (confirm(`本当に "${currentLogFile}" を削除しますか？\nこの操作は取り消せません。`)) {
-                try {
-                    const response = await apiRequest(`/api/dashboard/logs/${currentLogFile}`, {
-                        method: 'DELETE'
+        buttonDownloadComments.addEventListener('click', () => {
+            downloadCommentLog();
+        });
+
+        buttonDownloadCsv.addEventListener('click', () => {
+            downloadCommentCsv();
+        });
+
+        buttonClearComments.addEventListener('click', () => {
+            clearCommentLog();
+        });
+
+        document.getElementById('button_sync_surveys').addEventListener('click', () => {
+            syncSurveysFromServer(true);
+        });
+
+        document.getElementById('button_download_surveys_csv').addEventListener('click', () => {
+            downloadSurveyCsv();
+        });
+
+        // 同期ボタンのイベントリスナー
+        document.getElementById('button_sync_comments').addEventListener('click', async () => {
+            await loadLogSessions();
+            await loadSelectedSession();
+        });
+
+        document.getElementById('select_log_session').addEventListener('change', loadSelectedSession);
+
+        // 参加者数統計のダウンロード
+        document.getElementById('button_download_user_stats').addEventListener('click', () => {
+            downloadUserStatsCSV();
+        });
+
+        // コンテキスト長統計のダウンロード
+        document.getElementById('button_download_context_stats').addEventListener('click', () => {
+            downloadContextStatsCSV();
+        });
+
+        buttonTestLMStudio.addEventListener('click', () => {
+            testLMStudioConnection();
+        });
+
+        // AI名前の変更監視
+        textAiName.addEventListener('input', () => {
+            aiName = textAiName.value.trim() || '米太郎';
+            updateAutoResponseLabel();
+            updateAiNameAutoResponseLabel();
+            // localStorageに保存
+            saveAiName(aiName);
+            addLog(`AI名前を「${aiName}」に変更しました`, 'info');
+        });
+
+        // 文字の流れる方向の変更監視
+        selectTextDirection.addEventListener('change', () => {
+            aiTextDirection = selectTextDirection.value;
+            const directionText = selectTextDirection.options[selectTextDirection.selectedIndex].text;
+            addLog(`文字の流れる方向を「${directionText}」に変更しました`, 'info');
+        });
+
+        // 文字色の変更監視
+        inputTextColor.addEventListener('change', () => {
+            aiTextColor = inputTextColor.value;
+            addLog(`文字色を「${aiTextColor}」に変更しました`, 'info');
+        });
+
+        // システムプロンプトの変更監視
+        textareaSystemPrompt.addEventListener('input', () => {
+            const prompt = textareaSystemPrompt.value;
+            saveSystemPrompt(prompt);
+        });
+
+        // システムプロンプトリセットボタンのイベントリスナー
+        buttonResetSystemPrompt.addEventListener('click', () => {
+            resetSystemPrompt();
+        });
+
+        // 自動応答ラベルを更新する関数
+        function updateAutoResponseLabel() {
+            const labelAutoResponse = document.getElementById('label_auto_response');
+            labelAutoResponse.textContent = `「${aiName}」を含むコメントに自動応答`;
+        }
+
+        // 音声認識のAI名前自動応答ラベルを更新する関数
+        function updateAiNameAutoResponseLabel() {
+            if (labelAiNameAutoResponse) {
+                labelAiNameAutoResponse.textContent = `「${aiName}」を含む音声認識を自動でAIに送信`;
+            }
+        }
+
+        // 自動投稿関連のイベントリスナー
+        checkboxAutoPosting.addEventListener('change', () => {
+            if (checkboxAutoPosting.checked) {
+                startAutoPosting();
+            } else {
+                stopAutoPosting();
+            }
+        });
+
+        rangePostingIntervalMin.addEventListener('input', () => {
+            postingIntervalMin = parseInt(rangePostingIntervalMin.value);
+            spanIntervalMin.textContent = postingIntervalMin;
+
+            // 最小値が最大値を超えないようにする
+            if (postingIntervalMin >= postingIntervalMax) {
+                postingIntervalMax = postingIntervalMin + 1;
+                rangePostingIntervalMax.value = postingIntervalMax;
+                spanIntervalMax.textContent = postingIntervalMax;
+            }
+        });
+
+        rangePostingIntervalMax.addEventListener('input', () => {
+            postingIntervalMax = parseInt(rangePostingIntervalMax.value);
+            spanIntervalMax.textContent = postingIntervalMax;
+
+            // 最大値が最小値を下回らないようにする
+            if (postingIntervalMax <= postingIntervalMin) {
+                postingIntervalMin = postingIntervalMax - 1;
+                rangePostingIntervalMin.value = postingIntervalMin;
+                spanIntervalMin.textContent = postingIntervalMin;
+            }
+        });
+
+        selectPostingStyle.addEventListener('change', () => {
+            postingStyle = selectPostingStyle.value;
+            addLog(`投稿スタイルを「${selectPostingStyle.options[selectPostingStyle.selectedIndex].text}」に変更`, 'info');
+        });
+
+        buttonTestAutoPosting.addEventListener('click', () => {
+            testAutoPosting();
+        });
+
+        // 音声認識関連のイベントリスナー
+        buttonRefreshMics.addEventListener('click', () => {
+            refreshMicrophones({ requestPermission: true });
+        });
+
+        selectMicrophone.addEventListener('change', () => {
+            selectedMicrophoneId = selectMicrophone.value;
+            addLog(`マイクを変更しました: ${selectMicrophone.options[selectMicrophone.selectedIndex].text}`, 'info');
+        });
+
+        selectSpeechLanguage.addEventListener('change', () => {
+            recognitionLanguage = selectSpeechLanguage.value;
+            addLog(`音声認識言語を変更しました: ${selectSpeechLanguage.options[selectSpeechLanguage.selectedIndex].text}`, 'info');
+        });
+
+        buttonStartSpeech.addEventListener('click', () => {
+            startSpeechRecognition();
+        });
+
+        buttonStopSpeech.addEventListener('click', () => {
+            stopSpeechRecognition();
+        });
+
+        // 音声認識結果のダウンロード
+        buttonDownloadSpeech.addEventListener('click', () => {
+            downloadSpeechResult();
+        });
+
+        buttonClearSpeech.addEventListener('click', () => {
+            clearSpeechResult();
+        });
+
+        checkboxContinuousSpeech.addEventListener('change', () => {
+            isContinuous = checkboxContinuousSpeech.checked;
+            addLog(`連続認識モード: ${isContinuous ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        // checkboxAutoSendSpeech listener removed (auto-send feature deleted)
+
+        checkboxAiNameAutoResponse.addEventListener('change', () => {
+            isAiNameAutoResponse = checkboxAiNameAutoResponse.checked;
+            addLog(`AIアシスタント名音声認識自動応答: ${isAiNameAutoResponse ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        inputConversationHistoryLimit.addEventListener('change', () => {
+            conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
+            addLog(`会話履歴保存数を${conversationHistoryLimit}件に変更しました`, 'info');
+
+            // 現在の履歴数が上限を超えている場合は削除
+            if (conversationHistory.length > conversationHistoryLimit) {
+                conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
+                addLog(`履歴を${conversationHistoryLimit}件に調整しました`, 'info');
+            }
+            // 現在の履歴数を更新
+            updateCurrentHistoryCount();
+        });
+
+        buttonClearHistory.addEventListener('click', () => {
+            clearConversationHistory();
+        });
+
+        // 設定の変更を監視
+        checkboxAutoResponse.addEventListener('change', () => {
+            isAutoResponse = checkboxAutoResponse.checked;
+            addLog(`自動応答: ${isAutoResponse ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        // 初期化処理
+        document.addEventListener('DOMContentLoaded', () => {
+            // ブラウザチェック
+            checkBrowser();
+
+            // アコーディオン機能を最初に初期化
+            initAccordionButtons();
+
+            // 保存された設定を復元（部屋名は URL の指定を優先するので、この後で上書きされる）
+            restoreDashboardSettings();
+            document.getElementById('button_reset_settings').addEventListener('click', resetDashboardSettings);
+
+            // URL パラメータからルーム名を取得
+            const params = getURLParams();
+            if (params.room) {
+                const roomFromUrl = decodeURIComponent(params.room);
+                textRoomName.value = roomFromUrl;
+                addLog(`部屋名「${roomFromUrl}」が自動設定されました`, 'info');
+
+                // 自動で接続を開始
+                setTimeout(() => {
+                    if (!isConnected) {
+                        addLog('自動接続を開始します...', 'info');
+                        connectToServer();
+                    }
+                }, 1000); // 1秒待ってから自動接続
+            }
+
+            // 初期値の設定
+            spanIntervalMin.textContent = postingIntervalMin;
+            spanIntervalMax.textContent = postingIntervalMax;
+
+            // AIアシスタント名の初期化（localStorageから読み込み）
+            textAiName.value = aiName;
+
+            // 表示設定の初期値を設定
+            selectTextDirection.value = aiTextDirection;
+            inputTextColor.value = aiTextColor;
+
+            // 自動応答ラベルを初期設定
+            updateAutoResponseLabel();
+            updateAiNameAutoResponseLabel();
+
+            // 音声認識の初期化
+            initializeSpeechRecognition();
+            refreshMicrophones();
+
+            // 効果音パネルの初期化
+            initializeSoundPanel();
+            initializeAutoChime();
+            initializePostCard();
+            initializeAdminMessageCard();
+
+            // 会話履歴設定の初期化
+            conversationHistoryLimit = parseInt(inputConversationHistoryLimit.value);
+            updateCurrentHistoryCount();
+
+            // 参加者数グラフの初期化
+            initUserStatsChart();
+
+            // コンテキスト長グラフの初期化
+            initContextStatsChart();
+
+            addLog(`${aiName} AI アシスタントが起動しました`, 'info');
+            addLog(`「${aiName}」を含むメッセージに自動で AI が応答します`, 'info');
+            addLog(`表示設定: ${selectTextDirection.options[selectTextDirection.selectedIndex].text}、色: ${aiTextColor}`, 'info');
+            addLog('自動投稿機能で授業を盛り上げることができます', 'info');
+            addLog('音声認識機能が利用可能です', 'info');
+            addLog(`会話履歴機能が有効です（保存数: ${conversationHistoryLimit}件）`, 'info');
+            // Packery の初期化とドラッグ可能な配置
+            (function initPackery() {
+                const grid = document.querySelector('#dashboard-grid');
+                if (!grid) return;
+
+                const STORAGE_KEY = 'dashboard_card_order';
+
+                // 各カードにユニークなIDを付与
+                function assignCardIds() {
+                    const itemElems = Array.from(grid.children);
+                    itemElems.forEach((elem, index) => {
+                        if (!elem.dataset.cardId) {
+                            // カード内の最初のh6要素のテキストをIDとして使用
+                            const h6 = elem.querySelector('h6');
+                            if (h6) {
+                                elem.dataset.cardId = h6.textContent.trim();
+                            } else {
+                                elem.dataset.cardId = `card-${index}`;
+                            }
+                        }
+                    });
+                }
+
+                // localStorageからカードの順序を復元
+                function restoreCardOrder() {
+                    try {
+                        const savedOrder = localStorage.getItem(STORAGE_KEY);
+                        if (!savedOrder) return false;
+
+                        const orderArray = JSON.parse(savedOrder);
+                        const itemElems = Array.from(grid.children);
+
+                        // 保存された順序に従ってカードを並べ替え
+                        const sortedElems = [];
+                        orderArray.forEach(cardId => {
+                            const elem = itemElems.find(el => el.dataset.cardId === cardId);
+                            if (elem) {
+                                sortedElems.push(elem);
+                            }
+                        });
+
+                        // 保存されていないカードを最後に追加
+                        itemElems.forEach(elem => {
+                            if (!sortedElems.includes(elem)) {
+                                sortedElems.push(elem);
+                            }
+                        });
+
+                        // DOM順序を更新
+                        sortedElems.forEach(elem => {
+                            grid.appendChild(elem);
+                        });
+
+                        return true;
+                    } catch (e) {
+                        console.error('カードの順序復元に失敗:', e);
+                        return false;
+                    }
+                }
+
+                // カードの順序をlocalStorageに保存
+                function saveCardOrder() {
+                    try {
+                        const itemElems = Array.from(grid.children);
+                        const orderArray = itemElems.map(elem => elem.dataset.cardId);
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(orderArray));
+                        console.log('カード順序を保存:', orderArray);
+                    } catch (e) {
+                        console.error('カードの順序保存に失敗:', e);
+                    }
+                }
+
+                function setup() {
+                    if (typeof Packery === 'undefined' || typeof Draggabilly === 'undefined') {
+                        // Packery または Draggabilly がロードされていなければ遅延リトライ
+                        setTimeout(setup, 150);
+                        return;
+                    }
+
+                    // カードIDを付与
+                    assignCardIds();
+
+                    // 保存された順序を復元（Packery初期化前に実行）
+                    const restored = restoreCardOrder();
+                    if (restored) {
+                        console.log('カード順序を復元しました');
+                    }
+
+                    // Packery でグリッドレイアウト初期化
+                    const pckry = new Packery(grid, {
+                        itemSelector: '.col-md-6, .col-lg-4',
+                        percentPosition: true,
+                        transitionDuration: '0.25s'
                     });
 
-                    const result = await response.json();
+                    // グローバルに保存（アコーディオンからアクセスするため）
+                    window.packeryInstance = pckry;
 
-                    if (result.success) {
-                        alert('ログファイルを削除しました');
-                        bootstrap.Modal.getInstance(document.getElementById('logDetailModal')).hide();
-                        loadDashboard();
+                    // 各カードをドラッグ可能に設定
+                    const itemElems = pckry.getItemElements();
+                    itemElems.forEach(function (itemElem) {
+                        const draggie = new Draggabilly(itemElem, {
+                            handle: '.card-handle'
+                        });
+                        // ドラッグ終了時にレイアウトを更新
+                        pckry.bindDraggabillyEvents(draggie);
+
+                        // ドラッグ終了時にDOM順序を更新して保存
+                        draggie.on('dragEnd', function () {
+                            // Packeryのアイテム順序でDOM順序を更新
+                            const items = pckry.getItemElements();
+                            items.forEach(item => {
+                                grid.appendChild(item);
+                            });
+                            // 順序を保存
+                            saveCardOrder();
+                        });
+                    });
+
+                    // 監視対象の textarea を取得（カード内の textarea 全て）
+                    const textareas = Array.from(grid.querySelectorAll('textarea'));
+                    let layoutTimer = null;
+                    const scheduleLayout = () => {
+                        if (layoutTimer) clearTimeout(layoutTimer);
+                        layoutTimer = setTimeout(() => pckry.layout(), 120);
+                    };
+
+                    if (typeof ResizeObserver !== 'undefined') {
+                        const ro = new ResizeObserver(scheduleLayout);
+                        textareas.forEach(t => ro.observe(t));
                     } else {
-                        alert('削除に失敗しました: ' + result.error);
+                        // ResizeObserver が無い場合は input/resize で代替
+                        textareas.forEach(t => t.addEventListener('input', scheduleLayout));
+                        window.addEventListener('resize', scheduleLayout);
                     }
-                } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('削除中にエラーが発生しました');
+
+                    // 内容変更でも再レイアウト
+                    textareas.forEach(t => t.addEventListener('input', scheduleLayout));
+
+                    // 初回レイアウト
+                    setTimeout(() => pckry.layout(), 300);
                 }
-            }
+
+                setup();
+            })();
         });
 
-        // 全ログダウンロード
-        document.getElementById('downloadAllBtn').addEventListener('click', () => {
-            alert('全ログダウンロード機能は現在開発中です。\n各ログを個別にダウンロードしてください。');
-            // TODO: 複数ファイルをZIPでダウンロードする機能を実装
-        });
+        // ブラウザチェック関数
+        function checkBrowser() {
+            // Chrome/Chromiumベースのブラウザかチェック
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+            const isEdge = /Edg/.test(navigator.userAgent);
+            const isBrave = navigator.brave !== undefined;
 
-        // 古いログ削除実行
-        document.getElementById('cleanupOldLogsBtn').addEventListener('click', async () => {
-            if (!confirm('古いログファイルを削除しますか？\nこの操作は取り消せません。')) {
+            // Chrome、Edge、Braveは許可（すべてChromiumベース）
+            if (isChrome || isEdge || isBrave) {
+                console.log('互換性のあるブラウザです:', navigator.userAgent);
                 return;
             }
 
-            try {
-                const response = await apiRequest('/api/dashboard/cleanup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ retentionDays: 21 })
-                });
+            // Chrome以外の場合、警告モーダルを表示
+            console.warn('Chrome以外のブラウザです:', navigator.userAgent);
+            const browserWarningModal = new bootstrap.Modal(document.getElementById('browserWarningModal'));
+            browserWarningModal.show();
+        }
 
-                const result = await response.json();
+        // アコーディオン機能の初期化（全カード対象）
+        function initAccordionButtons() {
+            const COLLAPSE_STATE_KEY = 'dashboard_card_collapse_state';
 
-                if (result.success) {
-                    alert(`${result.deletedCount}個のログファイルを削除しました`);
-                    loadDashboard();
-                } else {
-                    alert('削除に失敗しました');
+            // 保存された最小化状態を復元
+            function restoreCollapseState() {
+                try {
+                    const savedState = localStorage.getItem(COLLAPSE_STATE_KEY);
+                    if (!savedState) return;
+
+                    const stateObj = JSON.parse(savedState);
+                    Object.keys(stateObj).forEach(cardId => {
+                        const cards = document.querySelectorAll('.card');
+                        cards.forEach(card => {
+                            const header = card.querySelector('.card-header');
+                            const h6 = header?.querySelector('h6');
+                            if (h6 && h6.textContent.trim() === cardId && stateObj[cardId] === true) {
+                                const cardBody = card.querySelector('.card-body');
+                                const toggleBtn = header.querySelector('.accordion-toggle');
+                                if (cardBody && toggleBtn) {
+                                    cardBody.classList.add('collapsed');
+                                    toggleBtn.classList.add('collapsed');
+                                }
+                            }
+                        });
+                    });
+                } catch (e) {
+                    console.error('最小化状態の復元に失敗:', e);
                 }
-            } catch (error) {
-                console.error('Cleanup error:', error);
-                alert('削除中にエラーが発生しました');
+            }
+
+            // 最小化状態を保存
+            function saveCollapseState() {
+                try {
+                    const stateObj = {};
+                    const cards = document.querySelectorAll('.card');
+                    cards.forEach(card => {
+                        const header = card.querySelector('.card-header');
+                        const h6 = header?.querySelector('h6');
+                        const cardBody = card.querySelector('.card-body');
+                        if (h6 && cardBody) {
+                            const cardId = h6.textContent.trim();
+                            stateObj[cardId] = cardBody.classList.contains('collapsed');
+                        }
+                    });
+                    localStorage.setItem(COLLAPSE_STATE_KEY, JSON.stringify(stateObj));
+                } catch (e) {
+                    console.error('最小化状態の保存に失敗:', e);
+                }
+            }
+
+            // すべてのカードヘッダーにアコーディオンボタンを追加（dashboard-grid内のカードのみ）
+            const grid = document.querySelector('#dashboard-grid');
+            if (!grid) {
+                console.warn('dashboard-gridが見つかりません');
+                return;
+            }
+
+            const cardHeaders = grid.querySelectorAll('.card-header');
+            console.log(`アコーディオンボタンを${cardHeaders.length}個のカードに追加します`);
+
+            cardHeaders.forEach(header => {
+                // すでにボタンがある場合はスキップ
+                if (header.querySelector('.accordion-toggle')) {
+                    console.log('既にアコーディオンボタンが存在します');
+                    return;
+                }
+
+                // アコーディオンボタンを作成
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'accordion-toggle';
+                toggleBtn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+                toggleBtn.setAttribute('type', 'button');
+                toggleBtn.setAttribute('aria-label', 'カードを最小化/展開');
+
+                // ヘッダーの最初に挿入（prependを使用）
+                if (header.firstChild) {
+                    header.insertBefore(toggleBtn, header.firstChild);
+                } else {
+                    header.appendChild(toggleBtn);
+                }
+
+                // クリックイベント
+                toggleBtn.addEventListener('click', function (e) {
+                    e.stopPropagation(); // ドラッグイベントと干渉しないように
+                    const card = header.closest('.card');
+                    const cardBody = card.querySelector('.card-body');
+
+                    if (cardBody) {
+                        cardBody.classList.toggle('collapsed');
+                        toggleBtn.classList.toggle('collapsed');
+
+                        // 最小化状態を保存
+                        saveCollapseState();
+
+                        // Packeryレイアウトを更新（存在する場合）
+                        const grid = document.querySelector('#dashboard-grid');
+                        if (grid && window.packeryInstance) {
+                            setTimeout(() => window.packeryInstance.layout(), 100);
+                        }
+                    }
+                });
+            });
+
+            // 保存された最小化状態を復元
+            restoreCollapseState();
+        }
+
+        // ページが閉じられる前にソケットを閉じる
+        window.addEventListener('beforeunload', () => {
+            stopAutoPosting(); // 自動投稿を停止
+            if (socket) {
+                socket.close();
             }
         });
 
-        // 統計CSVエクスポート
-        document.getElementById('exportStatsBtn').addEventListener('click', async () => {
-            try {
-                const response = await apiRequest('/api/dashboard/export/stats');
-                const blob = await response.blob();
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 保存されたシステムプロンプトを読み込み
+            const savedSystemPrompt = loadSystemPrompt();
+            textareaSystemPrompt.value = savedSystemPrompt;
 
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'chatlog_stats.csv';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Export error:', error);
-                alert('エクスポート中にエラーが発生しました');
+            // AI名を読み込み
+            const savedAiName = loadAiName();
+            textAiName.value = savedAiName;
+            aiName = savedAiName;
+
+            // URL パラメータの設定
+            const urlParams = getURLParams();
+            if (urlParams.room) {
+                textRoomName.value = urlParams.room;
             }
+
+            // 初期化完了のログ
+            addLog('設定を初期化しました', 'info');
         });
-
-        // 更新ボタン
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            loadDashboard();
-        });
-
-        // ユーティリティ関数
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-
-            if (seconds < 60) return '今';
-            if (seconds < 3600) return Math.floor(seconds / 60) + '分前';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + '時間前';
-            if (seconds < 2592000) return Math.floor(seconds / 86400) + '日前';
-            if (seconds < 31536000) return Math.floor(seconds / 2592000) + 'ヶ月前';
-            return Math.floor(seconds / 31536000) + '年前';
-        }
-
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
 </body>
 
 </html>

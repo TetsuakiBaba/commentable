@@ -1,4 +1,4 @@
-# ダッシュボード設定ガイド
+# 管理者ダッシュボード設定ガイド
 
 ## ローカル環境でのセットアップ
 
@@ -32,9 +32,9 @@ module.exports = {
 node server.js
 ```
 
-4. ダッシュボードにアクセス:
+4. 管理者ダッシュボードにアクセス:
 ```
-http://localhost:3000/dashboard/
+http://localhost:3000/admin/
 ```
 
 ## Render (本番環境) でのセットアップ

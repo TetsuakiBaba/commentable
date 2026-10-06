@@ -164,12 +164,6 @@
                                         data-i18n="continuous_comment_send_description_2">このように緑色で点灯しているときはコメントの連投が可能です。</span>
                                 </p>
 
-                                <h5 data-i18n="inappropriate_words_filter_title">不適切な表現のフィルター</h5>
-                                <p>
-                                    <span
-                                        data-i18n="inappropriate_words_filter_description">安全で快適な配信環境を保つため、コメントや名前に不適切な表現が含まれている場合、自動的に伏せ字（例：****）に置き換えられます。この処理は送信時に自動で行われ、すべての視聴者に適用されます。</span>
-                                </p>
-
                                 <!-- <h5>はがき送信</h5>
                             <p>
                                 配信者のみにメッセージを送信する場合に利用し、配信者画面には共有表示されません。ラジオ番組におけるはがきを送る、といったイベントに活用できるかベータテスト中の機能です。
@@ -379,10 +373,40 @@
     </div>
 
 
+    <!-- アンケート回答モーダル（配信者がアンケートを開始すると表示） -->
+    <div class="modal fade" id="survey_modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="survey_modal_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="survey_modal_label"><i class="bi bi-bar-chart-fill"></i> <span
+                            data-i18n="survey_title">アンケート</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="survey_form">
+                        <p id="survey_question" class="fs-5 fw-bold" style="white-space: pre-wrap;"></p>
+                        <p id="survey_hint" class="small text-muted"></p>
+                        <div id="survey_choices"></div>
+                    </div>
+                    <div id="survey_thanks" class="text-center fs-5 py-4 d-none">
+                        <i class="bi bi-check-circle-fill text-success"></i> <span
+                            data-i18n="survey_thanks">回答を送信しました</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="survey_submit" disabled
+                        data-i18n="survey_submit">回答を送信</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- p5 依存除去済み -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="utils.js"></script>
     <script src="comment_app.js"></script>
+    <script src="survey.js"></script>
     <script src="sketch.js"></script>
     <script src="clipboard.min.js"></script>
     <!-- 新しい外部 i18n 設定ファイルの読み込み -->

@@ -36,5 +36,10 @@
     "comment_ranking_title": "コメント部門 Top 10",
     "no_data_yet": "まだデータがありません",
     "times_suffix": "回",
-    "total_comments": "総コメント数"
+    "total_comments": "総コメント数",
+    "survey_title": "アンケート",
+    "survey_submit": "回答を送信",
+    "survey_thanks": "回答を送信しました",
+    "survey_single_hint": "1つ選んでください",
+    "survey_multiple_hint": "複数選択できます"
 }

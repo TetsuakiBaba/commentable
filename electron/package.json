@@ -5,9 +5,13 @@
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {
+    "prestart": "node native/person-segmentation/build.js --if-missing",
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build:native": "node native/person-segmentation/build.js",
+    "prepackage": "npm run build:native",
     "package": "electron-forge package",
+    "premake": "npm run build:native",
     "make": "electron-forge make",
     "publish": "electron-forge publish"
   },

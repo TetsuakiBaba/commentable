@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アンケート</title>
+    <link href="bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .result-bar {
+            height: 28px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .result-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: #0d6efd;
+            transition: width 0.4s ease;
+        }
+
+        #resultQuestion {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 作成画面 -->
+        <div id="editView">
+            <h2 class="mb-4">アンケート作成</h2>
+            <div class="card">
+                <div class="card-body">
+                    <label for="question" class="form-label fw-bold">質問</label>
+                    <textarea id="question" class="form-control mb-4" rows="2" maxlength="500"
+                        placeholder="例：今日の授業の理解度は？"></textarea>
+
+                    <label class="form-label fw-bold">選択肢</label>
+                    <div id="choiceList" class="mb-2"></div>
+                    <button id="addChoice" type="button" class="btn btn-outline-secondary btn-sm mb-4">＋ 選択肢を追加</button>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="multiple">
+                        <label class="form-check-label" for="multiple">複数選択を許可する</label>
+                    </div>
+
+                    <div id="editError" class="alert alert-danger py-2 d-none"></div>
+
+                    <div class="d-flex justify-content-between">
+                        <button id="backToResult" type="button" class="btn btn-outline-secondary d-none">前回の結果を見る</button>
+                        <button id="startSurvey" type="button" class="btn btn-primary ms-auto">アンケート開始</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="resultView" class="d-none">
+            <div class="d-flex align-items-center mb-3">
+                <h2 class="mb-0 me-3">アンケート結果</h2>
+                <span id="statusBadge" class="badge"></span>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <p id="resultQuestion" class="fs-5 fw-bold"></p>
+                    <p class="text-muted">回答者数：<span id="respondents" class="fs-5 fw-bold text-dark">0</span> 人</p>
+                    <div id="resultList"></div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button id="newSurvey" type="button" class="btn btn-outline-primary">新しいアンケートを作成</button>
+                        <button id="endSurvey" type="button" class="btn btn-danger">アンケート終了</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MAX_CHOICES = 20;
+        let survey = null; // メインプロセスから受け取った最新の状態
+
+        const $ = (id) => document.getElementById(id);
+
+        function addChoiceInput(value = '') {
+            const list = $('choiceList');
+            if (list.children.length >= MAX_CHOICES) return;
+
+            const row = document.createElement('div');
+            row.className = 'input-group mb-2';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control choice-input';
+            input.maxLength = 200;
+            input.value = value;
+            input.placeholder = `選択肢 ${list.children.length + 1}`;
+            input.addEventListener('keydown', (e) => {
+                // Enter で次の選択肢へ（最後なら追加）
+                if (e.key === 'Enter' && !e.isComposing) {
+                    e.preventDefault();
+                    const next = row.nextElementSibling;
+                    if (next) {
+                        next.querySelector('input').focus();
+                    } else {
+                        addChoiceInput();
+                        $('choiceList').lastElementChild?.querySelector('input').focus();
+                    }
+                }
+            });
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'btn btn-outline-secondary';
+            remove.textContent = '×';
+            remove.title = '削除';
+            remove.addEventListener('click', () => {
+                if ($('choiceList').children.length > 2) {
+                    row.remove();
+                } else {
+                    input.value = '';
+                }
+            });
+            row.append(input, remove);
+            list.appendChild(row);
+        }
+
+        function showEditView(prefill) {
+            $('choiceList').innerHTML = '';
+            $('question').value = prefill ? prefill.question : '';
+            $('multiple').checked = prefill ? prefill.multiple : false;
+            const choices = prefill ? prefill.choices : ['', '', ''];
+            choices.forEach(c => addChoiceInput(c));
+            $('editError').classList.add('d-none');
+            $('backToResult').classList.toggle('d-none', !survey);
+            $('editView').classList.remove('d-none');
+            $('resultView').classList.add('d-none');
+            $('question').focus();
+        }
+
+        function showResultView() {
+            $('editView').classList.add('d-none');
+            $('resultView').classList.remove('d-none');
+            renderResult();
+        }
+
+        function renderResult() {
+            if (!survey) return;
+            $('resultQuestion').textContent = survey.question;
+            $('respondents').textContent = survey.respondents;
+
+            const badge = $('statusBadge');
+            badge.textContent = survey.active ? '実施中' : '終了';
+            badge.className = 'badge ' + (survey.active ? 'bg-success' : 'bg-secondary');
+            $('endSurvey').classList.toggle('d-none', !survey.active);
+
+            const list = $('resultList');
+            // 選択肢が変わったときだけ作り直す（バーのアニメーションを活かす）
+            if (list.dataset.surveyId !== survey.id) {
+                list.innerHTML = '';
+                list.dataset.surveyId = survey.id;
+                survey.choices.forEach((choice) => {
+                    const item = document.createElement('div');
+                    item.className = 'mb-3';
+                    const head = document.createElement('div');
+                    head.className = 'd-flex justify-content-between mb-1';
+                    const label = document.createElement('span');
+                    label.textContent = choice;
+                    const value = document.createElement('span');
+                    value.className = 'fw-bold result-value';
+                    head.append(label, value);
+                    const bar = document.createElement('div');
+                    bar.className = 'result-bar';
+                    const fill = document.createElement('div');
+                    fill.className = 'result-bar-fill';
+                    bar.appendChild(fill);
+                    item.append(head, bar);
+                    list.appendChild(item);
+                });
+            }
+
+            [...list.children].forEach((item, i) => {
+                const count = survey.counts[i] || 0;
+                const percent = survey.respondents > 0 ? Math.round(count / survey.respondents * 100) : 0;
+                item.querySelector('.result-value').textContent = `${count} 票（${percent}%）`;
+                item.querySelector('.result-bar-fill').style.width = `${percent}%`;
+            });
+        }
+
+        $('addChoice').addEventListener('click', () => {
+            addChoiceInput();
+            $('choiceList').lastElementChild?.querySelector('input').focus();
+        });
+
+        $('startSurvey').addEventListener('click', async () => {
+            const question = $('question').value.trim();
+            const choices = [...document.querySelectorAll('.choice-input')].map(el => el.value.trim()).filter(c => c !== '');
+            const error = $('editError');
+            if (question === '' || choices.length < 2) {
+                error.textContent = '質問と2つ以上の選択肢を入力してください。';
+                error.classList.remove('d-none');
+                return;
+            }
+            try {
+                survey = await window.electronAPI.startSurvey({ question, choices, multiple: $('multiple').checked });
+                showResultView();
+            } catch (e) {
+                error.textContent = e.message;
+                error.classList.remove('d-none');
+            }
+        });
+
+        $('endSurvey').addEventListener('click', async () => {
+            if (!confirm('アンケートを終了しますか？参加者の回答画面は閉じられます。')) return;
+            survey = await window.electronAPI.endSurvey();
+            renderResult();
+        });
+
+        $('newSurvey').addEventListener('click', async () => {
+            if (survey && survey.active) {
+                if (!confirm('実施中のアンケートを終了して、新しいアンケートを作成しますか？')) return;
+                survey = await window.electronAPI.endSurvey();
+            }
+            showEditView(survey);
+        });
+
+        $('backToResult').addEventListener('click', showResultView);
+
+        window.electronAPI.onSurveyUpdate((event, state) => {
+            survey = state;
+            if (!$('resultView').classList.contains('d-none')) {
+                renderResult();
+            }
+        });
+
+        // 開いたときに実施中・前回のアンケートがあれば結果を表示
+        window.electronAPI.getSurveyState().then((state) => {
+            survey = state;
+            if (survey) {
+                showResultView();
+            } else {
+                showEditView(null);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -327,6 +327,28 @@
 
     function attachSocket(ioSocket) { state.socket = ioSocket; }
 
+    // ブラウザごとの匿名ID（授業ログで同じ人の投稿・アンケート回答を結びつけるのに使う）
+    const PARTICIPANT_ID_KEY = 'commentable_voter_id';
+    let participantId = null;
+    function getParticipantId() {
+        if (participantId) return participantId;
+        try {
+            participantId = localStorage.getItem(PARTICIPANT_ID_KEY);
+            if (!participantId) {
+                participantId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+                localStorage.setItem(PARTICIPANT_ID_KEY, participantId);
+            }
+        } catch (e) {
+            participantId = participantId || String(Date.now()) + Math.random().toString(16).slice(2);
+        }
+        return participantId;
+    }
+
+    // 部屋に入るときにサーバーへ渡す情報
+    function joinInfo() {
+        return { role: 'participant', participantId: getParticipantId() };
+    }
+
     global.CommentApp = {
         state,
         formatTimestamp,
@@ -334,6 +356,8 @@
         sendComment,
         integrateIncoming,
         attachSocket,
+        getParticipantId,
+        joinInfo,
         setEmojiFilter,
         updateHistoryDisplay,
         calculateTop10  // 同期時に全体再計算するために公開

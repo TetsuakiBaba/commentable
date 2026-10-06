@@ -36,86 +36,6 @@ var flg_deactivate_comment_control;
 var color_text;
 var color_text_stroke;
 
-// 不適切な単語リスト
-var inappropriateWords = [];
-
-// 不適切な単語リストを読み込む（base64化されたファイルから）
-async function loadInappropriateWords() {
-    try {
-        // 読み込むbase64ファイルのリスト
-        const base64Files = [
-            '/inappropriate-words-ja/Sexual.base64.txt',
-            '/inappropriate-words-ja/Sexual_with_mask.base64.txt',
-            '/inappropriate-words-ja/Sexual_with_bopo.base64.txt'
-        ];
-
-        // 全てのファイルを並行して読み込む
-        const promises = base64Files.map(async (file) => {
-            try {
-                const response = await fetch(file);
-                const text = await response.text();
-
-                // 行ごとに分割してbase64デコード
-                const words = text.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0)
-                    .map(base64String => {
-                        try {
-                            // base64デコード
-                            const decoded = atob(base64String);
-                            // UTF-8としてデコード
-                            return decodeURIComponent(escape(decoded));
-                        } catch (e) {
-                            debugError(`Failed to decode: ${base64String}`, e);
-                            return null;
-                        }
-                    })
-                    .filter(word => word !== null);
-
-                return words;
-            } catch (error) {
-                debugError(`${file} の読み込みに失敗しました:`, error);
-                return [];
-            }
-        });
-
-        // 全てのファイルの読み込みを待つ
-        const results = await Promise.all(promises);
-
-        // 全ての単語を結合して重複を除去
-        inappropriateWords = [...new Set(results.flat())];
-
-        debugLog(`${inappropriateWords.length}個の不適切な単語を読み込みました`);
-    } catch (error) {
-        debugError('不適切な単語リストの読み込みに失敗しました:', error);
-    }
-}
-
-
-// テキストから不適切な単語を伏せ字にする
-function maskInappropriateWords(text) {
-    if (!text || inappropriateWords.length === 0) return text;
-
-    let maskedText = text;
-
-    // 長い単語から順にマッチさせる（部分一致を避けるため）
-    const sortedWords = [...inappropriateWords].sort((a, b) => b.length - a.length);
-
-    for (const word of sortedWords) {
-        if (word.length === 0) continue;
-
-        // 単語を正規表現でエスケープ
-        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedWord, 'gi');
-
-        // 単語の文字数分だけ「*」で置き換え
-        const mask = '*'.repeat(word.length);
-        maskedText = maskedText.replace(regex, mask);
-    }
-
-    return maskedText;
-}
-
 // flash / capture / 音量関連機能は未使用化のため削除
 
 function setup() {
@@ -166,9 +86,6 @@ function setup() {
         });
     }
 
-    // 不適切な単語リストを読み込む
-    loadInappropriateWords();
-
     //socket = io.connect('http://localhost:80');
     //socket = io.connect('https://commentable.lolipop.io')
     socket = io.connect(window.location.origin);
@@ -182,12 +99,12 @@ function setup() {
         let params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
         if (params.room) {
             currentRoom = decodeURIComponent(params.room);
-            socket.emit('join', currentRoom);
+            socket.emit('join', currentRoom, CommentApp.joinInfo());
         } else {
             // i18nextが初期化されている場合は翻訳を使用
             const promptMessage = window.i18next ? window.i18next.t('enter_room_name') : '部屋名を入力してください';
             while ((currentRoom = prompt(promptMessage, 'test_room')) == '');
-            socket.emit('join', currentRoom);
+            socket.emit('join', currentRoom, CommentApp.joinInfo());
         }
 
         // 部屋に接続した後、サーバーからチャットログを同期（アラートは表示しない）
@@ -217,12 +134,12 @@ function setup() {
         let params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
         if (params.room) {
             currentRoom = decodeURIComponent(params.room);
-            socket.emit('join', currentRoom);
+            socket.emit('join', currentRoom, CommentApp.joinInfo());
         } else {
             // i18nextが初期化されている場合は翻訳を使用
             const promptMessage = window.i18next ? window.i18next.t('enter_room_name') : '部屋名を入力してください';
             currentRoom = prompt(promptMessage, 'test_room');
-            socket.emit('join', currentRoom);
+            socket.emit('join', currentRoom, CommentApp.joinInfo());
         }
         // 再接続後に人数を明示的に問い合わせ
         setTimeout(() => {
@@ -306,6 +223,10 @@ function setup() {
             CommentApp.setEmojiFilter(e.target.checked);
         }
     });
+
+    if (window.SurveyApp) {
+        SurveyApp.attach(socket);
+    }
 
     if (window.CommentApp) {
         CommentApp.attachSocket(socket);
@@ -492,19 +413,7 @@ function pushedSendButton() {
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
-    // 不適切な単語を伏せ字にする（絵文字の場合は除く）
-    let maskedComment = _str_comment;
-    if (!_flg_emoji && _str_comment) {
-        maskedComment = maskInappropriateWords(_str_comment);
-    }
-
-    // 名前にも不適切な単語が含まれている場合は伏せ字にする
-    let maskedName = _str_my_name;
-    if (_str_my_name) {
-        maskedName = maskInappropriateWords(_str_my_name);
-    }
-
-    const result = CommentApp.sendComment({ comment: maskedComment, myName: maskedName, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
+    const result = CommentApp.sendComment({ comment: _str_comment, myName: _str_my_name, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
     if (!result.ok) {
         if (result.reason === 'interval') {
             const remain = 5 - parseInt((performance.now() - CommentApp.state.lastSend) / 1000);

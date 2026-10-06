@@ -1,36 +1,92 @@
 var socket;
 var sound;
-var sound_chime;
-var sound_dodon;
-var sound_drumroll;
-var sound_dora;
-var sound_deden;
-var sound_pingpong;
-var sound_chin;
-var sound_kansei;
-var sound_applause;
 var flg_clock = false;
-var flg_noDraw;
 let comment_display_duration = 10000; // コメント表示時間（ミリ秒）
-
-var flg_speech;
-var flg_deactivate_comment_control;
-var g_flg_deactivate_comment_control;
-let peerConnection;
 
 var g_room_name;
 
-var color_text;
-var color_text_stroke;
 var volume = 0.1;
 var flg_sound_mute = false;
 
+// ========== 描画スケジューラ ==========
+// 画面全体の透明キャンバスを毎フレーム描き直すのは重いので、
+// 動くものがある間だけ draw ループを回し、何もなければ止める。
+const FRAME_RATE_ANIMATION = 60; // コメント・エフェクトが動いているとき
+const FRAME_RATE_CAMERA = 30;    // カメラ映像だけのとき（カメラ自体が30fps程度）
+var clockTimer = null;
+
+// アニメーションを開始する（止まっていればループを再開）
+function requestRender() {
+    if (typeof isLooping === 'function' && !isLooping()) {
+        loop();
+    }
+}
+
+// 静止した内容が変わったときに1フレームだけ描き直す
+function requestRedraw() {
+    if (typeof isLooping === 'function' && !isLooping()) {
+        redraw();
+    }
+}
+
+function isCameraVisible() {
+    return !!cameraCapture && personScale > 0;
+}
+
+function hasActiveAnimation() {
+    return comments.some(c => c.getLife() > 0) ||
+        protofessional_effect.is_activating ||
+        flash.status ||
+        commentCommands.length > 0;
+}
+
+// 次のフレームが必要かを判断してフレームレートを決める（draw の最後に呼ぶ）
+function scheduleNextFrame() {
+    if (hasActiveAnimation() || cameraFadeInProgress()) {
+        frameRate(FRAME_RATE_ANIMATION);
+    } else if (isCameraVisible()) {
+        frameRate(FRAME_RATE_CAMERA);
+    } else {
+        noLoop();
+    }
+}
+
+// 時計は分が変わるときだけ描き直す
+function scheduleClockTick() {
+    clearTimeout(clockTimer);
+    clockTimer = null;
+    if (!flg_clock) return;
+    const now = new Date();
+    const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50;
+    clockTimer = setTimeout(() => {
+        requestRedraw();
+        scheduleClockTick();
+    }, msToNextMinute);
+}
+
 // カメラ関連の変数
 var cameraCapture = null;
+
+// 実施中のアンケート（再接続時に配信し直すために保持）
+var activeSurvey = null;
 var personX = 0; // カメラ映像のX座標
 var personY = 0; // カメラ映像のY座標
 var personScale = 0.15; // カメラ映像のスケール（画面幅に対する比率、デフォルト: 小=15%）
 var cameraPosition = 'bottom-left'; // カメラ位置: 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
+var cameraAlpha = 1.0; // カメラ映像の不透明度（マウスホバーでふわっと消す）
+const CAMERA_FADE_TIME = 150; // フェードの時定数（ms）
+const CAMERA_HOVER_ALPHA = 0.0; // ホバー中の不透明度
+
+// 人物切り抜き（メインプロセスの Vision でマスクを生成し、背景を透過して描画）
+const SEGMENTATION_INPUT_WIDTH = 512; // Vision に送るフレームの幅
+var cameraSegmentationEnabled = false;
+var segmentationInFlight = false;
+var segmentationReady = false; // 切り抜き済みフレームが用意できているか
+var segmentationLastVideoTime = -1;
+var segmentationFrameCanvas = null; // マスク生成に使ったフレーム（原寸）
+var segmentationInputCanvas = null; // Vision に送る縮小フレーム
+var segmentationMaskCanvas = null;  // マスク（アルファのみ）
+var segmentationOutputCanvas = null; // 切り抜き結果
 
 // QRコードの状態を保持
 var currentQRPosition = 'none'; // 'none', 'center', 'top_right'
@@ -72,12 +128,8 @@ var flash;
 var speech;
 var mycanvas;
 var max_number_of_comment = 50;
-let version = "undefined";
+let version = window.APP_VERSION || "undefined";
 var protofessional_effect;
-
-function setVersion(v) {
-    version = v;
-}
 
 var admin_message = {
     show: false,
@@ -86,6 +138,7 @@ var admin_message = {
 function toggleMessage(checked, text_message) {
     admin_message.show = checked;
     admin_message.text = text_message;
+    requestRedraw();
 }
 
 function toggleQR(checked, position, room) {
@@ -174,6 +227,7 @@ class ProtofessionalEffect {
     activate() {
         this.is_activating = true;
         this.timestamp = millis();
+        requestRender();
         if (flg_sound_mute == false) {
             this.sound.setVolume(this.volume);
             this.sound.play();
@@ -233,6 +287,7 @@ class Comment {
     }
     setText(_text) {
         this.text = _text;
+        this.measured_size = null;
         return;
     }
     setX(_x) {
@@ -282,7 +337,7 @@ class Comment {
 
         // フォントサイズの倍率を適用
         const baseSize = height / 20;
-        this.size = abs(baseSize * this.font_size_multiplier * sin(0.5 * PI));
+        this.size = baseSize * this.font_size_multiplier;
 
         if (this.text_direction == 'still') {
             textAlign(CENTER, CENTER);
@@ -293,8 +348,13 @@ class Comment {
         }
         else if (this.text_direction == 'left' || this.text_direction == 'right') {
             textAlign(LEFT, CENTER);
-            textSize(this.size);
-            let text_width = textWidth(this.text);
+            // 文字幅はサイズが変わったときだけ測り直す
+            if (this.measured_size !== this.size) {
+                textSize(this.size);
+                this.text_width = textWidth(this.text);
+                this.measured_size = this.size;
+            }
+            let text_width = this.text_width;
 
             let start_x = this.text_direction == 'left' ? width : -text_width;
             let end_x = this.text_direction == 'left' ? -text_width : width;
@@ -385,8 +445,7 @@ function preload() {
     }
 
     let count_loaded = 0;
-    // Load sound files
-    sound_chime = loadSound('./sounds/chime.mp3', () => readyLoading(++count_loaded), null, whileLoading);
+    // コメントの効果音（id_sound の番号順。配列のものはランダムに1つ鳴らす）
     sound = [
         [loadSound('./sounds/camera1.mp3', () => readyLoading(++count_loaded)),
         loadSound('./sounds/camera2.mp3', () => readyLoading(++count_loaded)),
@@ -413,23 +472,11 @@ function preload() {
         loadSound('./sounds/kusa04.mp3', () => readyLoading(++count_loaded)),
         loadSound('./sounds/kusa05.mp3', () => readyLoading(++count_loaded))]
     ]
-    sound_dodon = loadSound('./sounds/dodon.mp3', () => readyLoading(++count_loaded));
-    sound_drumroll = loadSound('./sounds/drumroll.mp3', () => readyLoading(++count_loaded));
-    sound_dora = loadSound('./sounds/dora.mp3', () => readyLoading(++count_loaded));
-    sound_deden = loadSound('./sounds/quiz.mp3', () => readyLoading(++count_loaded));
-    sound_pingpong = loadSound('./sounds/seikai.mp3', () => readyLoading(++count_loaded));
-    sound_chin = loadSound('./sounds/chin.mp3', () => readyLoading(++count_loaded));
-    sound_kansei = loadSound('./sounds/kansei.mp3', () => readyLoading(++count_loaded));
-    sound_applause = loadSound('./sounds/applause.mp3', () => readyLoading(++count_loaded));
     protofessional_effect = new ProtofessionalEffect();
 }
 
 function readyLoading(count_loaded) {
-    document.getElementById('p5_loading').innerHTML = str(count_loaded) + ' files loaded.';
-}
-
-function whileLoading(total) {
-    // console.log('loaded: ', + total);
+    document.getElementById('p5_loading').textContent = count_loaded + ' files loaded.';
 }
 
 
@@ -440,18 +487,10 @@ function startSocketConnection(room) {
     let serverUrl = window.SOCKET_SERVER_URL || 'https://commentable.onrender.com';
     console.log('Connecting to socket server:', serverUrl);
 
-    // Socket.IOが読み込まれるまで待機
+    // socket.io クライアントは同梱しているので、サーバーが未起動でも接続を試み続ける
     function connectSocket() {
-        if (typeof io !== 'undefined') {
-            socket = io.connect(serverUrl);
-            console.log('Socket.IO connection established with:', serverUrl);
-
-            // Socket.IOイベントリスナーの設定
-            setupSocketListeners();
-        } else {
-            console.log('Waiting for Socket.IO to load...');
-            setTimeout(connectSocket, 100);
-        }
+        socket = io.connect(serverUrl);
+        setupSocketListeners();
     }
 
     // Socket.IOイベントリスナーを設定する関数
@@ -471,44 +510,44 @@ function startSocketConnection(room) {
 
         socket.on('you_are_connected', function () {
             // 部屋名を指定してジョインする．
-            socket.emit('join', room);
+            socket.emit('join', room, { role: 'overlay' });
+            // 実施中のアンケートがあれば再接続後に配信し直す（回答者のブラウザ側で重複表示はされない）
+            if (activeSurvey) {
+                socket.emit('survey start', activeSurvey);
+            }
+        });
+
+        // アンケートの回答をメインプロセス（集計ウィンドウ）へ
+        socket.on('survey answer', (data) => {
+            if (window.electronAPI) {
+                window.electronAPI.sendSurveyAnswer(data);
+            }
         });
 
         socket.on('comment', newComment);
 
-        // Whenever the server emits 'user joined', log it in the chat body
-        socket.on('user joined', (data) => {
-            console.log(data.username + ' joined');
-            // addParticipantsMessage(data);
-        });
-
-        // Whenever the server emits 'user left', log it in the chat body
-        socket.on('user left', (data) => {
-            console.log(data.username + ' left');
-            // removeChatTyping(data);
-            // addParticipantsMessage(data);
+        // 管理者メッセージ（ダッシュボードの「メッセージ表示」カードから）
+        socket.on('admin message', (data) => {
+            toggleMessage(!!(data && data.show), data && data.text ? String(data.text) : '');
         });
 
         socket.on('reconnect', () => {
             console.log('you have been reconnected');
-            socket.emit('join', room);
+            socket.emit('join', room, { role: 'overlay' });
         });
 
         socket.on('login', (data) => {
             console.log("you have been connected to " + room);
-            //isConnected = true;
-            // Display the welcome message
-            // addParticipantsMessage(data);
+            // 授業ログを購読して、この Mac にも保存する（サーバーのログが消えても残るように）
+            socket.emit('log watch');
         });
 
-        socket.on("deactivate_comment_control", (data) => {
-            g_flg_deactivate_comment_control = data.control;
+        socket.on('log snapshot', (events) => {
+            if (window.electronAPI && events.length > 0) window.electronAPI.archiveLogEvents(events);
         });
 
-        socket.on("disconnectPeer", () => {
-            if (typeof peerConnection !== 'undefined') {
-                peerConnection.close();
-            }
+        socket.on('log event', (event) => {
+            if (window.electronAPI) window.electronAPI.archiveLogEvents([event]);
         });
     }
 
@@ -546,8 +585,6 @@ function setup() {
         physicalHeight: Math.round(actualHeight * pixelRatio)
     });
 
-    flg_deactivate_comment_control = false;
-
     flash = new Flash();
     flg_sound_mute = false;
 
@@ -567,26 +604,28 @@ function setup() {
             stopCamera();
         });
 
+        // アンケートの開始・終了をサーバーへ中継
+        window.electronAPI.onSurveyStart((event, survey) => {
+            activeSurvey = survey;
+            if (socket) socket.emit('survey start', survey);
+        });
+
+        window.electronAPI.onSurveyEnd((event, data) => {
+            activeSurvey = null;
+            if (socket) socket.emit('survey end', data);
+        });
+
         // ウィンドウリサイズイベントのリスナー
         window.electronAPI.onWindowResized((event, size) => {
             console.log('Received window resize:', size.width, 'x', size.height);
             applyCanvasSizeFromMetrics(size);
         });
-
-        // 保存された設定を読み込み
-        loadCameraSettingsFromMain();
     }
-}
 
-// カメラ設定を読み込み
-async function loadCameraSettingsFromMain() {
-    try {
-        const settings = await window.electronAPI.getCameraSetting();
-        console.log('Loaded camera settings:', settings);
-        // 設定は文字列で返ってくる可能性があるのでパースする
-        // ここでは使わないが、位置とサイズはtoggleCameraで適用される
-    } catch (error) {
-        console.error('Error loading camera settings:', error);
+    // 部屋に接続し、QRコードを表示（IPC の受信準備ができてから始める）
+    if (window.ROOM_NAME !== null && window.ROOM_NAME !== undefined) {
+        startSocketConnection(window.ROOM_NAME);
+        toggleQR(true, "top_right", window.ROOM_NAME);
     }
 }
 
@@ -614,58 +653,85 @@ function draw() {
     // 透明背景をクリア
     clear();
 
-    // カメラ映像を描画
-    if (cameraCapture && personScale > 0) {
-        // カメラの表示サイズを画面幅に対する比率で計算
-        const targetWidth = width * personScale;
-        const aspectRatio = cameraCapture.width / cameraCapture.height;
-        const vidHeight = targetWidth / aspectRatio;
-        const vidWidth = targetWidth;
-
-        // マウスがカメラ映像の範囲内にあるかチェック
-        const isMouseOverCamera = mouseX >= (personX - vidWidth / 2) &&
-            mouseX <= (personX + vidWidth / 2) &&
-            mouseY >= (personY - vidHeight / 2) &&
-            mouseY <= (personY + vidHeight / 2);
-
-        push();
-        imageMode(CENTER);
-
-        // マウスがホバーしている場合は透過
-        if (isMouseOverCamera) {
-            tint(255, 0);
-        }
-
-        image(cameraCapture, personX, personY, vidWidth, vidHeight);
-        pop();
-    }
-
-    // 時計表示
-    if (flg_clock) {
-        let now = new Date();
-        let time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        textStyle(BOLD);
-        strokeWeight(5.0);
-        stroke("#000");
-        fill("#ffffff");
-        textSize(height / 15);
-        textAlign(LEFT, TOP);
-        text(time, 20, 10);
-        textStyle(NORMAL);
-    }
-
-    // コメント描画
-    for (var i = 0; i < max_number_of_comment; i++) {
-        if (comments[i].getLife() > 0) {
-            comments[i].update();
-            comments[i].draw();
-        }
-    }
-
+    drawCamera();
+    if (flg_clock) drawClock();
+    drawComments();
     protofessional_effect.draw();
     flash.draw();
+    drawCommentCommands();
+    if (admin_message.show) drawAdminMessage();
 
-    // コメントコマンドの描画と削除
+    scheduleNextFrame();
+}
+
+// カメラ映像の表示サイズ（画面幅に対する比率）
+function getCameraDisplaySize() {
+    const vidWidth = width * personScale;
+    const vidHeight = vidWidth / (cameraCapture.width / cameraCapture.height);
+    return { vidWidth, vidHeight };
+}
+
+// マウスホバーで消すときの目標の不透明度
+function cameraTargetAlpha() {
+    const { vidWidth, vidHeight } = getCameraDisplaySize();
+    const isMouseOverCamera = mouseX >= (personX - vidWidth / 2) &&
+        mouseX <= (personX + vidWidth / 2) &&
+        mouseY >= (personY - vidHeight / 2) &&
+        mouseY <= (personY + vidHeight / 2);
+    return isMouseOverCamera ? CAMERA_HOVER_ALPHA : 1.0;
+}
+
+function cameraFadeInProgress() {
+    return isCameraVisible() && Math.abs(cameraTargetAlpha() - cameraAlpha) > 0.01;
+}
+
+function drawCamera() {
+    if (!isCameraVisible()) return;
+    const { vidWidth, vidHeight } = getCameraDisplaySize();
+
+    // マウスがホバーしている場合はふわっと透過（フレームレートに依存しないイージング）
+    cameraAlpha += (cameraTargetAlpha() - cameraAlpha) * (1 - Math.exp(-deltaTime / CAMERA_FADE_TIME));
+
+    let source = cameraCapture.elt;
+    if (cameraSegmentationEnabled) {
+        requestSegmentation();
+        source = segmentationReady ? segmentationOutputCanvas : null;
+    }
+
+    if (source && cameraAlpha > 0.01) {
+        drawingContext.save();
+        drawingContext.globalAlpha = cameraAlpha;
+        drawingContext.drawImage(source,
+            personX - vidWidth / 2, personY - vidHeight / 2, vidWidth, vidHeight);
+        drawingContext.restore();
+    }
+}
+
+function drawClock() {
+    let now = new Date();
+    let time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    textStyle(BOLD);
+    strokeWeight(5.0);
+    stroke("#000");
+    fill("#ffffff");
+    textSize(height / 15);
+    textAlign(LEFT, TOP);
+    text(time, 20, 10);
+    textStyle(NORMAL);
+}
+
+function drawComments() {
+    for (const comment of comments) {
+        if (comment.getLife() > 0) {
+            comment.update();
+            // 表示時間が終わったコメントは描かない（ループ停止時に残像が残らないように）
+            if (comment.getLife() > 0) comment.draw();
+        }
+    }
+}
+
+// コメントコマンドの描画と削除
+function drawCommentCommands() {
     for (let i = commentCommands.length - 1; i >= 0; i--) {
         commentCommands[i].update();
         if (commentCommands[i].isActive) {
@@ -674,21 +740,22 @@ function draw() {
             commentCommands.splice(i, 1);
         }
     }
+}
 
-    // 管理者メッセージ表示
-    if (admin_message.show) {
-        textAlign(CENTER, CENTER);
-        textSize(height / 20);
-        let txt = admin_message.text;
-        let txtWidth = textWidth(txt);
-        let txtHeight = textAscent() + textDescent();
+// 管理者メッセージ表示
+function drawAdminMessage() {
+    textAlign(CENTER, CENTER);
+    textSize(height / 20);
+    let txt = admin_message.text;
+    let txtWidth = textWidth(txt);
+    let txtHeight = textAscent() + textDescent();
 
-        fill("#000000");
-        rect((width - txtWidth) / 2, (height - txtHeight) / 2, txtWidth, txtHeight);
+    noStroke();
+    fill("#000000");
+    rect((width - txtWidth) / 2, (height - txtHeight) / 2, txtWidth, txtHeight);
 
-        fill("#ffffff");
-        text(txt, width / 2, height / 2);
-    }
+    fill("#ffffff");
+    text(txt, width / 2, height / 2);
 }
 
 function parseFunctionString(str) {
@@ -739,24 +806,13 @@ function executeCommentCommand(commandString, colorText, colorTextStroke) {
     // コメントコマンドを作成して配列に追加
     const commentCommand = new CommentCommand(parsed.functionName, parsed.args, colorText, colorTextStroke);
     commentCommands.push(commentCommand);
+    requestRender();
 
     console.log('Comment command executed:', parsed.functionName, parsed.args, 'colors:', colorText, colorTextStroke);
     return true;
 }
 
-var count_comment = 0;
-
 function newComment(data) {
-    count_comment++;
-
-    // コメント履歴にフォーマットして追加
-    let comment_format = `[${nf(year(), 4)}:${nf(month(), 2)}:${nf(day(), 2)}:${nf(hour(), 2)}:${nf(minute(), 2)}:${nf(second(), 2)}-${nf(count_comment, 4)}] `;
-    comment_format += data.comment;
-    if (data.flg_sound) comment_format += " [sound]";
-    if (data.hidden >= 0) comment_format += " [hidden]";
-    comment_format += `[${data.my_name}]\n`;
-    select("#textarea_comment_history").html(comment_format, true);
-
     // コメントコマンドチェック（= で始まる場合）
     if (data.comment && data.comment.startsWith('=')) {
         const executed = executeCommentCommand(data.comment, data.color_text, data.color_text_stroke);
@@ -776,22 +832,15 @@ function newComment(data) {
         // 通常のコメント
         if (data.comment.length <= 0) return;
         if (data.hidden >= 1) return; // 隠しコマンド（1以上）は表示しない
-        let id = -1;
-        for (var i = 0; i < max_number_of_comment; i++) {
-            if (comments[i].getLife() == 0) {
-                id = i;
-                break;
-            }
-        }
+        const id = comments.findIndex(c => c.getLife() == 0);
 
         // パーティクルに空きがあれば
         if (id >= 0) {
-            console.log(data);
             comments[id].setLife(255);
             comments[id].setText(data.comment);
             comments[id].text_direction = data.text_direction;
             comments[id].setFontSize(data.font_size || 'medium');
-            textSize(abs((height / 20) * sin(0.5 * PI)));
+            textSize(height / 20);
             let text_width = textWidth(data.comment);
 
             if (text_width < width) {
@@ -806,7 +855,7 @@ function newComment(data) {
             comments[id].flg_sound = data.flg_sound;
             comments[id].id_sound = data.id_sound;
 
-            mainLog('New comment added:', data.flg_sound, data.id_sound);
+            requestRender();
             if (data.flg_sound && data.id_sound == 0) { // camera
                 flash.do();
             }
@@ -867,6 +916,8 @@ function applyCanvasSizeFromMetrics(metrics) {
     if (currentQRPosition !== 'none' && currentQRChecked) {
         toggleQR(currentQRChecked, currentQRPosition, currentQRRoom);
     }
+
+    requestRedraw();
 }
 
 function windowResized() {
@@ -896,6 +947,8 @@ function toggleSoundMute() {
 
 function toggleClock(checked) {
     flg_clock = checked;
+    scheduleClockTick();
+    requestRedraw();
 }
 
 function toggleCommentControl(checked) {
@@ -904,32 +957,6 @@ function toggleCommentControl(checked) {
         control: checked
     }
     socket.emit('deactivate_comment_control', data);
-}
-
-// _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
-function sendComment(
-    _str_comment,
-    _flg_emoji,
-    _str_my_name,
-    _flg_img,
-    _id_img,
-    _flg_sound,
-    _id_sound,
-    _hidden) {
-
-    var data = {
-        room_name: g_room_name,
-        comment: "",
-        flg_speech: flg_speech,
-        color_text: color_text,
-        color_text_stroke: color_text_stroke,
-        flg_image: true,
-        id_image: 0,
-        flg_sound: _flg_sound,
-        id_sound: _id_sound
-    }
-    socket.emit("comment", data);
-    newComment(data);
 }
 
 function sendCodeSnippet(clip_text) {
@@ -944,7 +971,8 @@ function sendCodeSnippet(clip_text) {
         id_image: 0,
         flg_sound: false,
         id_sound: false,
-        hidden: 100
+        hidden: 100,
+        origin: 'host'
     }
 
     socket.emit("comment", data);
@@ -976,6 +1004,7 @@ async function startCamera(deviceId) {
             console.log('Camera capture created:', cameraCapture.width, 'x', cameraCapture.height);
             cameraCapture.hide();
             updateCameraPosition();
+            requestRender();
         });
 
         cameraCapture.elt.addEventListener('error', (e) => {
@@ -992,7 +1021,88 @@ function stopCamera() {
     if (cameraCapture) {
         cameraCapture.remove();
         cameraCapture = null;
+        segmentationReady = false;
+        segmentationLastVideoTime = -1;
         console.log('Camera stopped');
+        requestRedraw(); // 最後のフレームを消す
+    }
+}
+
+// 人物切り抜きのON/OFF
+function setCameraSegmentation(enabled) {
+    cameraSegmentationEnabled = enabled && !!(window.electronAPI && window.electronAPI.segmentPerson);
+    segmentationReady = false;
+    segmentationLastVideoTime = -1;
+    console.log('Camera segmentation:', cameraSegmentationEnabled);
+}
+
+function createSegmentationCanvas(w, h) {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    return canvas;
+}
+
+// 現在のカメラフレームを Vision に送り、返ってきたマスクで切り抜く
+// 1フレームずつ処理し、マスクは同じフレームに適用するので映像とずれない
+async function requestSegmentation() {
+    if (segmentationInFlight || !cameraCapture) return;
+
+    const video = cameraCapture.elt;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (video.readyState < 2 || !vw || !vh) return;
+    if (video.currentTime === segmentationLastVideoTime) return; // 新しいフレームがない
+    segmentationLastVideoTime = video.currentTime;
+
+    const iw = Math.min(SEGMENTATION_INPUT_WIDTH, vw);
+    const ih = Math.round(vh * iw / vw);
+
+    if (!segmentationFrameCanvas || segmentationFrameCanvas.width !== vw || segmentationFrameCanvas.height !== vh) {
+        segmentationFrameCanvas = createSegmentationCanvas(vw, vh);
+        segmentationOutputCanvas = createSegmentationCanvas(vw, vh);
+        segmentationReady = false;
+    }
+    if (!segmentationInputCanvas || segmentationInputCanvas.width !== iw || segmentationInputCanvas.height !== ih) {
+        segmentationInputCanvas = createSegmentationCanvas(iw, ih);
+    }
+
+    segmentationInFlight = true;
+    try {
+        segmentationFrameCanvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+        const inputCtx = segmentationInputCanvas.getContext('2d', { willReadFrequently: true });
+        inputCtx.drawImage(segmentationFrameCanvas, 0, 0, iw, ih);
+        const frame = inputCtx.getImageData(0, 0, iw, ih);
+
+        const result = await window.electronAPI.segmentPerson(frame.data, iw, ih);
+        if (!cameraSegmentationEnabled || !cameraCapture) return;
+
+        // マスク（0-255）をアルファチャンネルに入れる
+        if (!segmentationMaskCanvas || segmentationMaskCanvas.width !== result.width || segmentationMaskCanvas.height !== result.height) {
+            segmentationMaskCanvas = createSegmentationCanvas(result.width, result.height);
+        }
+        const maskImage = new ImageData(result.width, result.height);
+        const mask = result.data;
+        for (let i = 0; i < mask.length; i++) {
+            maskImage.data[i * 4 + 3] = mask[i];
+        }
+        segmentationMaskCanvas.getContext('2d').putImageData(maskImage, 0, 0);
+
+        // フレームをマスクで切り抜く（マスクは拡大時に補間されるので輪郭が滑らかになる）
+        const outCtx = segmentationOutputCanvas.getContext('2d');
+        outCtx.save();
+        outCtx.globalCompositeOperation = 'copy';
+        outCtx.drawImage(segmentationFrameCanvas, 0, 0);
+        outCtx.globalCompositeOperation = 'destination-in';
+        outCtx.imageSmoothingEnabled = true;
+        outCtx.imageSmoothingQuality = 'high';
+        outCtx.drawImage(segmentationMaskCanvas, 0, 0, vw, vh);
+        outCtx.restore();
+        segmentationReady = true;
+    } catch (error) {
+        console.error('Segmentation error:', error);
+    } finally {
+        segmentationInFlight = false;
     }
 }
 
@@ -1039,4 +1149,5 @@ function updateCameraPosition() {
     const pos = positions[cameraPosition] || positions['bottom-left'];
     personX = pos[0];
     personY = pos[1];
+    requestRender();
 }

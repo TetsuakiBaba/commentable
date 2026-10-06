@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const eventLog = require('./event-log');
 
 // コメントログファイルのパス
 const LOG_DIR = path.join(__dirname, 'public', 'chatlogs');
@@ -10,10 +11,10 @@ if (!fs.existsSync(LOG_DIR)) {
     console.log('Created log directory:', LOG_DIR);
 }
 
-// ファイル名として安全な文字列に変換する関数
-function sanitizeFilename(str) {
-    // 英数字、ハイフン、アンダースコア以外を置換
-    return str.replace(/[^a-zA-Z0-9_-]/g, '_');
+// 部屋ごとのコメントログ（従来形式）のパス。
+// 英数字以外を含む部屋名はハッシュ付きの名前にして、別の部屋のログが混ざらないようにする
+function legacyCommentLogFile(room) {
+    return path.join(LOG_DIR, `${eventLog.roomKey(room)}.log`);
 }
 
 // コメントをログファイルに追記する関数
@@ -24,9 +25,7 @@ function saveCommentLog(data, room) {
             return;
         }
 
-        // room名をファイル名として安全な形式に変換
-        const safeRoomName = sanitizeFilename(room);
-        const logFile = path.join(LOG_DIR, `${safeRoomName}.log`);
+        const logFile = legacyCommentLogFile(room);
 
         const timestamp = new Date().toISOString();
         const logEntry = JSON.stringify({
@@ -44,6 +43,62 @@ function saveCommentLog(data, room) {
     } catch (error) {
         console.error('Error saving comment log:', error);
     }
+}
+
+// アンケート結果のログファイル（部屋ごとに JSON 配列で保存）
+function surveyLogFile(room) {
+    return path.join(LOG_DIR, `${eventLog.roomKey(room)}.surveys.json`);
+}
+
+function loadSurveyLog(room) {
+    try {
+        const file = surveyLogFile(room);
+        if (fs.existsSync(file)) {
+            const log = JSON.parse(fs.readFileSync(file, 'utf8'));
+            return Array.isArray(log) ? log : [];
+        }
+    } catch (error) {
+        console.error('Error loading survey log:', error);
+    }
+    return [];
+}
+
+function saveSurveyRecord(room, record) {
+    try {
+        if (!room) return;
+        const log = loadSurveyLog(room);
+        const index = log.findIndex(r => r.id === record.id);
+        if (index >= 0) {
+            log[index] = record;
+        } else {
+            log.push(record);
+        }
+        fs.writeFileSync(surveyLogFile(room), JSON.stringify(log, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving survey log:', error);
+    }
+}
+
+// 回答のたびに書き込まないよう、アンケートごとに少し待ってまとめて保存する
+const SURVEY_SAVE_DELAY_MS = 1000;
+const pendingSurveySaves = {};
+
+function scheduleSurveySave(room, id, getRecord) {
+    const key = `${room}\n${id}`;
+    if (pendingSurveySaves[key]) return;
+    pendingSurveySaves[key] = setTimeout(() => {
+        delete pendingSurveySaves[key];
+        saveSurveyRecord(room, getRecord());
+    }, SURVEY_SAVE_DELAY_MS);
+}
+
+function flushSurveySave(room, record) {
+    const key = `${room}\n${record.id}`;
+    if (pendingSurveySaves[key]) {
+        clearTimeout(pendingSurveySaves[key]);
+        delete pendingSurveySaves[key];
+    }
+    saveSurveyRecord(room, record);
 }
 
 // ローカル開発環境では3000番ポート、本番環境では80番ポート
@@ -69,6 +124,14 @@ app.use((req, res, next) => {
 // ダッシュボードAPIルーターを読み込み
 const dashboardRouter = require('./dashboard-api');
 app.use(dashboardRouter);
+
+// 授業ログ（イベントログ）の読み出しAPI
+app.use(eventLog.createRouter({ legacyCommentLogFile }));
+
+// アンケート結果（ダッシュボードの結果カード用）
+app.get('/api/rooms/:room/surveys', (req, res) => {
+    res.json(loadSurveyLog(req.params.room));
+});
 
 var server = app.listen(port, () => console.log('listening on', port));
 
@@ -96,6 +159,103 @@ var io = socket(server, options);
 // roomState[roomName] = { deactivate_comment_control: boolean }
 const roomState = {};
 
+// アンケートの回答を受け取る配信者（Electron）用のルーム名
+function surveyHostRoom(roomName) {
+    return `${roomName}::survey-host`;
+}
+
+// アンケート結果をリアルタイムで受け取るダッシュボード用のルーム名
+function surveyWatchRoom(roomName) {
+    return `${roomName}::survey-watch`;
+}
+
+// ログ・ダッシュボード用のアンケート結果
+function surveyRecord(roomName, survey) {
+    return {
+        id: survey.data.id,
+        room: roomName,
+        question: survey.data.question,
+        choices: survey.data.choices,
+        multiple: survey.data.multiple,
+        counts: survey.counts,
+        respondents: survey.respondents,
+        startedAt: survey.startedAt,
+        endedAt: survey.endedAt || null,
+        active: !survey.endedAt
+    };
+}
+
+// アンケートの内容を検証・整形する
+function sanitizeSurvey(data) {
+    if (!data || typeof data.id !== 'string' || typeof data.question !== 'string' || !Array.isArray(data.choices)) {
+        return null;
+    }
+    const question = data.question.trim().slice(0, 500);
+    const choices = data.choices
+        .filter(c => typeof c === 'string')
+        .map(c => c.trim().slice(0, 200))
+        .filter(c => c !== '')
+        .slice(0, 20);
+    if (question === '' || choices.length < 2) {
+        return null;
+    }
+    return { id: data.id.slice(0, 64), question, choices, multiple: !!data.multiple };
+}
+
+// 授業ログをリアルタイムで受け取るダッシュボード・配信画面用のルーム名
+function logWatchRoom(roomName) {
+    return `${roomName}::log-watch`;
+}
+
+const CLIENT_ROLES = ['participant', 'overlay', 'dashboard'];
+
+function sanitizeParticipantId(value) {
+    return typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null;
+}
+
+function str(value, max = 500) {
+    return typeof value === 'string' ? value.slice(0, max) : '';
+}
+
+// 受け取ったコメントを授業ログの1件に変換する
+function commentEventFields(data, socket) {
+    const text = str(data.comment, 10000);
+    const hidden = Number.isInteger(Number(data.hidden)) ? Number(data.hidden) : -1;
+    const actor = data.origin === 'ai' ? 'ai'
+        : (data.origin === 'host' || socket.role !== 'participant') ? 'host'
+            : 'participant';
+    const base = {
+        actor,
+        participant_id: actor === 'participant' ? (socket.participantId || socket.id) : null,
+        name: str(data.my_name, 100)
+    };
+    if (hidden === 100) {
+        return { ...base, type: 'material', text };
+    }
+    if (data.flg_emoji) {
+        return {
+            ...base,
+            type: 'reaction',
+            emoji: text,
+            sound_id: data.flg_sound ? Number(data.id_sound) : null
+        };
+    }
+    return {
+        ...base,
+        type: 'comment',
+        text,
+        hidden: hidden >= 0 ? hidden : undefined,
+        trigger: actor === 'ai' ? str(data.trigger, 20) || undefined : undefined,
+        display: {
+            color: str(data.color_text, 20) || undefined,
+            stroke: str(data.color_text_stroke, 20) || undefined,
+            direction: str(data.text_direction, 10) || undefined,
+            size: str(data.font_size, 10) || undefined,
+            read_aloud: !!data.flg_speech
+        }
+    };
+}
+
 function getRoomUserCount(roomName) {
     const roomRef = io.sockets.adapter.rooms.get(roomName);
     return roomRef ? roomRef.size : 0;
@@ -111,11 +271,14 @@ io.on('connection', (socket) => {
     // 接続者に対してコネクションを作ったことを知らせるメッセージ
     socket.emit('you_are_connected');
 
-    socket.on("join", (room_to_join) => {
+    // join(部屋名, { role, participantId }) ※第2引数のない古いクライアントは参加者として扱う
+    socket.on("join", (room_to_join, info) => {
         if (room_to_join == "") room_to_join = "undefined-room"
         socket.join(room_to_join);
         console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
+        socket.role = info && CLIENT_ROLES.includes(info.role) ? info.role : 'participant';
+        socket.participantId = sanitizeParticipantId(info && info.participantId);
 
         // ルーム状態初期化
         if (!roomState[room]) {
@@ -137,6 +300,23 @@ io.on('connection', (socket) => {
             numUsers: number_of_users
         });
 
+        eventLog.logEvent(room, {
+            type: 'join',
+            actor: socket.role === 'participant' ? 'participant' : 'host',
+            role: socket.role,
+            participant_id: socket.role === 'participant' ? (socket.participantId || socket.id) : null,
+            connections: number_of_users
+        });
+
+        // 実施中のアンケートがあれば途中参加者にも表示
+        if (roomState[room].survey) {
+            socket.emit('survey start', roomState[room].survey.data);
+        }
+
+        // 表示中の管理者メッセージ（配信画面の再起動やダッシュボードの開き直しでも状態を合わせる）
+        if (roomState[room].adminMessage) {
+            socket.emit('admin message', roomState[room].adminMessage);
+        }
     });
     socket.on("join-as-master", (room_to_join) => {
         if (room_to_join == "") room_to_join = "undefined-room"
@@ -164,13 +344,29 @@ io.on('connection', (socket) => {
 
         // コメントをログファイルに保存
         saveCommentLog(data, room);
+        eventLog.logEvent(room, commentEventFields(data, socket));
 
         // 全員に送信
         socket.to(room).emit('comment', data);
     });
 
     socket.on('delete comment', (data) => {
+        eventLog.logEvent(room, { type: 'delete_comment', actor: 'host', target: data });
         socket.to(room).emit('delete comment', data);
+    });
+
+    // 配信者の発言（ダッシュボードの音声認識の確定結果）
+    socket.on('speech transcript', (data) => {
+        const text = data && str(data.text, 2000).trim();
+        if (room === "" || !text) return;
+        eventLog.logEvent(room, { type: 'speech', actor: 'host', text });
+    });
+
+    // 授業ログの購読（現在の授業回のログを返し、以降は1件ずつ送る）
+    socket.on('log watch', () => {
+        if (room === "") return;
+        socket.join(logWatchRoom(room));
+        socket.emit('log snapshot', eventLog.currentSessionEvents(room));
     });
 
     socket.on('letter', (data) => {
@@ -186,7 +382,128 @@ io.on('connection', (socket) => {
             roomState[room] = { deactivate_comment_control: false };
         }
         roomState[room].deactivate_comment_control = data.control;
+        eventLog.logEvent(room, { type: 'comment_control', actor: 'host', unrestricted: !!data.control });
         socket.to(room).emit('deactivate_comment_control', data);
+    });
+
+    // アンケート開始（配信者から）
+    socket.on('survey start', (data) => {
+        if (room === "") return;
+        const survey = sanitizeSurvey(data);
+        if (!survey) return;
+        if (!roomState[room]) {
+            roomState[room] = { deactivate_comment_control: false };
+        }
+        // 再接続時の再送（同じID）は回答済みリストと集計を引き継ぐ
+        const current = roomState[room].survey;
+        if (!current || current.data.id !== survey.id) {
+            const next = {
+                data: survey,
+                voters: new Set(),
+                counts: survey.choices.map(() => 0),
+                respondents: 0,
+                startedAt: new Date().toISOString(),
+                endedAt: null
+            };
+            // サーバー再起動後の再送ならログから集計を復元
+            const logged = loadSurveyLog(room).find(r => r.id === survey.id);
+            if (logged && Array.isArray(logged.counts) && logged.counts.length === survey.choices.length) {
+                next.counts = logged.counts;
+                next.respondents = logged.respondents || 0;
+                next.startedAt = logged.startedAt || next.startedAt;
+            }
+            roomState[room].survey = next;
+            if (!logged) {
+                eventLog.logEvent(room, {
+                    type: 'survey_start',
+                    actor: 'host',
+                    survey_id: survey.id,
+                    question: survey.question,
+                    choices: survey.choices,
+                    multiple: survey.multiple
+                });
+            }
+            flushSurveySave(room, surveyRecord(room, next));
+            io.to(surveyWatchRoom(room)).emit('survey update', surveyRecord(room, next));
+        }
+        socket.join(surveyHostRoom(room));
+        socket.to(room).emit('survey start', survey);
+    });
+
+    // アンケート終了（配信者から）
+    socket.on('survey end', (data) => {
+        if (room === "" || !roomState[room] || !roomState[room].survey) return;
+        if (data && data.id && roomState[room].survey.data.id !== data.id) return;
+        const survey = roomState[room].survey;
+        survey.endedAt = new Date().toISOString();
+        delete roomState[room].survey;
+        eventLog.logEvent(room, {
+            type: 'survey_end',
+            actor: 'host',
+            survey_id: survey.data.id,
+            counts: survey.counts,
+            respondents: survey.respondents
+        });
+        flushSurveySave(room, surveyRecord(room, survey));
+        io.to(surveyWatchRoom(room)).emit('survey update', surveyRecord(room, survey));
+        socket.to(room).emit('survey end', { id: survey.data.id });
+    });
+
+    // 管理者メッセージの表示・非表示（ダッシュボードから）→ 配信画面に中継
+    socket.on('admin message', (data) => {
+        if (room === "" || !data) return;
+        const message = {
+            show: !!data.show,
+            text: typeof data.text === 'string' ? data.text.trim().slice(0, 100) : ''
+        };
+        if (message.show && message.text === '') return;
+        if (!roomState[room]) {
+            roomState[room] = { deactivate_comment_control: false };
+        }
+        roomState[room].adminMessage = message.show ? message : null;
+        eventLog.logEvent(room, { type: 'admin_message', actor: 'host', show: message.show, text: message.text });
+        socket.to(room).emit('admin message', message);
+    });
+
+    // ダッシュボードからアンケート結果の購読（ログ全体を返し、以降は更新を送る）
+    socket.on('survey watch', () => {
+        if (room === "") return;
+        socket.join(surveyWatchRoom(room));
+        socket.emit('survey log', loadSurveyLog(room));
+    });
+
+    // アンケート回答（参加者から）→ 配信者にだけ送る
+    socket.on('survey answer', (data) => {
+        if (room === "" || !roomState[room] || !roomState[room].survey || !data) return;
+        const survey = roomState[room].survey;
+        if (data.id !== survey.data.id) return;
+
+        // 同じブラウザ（voterId）・同じ接続からの重複回答は受け付けない
+        const voterId = typeof data.voterId === 'string' && data.voterId ? data.voterId.slice(0, 64) : socket.id;
+        if (survey.voters.has(voterId) || survey.voters.has(socket.id)) return;
+
+        const indexes = Array.isArray(data.choices) ? data.choices : [];
+        const choices = [...new Set(indexes)]
+            .filter(i => Number.isInteger(i) && i >= 0 && i < survey.data.choices.length);
+        if (choices.length === 0 || (!survey.data.multiple && choices.length > 1)) return;
+
+        survey.voters.add(voterId);
+        survey.voters.add(socket.id);
+        choices.forEach(i => survey.counts[i]++);
+        survey.respondents++;
+        eventLog.logEvent(room, {
+            type: 'survey_answer',
+            actor: 'participant',
+            participant_id: socket.participantId || voterId,
+            survey_id: survey.data.id,
+            choices,
+            choice_labels: choices.map(i => survey.data.choices[i])
+        });
+        io.to(surveyHostRoom(room)).emit('survey answer', { id: survey.data.id, voterId, choices });
+
+        const roomName = room;
+        io.to(surveyWatchRoom(roomName)).emit('survey update', surveyRecord(roomName, survey));
+        scheduleSurveySave(roomName, survey.data.id, () => surveyRecord(roomName, survey));
     });
 
     // when the user disconnects.. perform this
@@ -199,7 +516,21 @@ io.on('connection', (socket) => {
         });
         socket.to(broadcaster).emit("disconnectPeer", socket.id, number_of_users);
         // 明示的 leave は不要（Socket.IO が処理）
+        if (room !== "") {
+            eventLog.logEvent(room, {
+                type: 'leave',
+                actor: socket.role === 'participant' ? 'participant' : 'host',
+                role: socket.role,
+                participant_id: socket.role === 'participant' ? (socket.participantId || socket.id) : null,
+                connections: number_of_users
+            });
+        }
     });
+});
+
+// 記録した出来事を購読中のダッシュボード・配信画面に送る
+eventLog.onEvent((roomName, event) => {
+    io.to(logWatchRoom(roomName)).emit('log event', event);
 });
 
 
@@ -264,8 +595,8 @@ function cleanupOldChatLogs() {
         files.forEach(file => {
             const filePath = path.join(LOG_DIR, file);
 
-            // .logファイルのみ対象
-            if (path.extname(file) !== '.log') {
+            // .log ファイルとアンケート結果（.surveys.json）が対象
+            if (path.extname(file) !== '.log' && !file.endsWith('.surveys.json')) {
                 return;
             }
 
@@ -297,6 +628,9 @@ function cleanupOldChatLogs() {
                 console.error(`Error processing file ${file}:`, error);
             }
         });
+
+        // 授業ログ（logs/events）も同じ保持期間で削除する
+        deletedCount += eventLog.cleanup(retentionPeriodMs);
 
         if (deletedCount > 0) {
             console.log(`Cleanup completed: ${deletedCount} old chat log(s) deleted`);
