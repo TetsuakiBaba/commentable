@@ -1,7 +1,7 @@
 {
   "name": "commentable-desktop",
-  "version": "1.6.3",
-  "year": "2025",
+  "version": "1.7.1",
+  "year": "2026",
   "description": "コメンタブルの表示をデスクトップ上に投影するアプリケーション．終了する場合はタスクバーから終了を選択してください．",
   "main": "main.js",
   "scripts": {
@@ -13,7 +13,7 @@
     "package": "electron-forge package",
     "premake": "npm run build:native",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "publish": "npm run build:native && electron-forge publish"
   },
   "author": "Tetsuaki Baba",
   "license": "ISC",

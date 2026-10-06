@@ -51,8 +51,15 @@ npm run make
 intel chip macOS 用も一緒にビルドする場合は以下のコマンドを利用してください
 ```
 npm run make -- --arch=x64,arm64
+```
+
+### Release（GitHub リリース）
+`npm run publish` はビルド（make）から GitHub へのアップロードまでを行うため、事前に `npm run make` を実行する必要はありません。リリースは下書き（draft）として作成されるので、GitHub のリリースページで公開すると、配布済みのアプリに自動アップデートが届きます。
+```
+cd electron
 npm run publish -- --arch=x64,arm64
 ```
+リリース前に、`electron/package.json` の `version` を上げ、`electron/main.js` の `USE_LOCAL_SERVER` が `false` になっていることを確認してください。
 
 ## 不適切用語のフィルタリング
 不適切用語のフィルタリングは、public/inappropriate-words-ja/ 以下にbase64化されて保存しています。元となっているリストは [https://github.com/MosasoM/inappropriate-words-ja](https://github.com/MosasoM/inappropriate-words-ja) を利用しています。

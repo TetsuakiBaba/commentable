@@ -190,17 +190,20 @@ function cleanup(retentionMs) {
 }
 
 // 記録を読み出す API
-function createRouter({ legacyCommentLogFile }) {
+// authorize(req, res, room) が false を返したら処理しない（配信者だけが読めるようにする）
+function createRouter({ legacyCommentLogFile, authorize }) {
     const router = express.Router();
 
     // 授業回の一覧（新しい順）
     router.get('/api/rooms/:room/sessions', (req, res) => {
+        if (!authorize(req, res, req.params.room)) return;
         res.json(listSessions(req.params.room));
     });
 
     // 授業回の全イベント（JSON Lines）。session に "current" を指定すると現在の授業回
     router.get('/api/rooms/:room/sessions/:session/events', (req, res) => {
         const room = req.params.room;
+        if (!authorize(req, res, room)) return;
         let sessionId = req.params.session;
         if (sessionId === 'current') {
             sessionId = (sessions.get(room) || {}).id || listSessionIds(room).pop();
