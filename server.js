@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const eventLog = require('./event-log');
+const roomAuth = require('./room-auth');
 
 // コメントログファイルのパス
 const LOG_DIR = path.join(__dirname, 'public', 'chatlogs');
@@ -125,11 +126,20 @@ app.use((req, res, next) => {
 const dashboardRouter = require('./dashboard-api');
 app.use(dashboardRouter);
 
+// 配信者（ダッシュボードのトークン）だけが読める API の認証
+// トークンはヘッダー X-Room-Token で受け取る
+function authorizeRoom(req, res, room) {
+    if (roomAuth.verifyDashboardToken(room, req.get('X-Room-Token'))) return true;
+    res.status(403).json({ error: 'forbidden' });
+    return false;
+}
+
 // 授業ログ（イベントログ）の読み出しAPI
-app.use(eventLog.createRouter({ legacyCommentLogFile }));
+app.use(eventLog.createRouter({ legacyCommentLogFile, authorize: authorizeRoom }));
 
 // アンケート結果（ダッシュボードの結果カード用）
 app.get('/api/rooms/:room/surveys', (req, res) => {
+    if (!authorizeRoom(req, res, req.params.room)) return;
     res.json(loadSurveyLog(req.params.room));
 });
 
@@ -221,9 +231,9 @@ function str(value, max = 500) {
 function commentEventFields(data, socket) {
     const text = str(data.comment, 10000);
     const hidden = Number.isInteger(Number(data.hidden)) ? Number(data.hidden) : -1;
-    const actor = data.origin === 'ai' ? 'ai'
-        : (data.origin === 'host' || socket.role !== 'participant') ? 'host'
-            : 'participant';
+    const actor = !socket.isHost ? 'participant'
+        : data.origin === 'ai' ? 'ai'
+            : 'host';
     const base = {
         actor,
         participant_id: actor === 'participant' ? (socket.participantId || socket.id) : null,
@@ -271,13 +281,37 @@ io.on('connection', (socket) => {
     // 接続者に対してコネクションを作ったことを知らせるメッセージ
     socket.emit('you_are_connected');
 
-    // join(部屋名, { role, participantId }) ※第2引数のない古いクライアントは参加者として扱う
+    // 配信画面・ダッシュボードとして認証された接続だけが行える操作か
+    function isHostSocket() {
+        return room !== "" && socket.isHost === true;
+    }
+
+    // join(部屋名, { role, participantId, hostKey, token }) ※第2引数のない古いクライアントは参加者として扱う
     socket.on("join", (room_to_join, info) => {
-        if (room_to_join == "") room_to_join = "undefined-room"
+        if (typeof room_to_join !== 'string' || room_to_join == "") room_to_join = "undefined-room"
+        const requestedRole = info && CLIENT_ROLES.includes(info.role) ? info.role : 'participant';
+
+        // 配信画面は部屋の鍵、ダッシュボードはトークンで認証する（違えば入室させない）
+        if (requestedRole === 'overlay') {
+            const result = roomAuth.claimOrVerifyHost(room_to_join, info.hostKey);
+            if (!result.ok) {
+                console.log(socket.id, 'overlay rejected for', room_to_join, result.reason);
+                socket.emit('join rejected', { role: 'overlay', reason: result.reason });
+                return;
+            }
+        } else if (requestedRole === 'dashboard') {
+            if (!roomAuth.verifyDashboardToken(room_to_join, info.token)) {
+                console.log(socket.id, 'dashboard rejected for', room_to_join);
+                socket.emit('join rejected', { role: 'dashboard', reason: 'invalid_token' });
+                return;
+            }
+        }
+        socket.isHost = requestedRole !== 'participant';
+
         socket.join(room_to_join);
         console.log(socket.id, " joined to ", room_to_join);
         room = room_to_join;
-        socket.role = info && CLIENT_ROLES.includes(info.role) ? info.role : 'participant';
+        socket.role = requestedRole;
         socket.participantId = sanitizeParticipantId(info && info.participantId);
 
         // ルーム状態初期化
@@ -351,6 +385,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('delete comment', (data) => {
+        if (!isHostSocket()) return;
         eventLog.logEvent(room, { type: 'delete_comment', actor: 'host', target: data });
         socket.to(room).emit('delete comment', data);
     });
@@ -358,13 +393,13 @@ io.on('connection', (socket) => {
     // 配信者の発言（ダッシュボードの音声認識の確定結果）
     socket.on('speech transcript', (data) => {
         const text = data && str(data.text, 2000).trim();
-        if (room === "" || !text) return;
+        if (!isHostSocket() || !text) return;
         eventLog.logEvent(room, { type: 'speech', actor: 'host', text });
     });
 
     // 授業ログの購読（現在の授業回のログを返し、以降は1件ずつ送る）
     socket.on('log watch', () => {
-        if (room === "") return;
+        if (!isHostSocket()) return;
         socket.join(logWatchRoom(room));
         socket.emit('log snapshot', eventLog.currentSessionEvents(room));
     });
@@ -375,8 +410,8 @@ io.on('connection', (socket) => {
 
 
     socket.on('deactivate_comment_control', (data) => {
-        if (room === "") {
-            return; // join 前は無視
+        if (!isHostSocket() || !data) {
+            return; // 配信者以外・join 前は無視
         }
         if (!roomState[room]) {
             roomState[room] = { deactivate_comment_control: false };
@@ -388,7 +423,7 @@ io.on('connection', (socket) => {
 
     // アンケート開始（配信者から）
     socket.on('survey start', (data) => {
-        if (room === "") return;
+        if (!isHostSocket()) return;
         const survey = sanitizeSurvey(data);
         if (!survey) return;
         if (!roomState[room]) {
@@ -432,7 +467,7 @@ io.on('connection', (socket) => {
 
     // アンケート終了（配信者から）
     socket.on('survey end', (data) => {
-        if (room === "" || !roomState[room] || !roomState[room].survey) return;
+        if (!isHostSocket() || !roomState[room] || !roomState[room].survey) return;
         if (data && data.id && roomState[room].survey.data.id !== data.id) return;
         const survey = roomState[room].survey;
         survey.endedAt = new Date().toISOString();
@@ -451,7 +486,7 @@ io.on('connection', (socket) => {
 
     // 管理者メッセージの表示・非表示（ダッシュボードから）→ 配信画面に中継
     socket.on('admin message', (data) => {
-        if (room === "" || !data) return;
+        if (!isHostSocket() || !data) return;
         const message = {
             show: !!data.show,
             text: typeof data.text === 'string' ? data.text.trim().slice(0, 100) : ''
@@ -467,7 +502,7 @@ io.on('connection', (socket) => {
 
     // ダッシュボードからアンケート結果の購読（ログ全体を返し、以降は更新を送る）
     socket.on('survey watch', () => {
-        if (room === "") return;
+        if (!isHostSocket()) return;
         socket.join(surveyWatchRoom(room));
         socket.emit('survey log', loadSurveyLog(room));
     });
@@ -516,6 +551,9 @@ io.on('connection', (socket) => {
         });
         socket.to(broadcaster).emit("disconnectPeer", socket.id, number_of_users);
         // 明示的 leave は不要（Socket.IO が処理）
+        if (room !== "" && socket.role === 'overlay') {
+            roomAuth.touchHost(room);
+        }
         if (room !== "") {
             eventLog.logEvent(room, {
                 type: 'leave',

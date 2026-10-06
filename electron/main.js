@@ -1,6 +1,6 @@
 require('update-electron-app')()
 
-const { app, BrowserWindow, Menu, Tray, screen, shell, clipboard, globalShortcut, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, Tray, screen, shell, clipboard, globalShortcut, ipcMain, autoUpdater, dialog } = require('electron')
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -28,8 +28,8 @@ process.on('uncaughtException', (error) => {
 });
 
 // サーバー切り替えフラグ（true: ローカル開発, false: 本番環境）
-// const USE_LOCAL_SERVER = false;
-const USE_LOCAL_SERVER = true;
+const USE_LOCAL_SERVER = false;
+// const USE_LOCAL_SERVER = true;
 
 // デバッグモードフラグ（true: DevTools表示 + マウス操作可能, false: DevTools非表示 + マウス操作不可）
 const DEBUG_MODE = false;
@@ -265,7 +265,8 @@ function getRandomInt(min, max) {
 function generateName() {
     var name1 = ["computer", "design", "art", "human", "410", "interface", "tmu"];
     var name2 = ["room", "class", "conference", "event", "area", "place"];
-    return capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]);
+    // 配信者の重複入室を防ぐので、他の人と重なりにくいように番号を付ける
+    return capFirst(name1[getRandomInt(0, name1.length)]) + '_' + capFirst(name2[getRandomInt(0, name2.length)]) + '_' + getRandomInt(100, 1000);
 }
 
 // ========== IPC ==========
@@ -335,6 +336,247 @@ function openLogArchiveFolder() {
     fs.mkdirSync(LOG_ARCHIVE_DIR, { recursive: true });
     shell.openPath(LOG_ARCHIVE_DIR);
 }
+
+// ========== 配信者の鍵 ==========
+// 部屋ごとに秘密の鍵を作って保存する。最初に入室したアプリの鍵がサーバーに登録され、
+// 同じ部屋名で別のアプリ（なりすまし）が配信画面として入室することを防ぐ。
+// ダッシュボードには鍵から作ったトークンを渡す（サーバーの room-auth.js と同じ式）
+//
+// 鍵のファイルは保存場所を変えられる。Dropbox や iCloud Drive の同じフォルダを選べば、
+// 別の Mac / PC でも同じ鍵を使って同じ部屋で配信できる
+const appSettingsPath = path.join(app.getPath('userData'), 'app-settings.json');
+const DEFAULT_HOST_KEYS_FILE = path.join(app.getPath('userData'), 'host-keys.json');
+const SHARED_HOST_KEYS_FILENAME = 'commentable-host-keys.json';
+let currentHostKey = null; // 入室中の部屋の鍵
+
+function loadAppSettings() {
+    try {
+        return JSON.parse(fs.readFileSync(appSettingsPath, 'utf8')) || {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function saveAppSettings(patch) {
+    try {
+        fs.writeFileSync(appSettingsPath, JSON.stringify({ ...loadAppSettings(), ...patch }, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving app settings:', error);
+    }
+}
+
+// 鍵の保存フォルダ（null なら既定の場所）
+function hostKeysDir() {
+    return loadAppSettings().hostKeysDir || null;
+}
+
+function hostKeysFile(dir = hostKeysDir()) {
+    return dir ? path.join(dir, SHARED_HOST_KEYS_FILENAME) : DEFAULT_HOST_KEYS_FILE;
+}
+
+function readHostKeys(file) {
+    try {
+        return JSON.parse(fs.readFileSync(file, 'utf8')) || {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function writeHostKeys(file, keys) {
+    fs.writeFileSync(file, JSON.stringify(keys, null, 2), { encoding: 'utf8', mode: 0o600 });
+}
+
+// 部屋の鍵を返す（なければ作る）。保存先のフォルダが見つからないときは例外を投げる
+// （同期前の共有フォルダで新しい鍵を作ると、自分の部屋に入れなくなるため）
+function getHostKey(room) {
+    const dir = hostKeysDir();
+    if (dir && !fs.existsSync(dir)) {
+        const error = new Error(`鍵の保存場所が見つかりません: ${dir}`);
+        error.code = 'HOST_KEYS_DIR_MISSING';
+        throw error;
+    }
+    const file = hostKeysFile(dir);
+    const keys = readHostKeys(file);
+    if (keys[room]) return keys[room];
+
+    // 他の Mac / PC が同じファイルに書いている可能性があるので、書く直前に読み直して追記する
+    const latest = readHostKeys(file);
+    if (latest[room]) return latest[room];
+    latest[room] = crypto.randomBytes(32).toString('base64url');
+    writeHostKeys(file, latest);
+    return latest[room];
+}
+
+// 入室前に鍵を用意する。保存場所が見つからなければ、どうするかを尋ねる（終了を選んだら null）
+async function ensureHostKey(room) {
+    for (;;) {
+        try {
+            return getHostKey(room);
+        } catch (error) {
+            if (error.code !== 'HOST_KEYS_DIR_MISSING') {
+                console.error('Error preparing host key:', error);
+                return null;
+            }
+            const { response } = await dialog.showMessageBox({
+                type: 'warning',
+                title: 'Commentable',
+                message: '配信者の鍵の保存場所が見つかりません',
+                detail: `${hostKeysDir()}\n\nDropbox や iCloud Drive の同期が終わっているか確認してください。`,
+                buttons: ['再試行', '保存場所を変更...', '既定の場所に戻す', '終了'],
+                defaultId: 0,
+                cancelId: 3
+            });
+            if (response === 1) await changeHostKeysDir();
+            else if (response === 2) await resetHostKeysDir();
+            else if (response === 3) return null;
+        }
+    }
+}
+
+// 鍵を新しい保存場所に移す。両方に同じ部屋の鍵があるときは、移動先（共有フォルダ）の鍵を使う
+async function moveHostKeys(newDir) {
+    const fromFile = hostKeysFile();
+    const toFile = hostKeysFile(newDir);
+    if (fromFile === toFile) return;
+    const current = fs.existsSync(path.dirname(fromFile)) ? readHostKeys(fromFile) : {};
+    const destination = readHostKeys(toFile);
+    const conflicts = Object.keys(current).filter(room => destination[room] && destination[room] !== current[room]);
+    const merged = { ...current, ...destination };
+    try {
+        fs.mkdirSync(path.dirname(toFile), { recursive: true });
+        writeHostKeys(toFile, merged);
+    } catch (error) {
+        await dialog.showMessageBox({ type: 'error', title: 'Commentable', message: '鍵を保存できませんでした', detail: error.message });
+        return;
+    }
+    saveAppSettings({ hostKeysDir: newDir });
+    if (g_room && merged[g_room]) currentHostKey = merged[g_room];
+    rebuildTrayMenu();
+
+    let detail = `保存場所: ${toFile}\n部屋の鍵: ${Object.keys(merged).length} 件`;
+    if (newDir) {
+        detail += '\n\n別の Mac / PC でも同じフォルダを選ぶと、同じ部屋で配信できます。';
+    }
+    if (conflicts.length > 0) {
+        detail += `\n\n次の部屋は、移動先にあった鍵を使います（この Mac で使っていた鍵とは別のものです）:\n${conflicts.join('\n')}`;
+    }
+    await dialog.showMessageBox({ type: 'info', title: 'Commentable', message: '配信者の鍵の保存場所を変更しました', detail });
+}
+
+async function changeHostKeysDir() {
+    const result = await dialog.showOpenDialog({
+        title: '配信者の鍵の保存場所を選択',
+        message: 'Dropbox や iCloud Drive のフォルダを選ぶと、別の Mac / PC と鍵を共有できます',
+        buttonLabel: 'このフォルダに保存',
+        properties: ['openDirectory', 'createDirectory']
+    });
+    if (result.canceled || result.filePaths.length === 0) return;
+    await moveHostKeys(result.filePaths[0]);
+}
+
+async function resetHostKeysDir() {
+    await moveHostKeys(null);
+}
+
+function buildHostKeyMenu() {
+    const dir = hostKeysDir();
+    return {
+        label: '配信者の鍵',
+        submenu: [
+            { label: `保存場所: ${dir || '既定（このアプリのデータフォルダ）'}`, enabled: false },
+            { type: 'separator' },
+            { label: '保存場所を変更...', click: changeHostKeysDir },
+            { label: '既定の場所に戻す', enabled: !!dir, click: resetHostKeysDir },
+            {
+                label: '保存場所を開く',
+                click: () => {
+                    const file = hostKeysFile();
+                    if (fs.existsSync(file)) shell.showItemInFolder(file);
+                    else shell.openPath(path.dirname(file));
+                }
+            }
+        ]
+    };
+}
+
+function dashboardToken() {
+    return crypto.createHash('sha256').update(`commentable-dashboard:${currentHostKey}`).digest('hex');
+}
+
+// ダッシュボードの URL（トークンは # 以降に付けるのでサーバーのアクセスログには残らない）
+function dashboardUrl() {
+    return `${currentBaseUrl}/dashboard/?room=${encodeURIComponent(g_room)}&v=${version}#token=${dashboardToken()}`;
+}
+
+// サーバーに配信画面としての入室を断られた（同じ部屋名を別の配信者が使用中）
+let handlingJoinRejection = false;
+ipcMain.on('join-rejected', async (event, reason) => {
+    if (handlingJoinRejection) return;
+    handlingJoinRejection = true;
+    const { response } = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Commentable',
+        message: `部屋「${g_room}」には入室できません`,
+        detail: reason === 'host_taken'
+            ? 'この部屋名は、別の配信者のアプリが使用しています。別の部屋名で入室してください。\n\n自分の別の Mac / PC で使っていた部屋なら、トレイメニュー「配信者の鍵」で、そちらと同じ保存場所（Dropbox など）を選んでから入り直してください。'
+            : `サーバーに入室を断られました（${reason}）。`,
+        buttons: ['別の部屋名で入室', '鍵の保存場所を変更して入り直す', '終了'],
+        defaultId: 0,
+        cancelId: 2
+    });
+    handlingJoinRejection = false;
+    if (response === 1) {
+        await changeHostKeysDir();
+        enterRoom(g_room);
+        return;
+    }
+    if (response !== 0) {
+        app.quit();
+        return;
+    }
+    const room = await askRoomName();
+    if (room === null) {
+        app.quit();
+        return;
+    }
+    enterRoom(room);
+});
+
+// ========== アップデートの手動確認 ==========
+// 定期的な確認と、ダウンロード後の再起動の確認は update-electron-app が行う。
+// トレイメニューから確認したときだけ、結果をダイアログで知らせる
+let manualUpdateCheck = false;
+
+function showUpdateDialog(type, message, detail = '') {
+    dialog.showMessageBox({ type, title: 'アップデートの確認', message, detail, buttons: ['OK'] });
+}
+
+function checkForUpdatesManually() {
+    if (!app.isPackaged || !(is_mac || is_windows)) {
+        showUpdateDialog('info', 'この環境ではアップデートを確認できません', '配布版（ビルドしたアプリ）の macOS / Windows でのみ利用できます。');
+        return;
+    }
+    manualUpdateCheck = true;
+    autoUpdater.checkForUpdates();
+}
+
+autoUpdater.on('update-available', () => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    showUpdateDialog('info', '新しいバージョンがあります', 'バックグラウンドでダウンロードしています。完了すると再起動の確認が表示されます。');
+});
+
+autoUpdater.on('update-not-available', () => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    showUpdateDialog('info', '最新のバージョンです', `現在のバージョン: ${version}`);
+});
+
+autoUpdater.on('error', (error) => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    showUpdateDialog('warning', 'アップデートを確認できませんでした', error && error.message ? error.message : String(error));
+});
 
 // ========== アンケート ==========
 // 集計はメインプロセスで保持する（集計ウィンドウを閉じても結果が残る）
@@ -644,12 +886,17 @@ function buildTrayMenu() {
             label: '授業ログのフォルダを開く',
             click: openLogArchiveFolder
         },
+        buildHostKeyMenu(),
         {
             label: "ダッシュボード",
-            click: () => openExternalUrl(`${currentBaseUrl}/dashboard/?room=${encodeURIComponent(g_room)}&v=${version}`)
+            click: () => openExternalUrl(dashboardUrl())
         },
         buildCameraMenu(),
         { type: 'separator' },
+        {
+            label: 'アップデートを確認...',
+            click: checkForUpdatesManually
+        },
         {
             label: 'About',
             click: openAboutWindow
@@ -661,12 +908,21 @@ function buildTrayMenu() {
 function rebuildTrayMenu() {
     if (!tray) return;
     contextMenu = buildTrayMenu();
+    // オーバーレイはメニューより手前に表示されるので、メニューを開いている間は QR コードを隠す
+    contextMenu.on('menu-will-show', () => callRenderer('setQRSuppressed', true));
+    contextMenu.on('menu-will-close', () => callRenderer('setQRSuppressed', false));
     tray.setContextMenu(contextMenu);
 }
 
 // ========== 起動 ==========
 // 部屋に入ったらオーバーレイ表示を開始する
-function enterRoom(room) {
+async function enterRoom(room) {
+    const hostKey = await ensureHostKey(room);
+    if (hostKey === null) {
+        app.quit();
+        return;
+    }
+    currentHostKey = hostKey;
     g_room = room;
 
     win.setVisibleOnAllWorkspaces(true, {
@@ -680,20 +936,42 @@ function enterRoom(room) {
         win.setIgnoreMouseEvents(true);
     }
 
-    // 接続先・部屋名・バージョンはクエリで渡す（レンダラーの setup で接続を開始する）
+    // 接続先・部屋名・バージョン・配信者の鍵はクエリで渡す（レンダラーの setup で接続を開始する）
     win.loadFile(path.join(__dirname, 'index.html'), {
-        query: { server: currentBaseUrl, room, v: version }
+        query: { server: currentBaseUrl, room, v: version, hostKey }
     });
 
-    tray = new Tray(path.join(__dirname, is_windows ? 'images/icon.ico' : 'images/icon.png'));
-    tray.setToolTip('commentable-desktop')
+    if (!tray) {
+        tray = new Tray(path.join(__dirname, is_windows ? 'images/icon.ico' : 'images/icon.png'));
+        tray.setToolTip('commentable-desktop')
+        // クリック時にメニューを表示
+        tray.on('click', () => {
+            tray.popUpContextMenu(contextMenu)
+        })
+    }
     cameraSegmentationQuality = loadCameraSettings().segmentationQuality || 'balanced';
     rebuildTrayMenu();
+}
 
-    // クリック時にメニューを表示
-    tray.on('click', () => {
-        tray.popUpContextMenu(contextMenu)
-    })
+// 部屋名を入力してもらう（キャンセルなら null）
+function askRoomName() {
+    return prompt({
+        title: 'Commentable',
+        alwaysOnTop: true,
+        label: '部屋名を入力して入室してください',
+        value: generateName(),
+        menuBarVisible: true,
+        buttonLabels: {
+            ok: '入室',
+            cancel: 'やめる'
+        },
+        inputAttrs: {
+            type: 'text',
+            required: true
+        },
+        type: 'input',
+        customStylesheet: PROMPT_STYLESHEET
+    });
 }
 
 app.whenReady().then(() => {
@@ -742,23 +1020,7 @@ app.whenReady().then(() => {
         cameraEnabled = false;
     });
 
-    prompt({
-        title: 'Commentable',
-        alwaysOnTop: true,
-        label: '部屋名を入力して入室してください',
-        value: generateName(),
-        menuBarVisible: true,
-        buttonLabels: {
-            ok: '入室',
-            cancel: 'やめる'
-        },
-        inputAttrs: {
-            type: 'text',
-            required: true
-        },
-        type: 'input',
-        customStylesheet: PROMPT_STYLESHEET
-    })
+    askRoomName()
         .then((r) => {
             if (r === null) {
                 console.log('user cancelled');

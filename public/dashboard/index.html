@@ -1575,7 +1575,7 @@
                 return;
             }
             try {
-                const response = await fetch(`/api/rooms/${encodeURIComponent(room)}/surveys`, { cache: 'no-store' });
+                const response = await fetch(`/api/rooms/${encodeURIComponent(room)}/surveys`, roomFetchOptions(room));
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 setSurveyLog(await response.json());
                 if (surveyLog.length === 0 && showAlert) alert('まだこの部屋のアンケート結果はありません。');
@@ -1698,12 +1698,65 @@
             addLog(`ユーザー別集計CSVをダウンロードしました: ${filename}`, 'info');
         }
 
+        // ========== 配信者トークン ==========
+        // Electron アプリのトレイメニュー「ダッシュボード」で開くと URL の # 以降にトークンが付く。
+        // 画面共有などで見えないよう、読み取ったらアドレスバーから消してブラウザに保存する
+        const ROOM_TOKENS_KEY = 'dashboardRoomTokens';
+
+        function loadRoomTokens() {
+            try {
+                return JSON.parse(localStorage.getItem(ROOM_TOKENS_KEY)) || {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        function getRoomToken(room) {
+            return loadRoomTokens()[room] || '';
+        }
+
+        function captureTokenFromUrl() {
+            const hashParams = new URLSearchParams(window.location.hash.slice(1));
+            const token = hashParams.get('token');
+            const room = getURLParams().room;
+            if (!token) return;
+            if (room) {
+                try {
+                    const tokens = loadRoomTokens();
+                    tokens[decodeURIComponent(room)] = token;
+                    localStorage.setItem(ROOM_TOKENS_KEY, JSON.stringify(tokens));
+                } catch (error) {
+                    // 保存できない場合も、このページを開いている間は URL から読んだトークンを使う
+                    sessionTokenFallback = { room: decodeURIComponent(room), token };
+                }
+            }
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+        let sessionTokenFallback = null;
+
+        function currentRoomToken(room = textRoomName.value.trim()) {
+            if (sessionTokenFallback && sessionTokenFallback.room === room) return sessionTokenFallback.token;
+            return getRoomToken(room);
+        }
+
+        // 配信者だけが読める API 用のリクエスト設定
+        function roomFetchOptions(room = textRoomName.value.trim()) {
+            return { cache: 'no-store', headers: { 'X-Room-Token': currentRoomToken(room) } };
+        }
+
+        function onJoinRejected() {
+            disconnectFromServer();
+            updateStatus('disconnected', '入室できません');
+            addLog('この部屋のダッシュボードに入るには、配信者の Commentable アプリのトレイメニュー「ダッシュボード」から開いてください', 'error');
+            alert('この部屋のダッシュボードには入れません。\n配信者の Commentable アプリのトレイメニュー「ダッシュボード」から開いてください。');
+        }
+
         function logApiBase() {
             return `/api/rooms/${encodeURIComponent(textRoomName.value.trim())}`;
         }
 
         async function fetchSessionEvents(sessionId) {
-            const response = await fetch(`${logApiBase()}/sessions/${encodeURIComponent(sessionId)}/events`, { cache: 'no-store' });
+            const response = await fetch(`${logApiBase()}/sessions/${encodeURIComponent(sessionId)}/events`, roomFetchOptions());
             if (response.status === 404) return [];
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return (await response.text()).split('\n').filter(line => line.trim())
@@ -1715,7 +1768,7 @@
         async function loadLogSessions() {
             if (!textRoomName.value.trim()) return;
             try {
-                const response = await fetch(`${logApiBase()}/sessions`, { cache: 'no-store' });
+                const response = await fetch(`${logApiBase()}/sessions`, roomFetchOptions());
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const list = await response.json();
                 const select = document.getElementById('select_log_session');
@@ -1743,7 +1796,7 @@
             try {
                 let events;
                 if (viewingSession === 'all') {
-                    const response = await fetch(`${logApiBase()}/sessions`, { cache: 'no-store' });
+                    const response = await fetch(`${logApiBase()}/sessions`, roomFetchOptions());
                     const list = response.ok ? await response.json() : [];
                     events = (await Promise.all(list.map(item => fetchSessionEvents(item.session_id)))).flat();
                 } else {
@@ -2893,7 +2946,7 @@
 
             socket.on('you_are_connected', () => {
                 addLog(`部屋 "${roomName}" に参加しています...`, 'info');
-                socket.emit('join', roomName, { role: 'dashboard' });
+                socket.emit('join', roomName, { role: 'dashboard', token: currentRoomToken(roomName) });
             });
 
             socket.on('login', (data) => {
@@ -2929,6 +2982,8 @@
                 updateUserStats(data.numUsers);
             });
 
+            socket.on('join rejected', onJoinRejected);
+
             socket.on('disconnect', () => {
                 isConnected = false;
                 stopAutoPosting(); // 自動投稿を停止
@@ -2939,7 +2994,7 @@
 
             socket.on('reconnect', () => {
                 addLog('サーバに再接続しました', 'info');
-                socket.emit('join', roomName, { role: 'dashboard' });
+                socket.emit('join', roomName, { role: 'dashboard', token: currentRoomToken(roomName) });
             });
         }
 
@@ -3174,6 +3229,9 @@
 
             // アコーディオン機能を最初に初期化
             initAccordionButtons();
+
+            // URL に付いた配信者トークンを保存して、アドレスバーから消す
+            captureTokenFromUrl();
 
             // 保存された設定を復元（部屋名は URL の指定を優先するので、この後で上書きされる）
             restoreDashboardSettings();

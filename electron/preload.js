@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     endSurvey: () => ipcRenderer.invoke('survey-end'),
     getSurveyState: () => ipcRenderer.invoke('survey-get-state'),
     onSurveyUpdate: (callback) => ipcRenderer.on('survey-update', callback),
+    // 配信画面としての入室を断られたことをメインプロセスに知らせる
+    notifyJoinRejected: (reason) => ipcRenderer.send('join-rejected', reason),
     // 授業ログをこの Mac に保存
     archiveLogEvents: (events) => ipcRenderer.send('archive-log-events', events),
     // ウィンドウリサイズイベントを受信

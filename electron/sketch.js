@@ -216,6 +216,13 @@ function toggleQR(checked, position, room) {
 }
 
 
+// トレイメニューを開いている間だけ QR コードを隠す（表示設定はそのまま）
+function setQRSuppressed(suppressed) {
+    ['QR_center', 'QR_top_right'].forEach(id => {
+        document.getElementById(id).classList.toggle('qr-suppressed', suppressed);
+    });
+}
+
 class ProtofessionalEffect {
     constructor() {
         this.is_activating = false;
@@ -510,7 +517,7 @@ function startSocketConnection(room) {
 
         socket.on('you_are_connected', function () {
             // 部屋名を指定してジョインする．
-            socket.emit('join', room, { role: 'overlay' });
+            socket.emit('join', room, { role: 'overlay', hostKey: window.HOST_KEY });
             // 実施中のアンケートがあれば再接続後に配信し直す（回答者のブラウザ側で重複表示はされない）
             if (activeSurvey) {
                 socket.emit('survey start', activeSurvey);
@@ -524,6 +531,13 @@ function startSocketConnection(room) {
             }
         });
 
+        // 同じ部屋名を別の配信者のアプリが使用している（なりすまし防止）
+        socket.on('join rejected', (data) => {
+            console.error('Join rejected:', data);
+            socket.disconnect(); // 再接続のたびに断られ続けないように止める
+            if (window.electronAPI) window.electronAPI.notifyJoinRejected(data && data.reason);
+        });
+
         socket.on('comment', newComment);
 
         // 管理者メッセージ（ダッシュボードの「メッセージ表示」カードから）
@@ -533,7 +547,7 @@ function startSocketConnection(room) {
 
         socket.on('reconnect', () => {
             console.log('you have been reconnected');
-            socket.emit('join', room, { role: 'overlay' });
+            socket.emit('join', room, { role: 'overlay', hostKey: window.HOST_KEY });
         });
 
         socket.on('login', (data) => {

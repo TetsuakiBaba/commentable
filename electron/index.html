@@ -81,6 +81,13 @@
             /* 子要素のマウスイベントを無効化 */
         }
 
+        /* トレイメニューを開いている間は隠す（メニューに重ならないように、すぐに消す） */
+        .QR_center.qr-suppressed,
+        .QR_top_right.qr-suppressed {
+            opacity: 0 !important;
+            transition: none;
+        }
+
         .QR_center:hover {
             opacity: 0 !important;
             /* マウスホバー時に非表示 */
@@ -195,6 +202,7 @@
         window.SOCKET_SERVER_URL = launchParams.get('server') || 'https://commentable.onrender.com';
         window.ROOM_NAME = launchParams.get('room');
         window.APP_VERSION = launchParams.get('v') || 'undefined';
+        window.HOST_KEY = launchParams.get('hostKey');
     </script>
     <script src="qr-code-styling.js"></script>
 
