@@ -1440,6 +1440,8 @@
             };
             socket.emit('comment', data);
             addLog(`${emoji ? 'リアクション' : 'コメント'}送信: ${comment}`, 'sent');
+            // 教員もAIをTAとして呼べるよう、自分の投稿もAIアシスタントに渡す
+            handleCommentForAssistant(data);
             return true;
         }
 
@@ -2891,7 +2893,12 @@
         // 新しいコメントを受信したときの処理
         async function onNewComment(data) {
             addLog(`受信: [${data.my_name}] ${data.comment}`, 'received');
+            await handleCommentForAssistant(data);
+        }
 
+        // コメントを会話履歴に追加し、AI名が含まれていれば応答する
+        // サーバは送信者自身にコメントを返さないため、ダッシュボードからの投稿は postComment から直接呼ぶ
+        async function handleCommentForAssistant(data) {
             // すべてのコメントを会話履歴に追加（自分のコメント以外、絵文字のみは除外）
             if (data.my_name !== aiName && !data.flg_emoji) {
                 const speaker = data.origin === 'host' ? '配信者' : '参加者';
