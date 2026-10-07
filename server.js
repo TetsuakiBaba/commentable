@@ -227,6 +227,22 @@ function str(value, max = 500) {
     return typeof value === 'string' ? value.slice(0, max) : '';
 }
 
+// 参加者が名前欄に入れた名前（学修番号など）。未入力や初期値の判定は読み出す側で行う
+function sanitizeParticipantName(value) {
+    return str(value, 100).trim();
+}
+
+// 参加者の出来事に付ける本人の情報（配信者側の接続には付けない）
+function participantFields(socket, fallbackId = socket.id) {
+    if (socket.role !== 'participant') {
+        return { participant_id: null };
+    }
+    return {
+        participant_id: socket.participantId || fallbackId,
+        name: socket.participantName || undefined
+    };
+}
+
 // 受け取ったコメントを授業ログの1件に変換する
 function commentEventFields(data, socket) {
     const text = str(data.comment, 10000);
@@ -313,6 +329,7 @@ io.on('connection', (socket) => {
         room = room_to_join;
         socket.role = requestedRole;
         socket.participantId = sanitizeParticipantId(info && info.participantId);
+        socket.participantName = socket.role === 'participant' ? sanitizeParticipantName(info && info.name) : '';
 
         // ルーム状態初期化
         if (!roomState[room]) {
@@ -338,7 +355,8 @@ io.on('connection', (socket) => {
             type: 'join',
             actor: socket.role === 'participant' ? 'participant' : 'host',
             role: socket.role,
-            participant_id: socket.role === 'participant' ? (socket.participantId || socket.id) : null,
+            ...participantFields(socket),
+            connection_id: socket.id,
             connections: number_of_users
         });
 
@@ -376,12 +394,33 @@ io.on('connection', (socket) => {
         // we tell the client to execute 'new message'
         data.socketid = socket.id;
 
+        // 名前欄を変えた直後にコメントした場合など、記録している名前をコメントの名前に合わせる
+        if (socket.role === 'participant') {
+            const name = sanitizeParticipantName(data.my_name);
+            if (name) socket.participantName = name;
+        }
+
         // コメントをログファイルに保存
         saveCommentLog(data, room);
         eventLog.logEvent(room, commentEventFields(data, socket));
 
         // 全員に送信
         socket.to(room).emit('comment', data);
+    });
+
+    // 参加者が名前欄を変更したとき（授業ログで入退室・アンケート回答を本人に結びつけるため）
+    socket.on('profile', (data) => {
+        if (room === '' || socket.role !== 'participant' || !data) return;
+        const name = sanitizeParticipantName(data.name);
+        if (name === (socket.participantName || '')) return;
+        const previous = socket.participantName || '';
+        socket.participantName = name;
+        eventLog.logEvent(room, {
+            type: 'name_change',
+            actor: 'participant',
+            ...participantFields(socket),
+            previous
+        });
     });
 
     socket.on('delete comment', (data) => {
@@ -529,7 +568,7 @@ io.on('connection', (socket) => {
         eventLog.logEvent(room, {
             type: 'survey_answer',
             actor: 'participant',
-            participant_id: socket.participantId || voterId,
+            ...participantFields(socket, voterId),
             survey_id: survey.data.id,
             choices,
             choice_labels: choices.map(i => survey.data.choices[i])
@@ -559,7 +598,8 @@ io.on('connection', (socket) => {
                 type: 'leave',
                 actor: socket.role === 'participant' ? 'participant' : 'host',
                 role: socket.role,
-                participant_id: socket.role === 'participant' ? (socket.participantId || socket.id) : null,
+                ...participantFields(socket),
+                connection_id: socket.id,
                 connections: number_of_users
             });
         }

@@ -344,9 +344,23 @@
         return participantId;
     }
 
+    // 名前欄の値（授業ログで入退室・アンケート回答を本人に結びつけるのに使う）
+    function currentName() {
+        const input = document.getElementById('text_my_name');
+        return input ? input.value.trim() : '';
+    }
+
+    // 名前が未入力か、初期値（匿名 / Anonymous）のままか
+    const DEFAULT_NAMES = ['匿名', 'anonymous'];
+    function isDefaultName(name) {
+        const value = String(name || '').trim().toLowerCase();
+        return value === '' || DEFAULT_NAMES.includes(value)
+            || (global.i18next && value === String(global.i18next.t('anonymous')).toLowerCase());
+    }
+
     // 部屋に入るときにサーバーへ渡す情報
     function joinInfo() {
-        return { role: 'participant', participantId: getParticipantId() };
+        return { role: 'participant', participantId: getParticipantId(), name: currentName() };
     }
 
     global.CommentApp = {
@@ -357,6 +371,8 @@
         integrateIncoming,
         attachSocket,
         getParticipantId,
+        currentName,
+        isDefaultName,
         joinInfo,
         setEmojiFilter,
         updateHistoryDisplay,

@@ -83,7 +83,20 @@ function setup() {
             if (name) {
                 localStorage.setItem('commentable_user_name', name);
             }
+            updateNameWarning();
         });
+        // 入力が確定したらサーバーに知らせる（授業ログで入退室・アンケート回答を本人に結びつけるため）
+        nameInput.addEventListener('change', function () {
+            if (socket && currentRoom) {
+                socket.emit('profile', { name: CommentApp.currentName() });
+            }
+        });
+    }
+    updateNameWarning();
+    // 言語ファイルの読み込み後に初期値（Anonymous など）が入ることがあるので、そのあとにも確認する
+    if (window.i18next) {
+        window.i18next.on('initialized', () => setTimeout(updateNameWarning, 0));
+        window.i18next.on('languageChanged', () => setTimeout(updateNameWarning, 0));
     }
 
     //socket = io.connect('http://localhost:80');
@@ -392,6 +405,16 @@ async function newComment(data) {
         card_header.appendChild(copy_button);
         new ClipboardJS(copy_button);
     }
+}
+
+// 名前が未入力・初期値のままなら注意を表示する
+function updateNameWarning() {
+    const input = document.getElementById('text_my_name');
+    const warning = document.getElementById('name_warning');
+    if (!input || !warning) return;
+    const missing = CommentApp.isDefaultName(input.value);
+    input.classList.toggle('is-invalid', missing);
+    warning.classList.toggle('d-none', !missing);
 }
 
 function pushedSendButton() {

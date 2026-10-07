@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授業参画度</title>
+    <script>
+        // OS のダーク／ライト設定に合わせる
+        document.documentElement.setAttribute('data-bs-theme',
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--bs-border-color);
+            border-radius: .5rem;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color .15s, border-color .15s;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--bs-primary);
+            background-color: var(--bs-primary-bg-subtle);
+        }
+
+        .stat-tile .value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th.sortable .bi {
+            opacity: .35;
+        }
+
+        th.sortable.sorted .bi {
+            opacity: 1;
+        }
+
+        .score-bar {
+            display: inline-block;
+            width: 60px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bs-secondary-bg);
+            vertical-align: middle;
+            margin-left: .4rem;
+            overflow: hidden;
+        }
+
+        .score-bar>span {
+            display: block;
+            height: 100%;
+            background: var(--bs-primary);
+        }
+
+        tr.student-row {
+            cursor: pointer;
+        }
+
+        tr.detail-row>td {
+            background: var(--bs-tertiary-bg);
+        }
+
+        .settings-grid label {
+            font-size: .875rem;
+        }
+
+        #method_text {
+            white-space: pre-wrap;
+            font-size: .875rem;
+        }
+
+        .table-responsive {
+            max-height: 70vh;
+        }
+
+        .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body class="bg-body-tertiary">
+    <div class="container-xl py-4">
+        <header class="mb-4">
+            <h1 class="h3 mb-1"><i class="bi bi-person-check"></i> 授業参画度</h1>
+            <p class="text-body-secondary mb-0 small">
+                ダッシュボードの「コメントログ」からダウンロードした授業ログ（JSON Lines）を読み込み、参加者ごとの授業参画度を計算します。
+                ファイルはこのブラウザの中だけで処理され、サーバーには送られません。
+            </p>
+        </header>
+
+        <!-- ファイル -->
+        <section class="card mb-3">
+            <div class="card-header d-flex align-items-center">
+                <span class="fw-semibold"><i class="bi bi-folder2-open"></i> 授業ログ</span>
+                <button class="btn btn-sm btn-outline-secondary ms-auto d-none" id="button_clear_files">
+                    <i class="bi bi-x-lg"></i> すべて外す
+                </button>
+            </div>
+            <div class="card-body">
+                <label class="drop-zone d-block" id="drop_zone" for="input_files">
+                    <i class="bi bi-cloud-arrow-up fs-2 d-block mb-2"></i>
+                    <span>ここに .jsonl ファイルをドロップ、またはクリックして選択（複数可）</span>
+                    <input type="file" id="input_files" accept=".jsonl,.ndjson,.json,.txt" multiple class="d-none">
+                </label>
+                <ul class="list-unstyled small mt-3 mb-0" id="file_list"></ul>
+            </div>
+        </section>
+
+        <!-- 授業回 -->
+        <section class="card mb-3 d-none" id="card_sessions">
+            <div class="card-header fw-semibold"><i class="bi bi-calendar3"></i> 授業回</div>
+            <div class="card-body">
+                <p class="small text-body-secondary">
+                    集計に含める授業回を選んでください。授業時間は記録の最初から最後までが初期値です。
+                    授業の前後に接続していた時間を除きたい場合は、開始・終了時刻を変更してください。
+                </p>
+                <div class="alert alert-warning small py-2 d-none" id="room_warning"></div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr class="text-nowrap">
+                                <th>含める</th>
+                                <th>授業回</th>
+                                <th>部屋</th>
+                                <th>開始</th>
+                                <th>終了</th>
+                                <th class="num">時間</th>
+                                <th class="num">参加者</th>
+                                <th class="num">アンケート</th>
+                            </tr>
+                        </thead>
+                        <tbody id="session_table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 設定 -->
+        <section class="card mb-3 d-none" id="card_settings">
+            <div class="card-header d-flex align-items-center">
+                <button class="btn btn-link p-0 text-decoration-none fw-semibold text-body" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#settings_body" aria-expanded="false">
+                    <i class="bi bi-sliders"></i> 計算の設定 <i class="bi bi-chevron-down small"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" id="button_reset_settings">初期値に戻す</button>
+            </div>
+            <div class="collapse" id="settings_body">
+                <div class="card-body settings-grid">
+                    <h2 class="h6">重み <span class="small text-body-secondary fw-normal" id="weight_total"></span></h2>
+                    <div class="row g-2 mb-3" id="weight_inputs"></div>
+
+                    <h2 class="h6">満点の基準</h2>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-4 col-lg">
+                            <label for="set_presenceFull" class="form-label">滞在：在室率（%）</label>
+                            <input type="number" class="form-control form-control-sm" id="set_presenceFull" min="1" max="100">
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <label for="set_commentsFull" class="form-label">発言：有効コメント数</label>
+                            <input type="number" class="form-control form-control-sm" id="set_commentsFull" min="1">
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <label for="set_qualityFull" class="form-label">質：実質コメント数</label>
+                            <input type="number" class="form-control form-control-sm" id="set_qualityFull" min="1">
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <label for="set_surveyFull" class="form-label">回答率（%）</label>
+                            <input type="number" class="form-control form-control-sm" id="set_surveyFull" min="1" max="100">
+                        </div>
+                        <div class="col-6 col-md-4 col-lg">
+                            <label for="set_continuityFull" class="form-label">継続性：活動区間（%）</label>
+                            <input type="number" class="form-control form-control-sm" id="set_continuityFull" min="1" max="100">
+                        </div>
+                    </div>
+
+                    <h2 class="h6">コメントの判定</h2>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <label for="set_commentMinChars" class="form-label">有効：最低文字数</label>
+                            <input type="number" class="form-control form-control-sm" id="set_commentMinChars" min="0">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="set_commentMinIntervalSec" class="form-label">有効：前の投稿からの秒数</label>
+                            <input type="number" class="form-control form-control-sm" id="set_commentMinIntervalSec" min="0">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="set_qualityMinChars" class="form-label">実質：本文の文字数</label>
+                            <input type="number" class="form-control form-control-sm" id="set_qualityMinChars" min="1">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="set_slotMinutes" class="form-label">継続性：区間（分）</label>
+                            <input type="number" class="form-control form-control-sm" id="set_slotMinutes" min="1">
+                        </div>
+                    </div>
+
+                    <h2 class="h6">名前</h2>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label for="set_defaultNames" class="form-label">名前として扱わない値（1行に1つ）</label>
+                            <textarea class="form-control form-control-sm" id="set_defaultNames" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-md-4">
+                                <input class="form-check-input" type="checkbox" id="set_fillNamesFromOtherSessions">
+                                <label class="form-check-label" for="set_fillNamesFromOtherSessions">
+                                    その回に名前を入力していないブラウザは、他の回で入力した名前で補う
+                                </label>
+                                <div class="form-text">
+                                    同じブラウザを複数の学生が使い回す環境（共用PCなど）ではオフにしてください。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結果 -->
+        <section class="card mb-3 d-none" id="card_results">
+            <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+                <span class="fw-semibold"><i class="bi bi-table"></i> 参加者別の結果</span>
+                <div class="ms-auto d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-success" id="button_csv_summary">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> 集計CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" id="button_csv_detail">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> 明細CSV
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3" id="stat_tiles"></div>
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <input type="search" class="form-control form-control-sm" id="input_search" placeholder="学修番号で絞り込み"
+                        style="max-width: 16rem;">
+                    <span class="small text-body-secondary">
+                        指標の列は「満点に対する割合」の授業回平均（欠席回は0%）。行をクリックすると授業回ごとの内訳を表示します。
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead id="result_head"></thead>
+                        <tbody id="result_body"></tbody>
+                    </table>
+                </div>
+                <div class="small text-body-secondary mt-2">
+                    <span class="badge text-bg-secondary">複数端末</span> 同じ回に複数のブラウザから参加（PCとスマホなど）
+                    <span class="badge text-bg-danger ms-2">別名あり</span> 同じブラウザから別の名前も記録されている（代理入力の可能性）
+                    <span class="badge text-bg-warning ms-2">補完</span> 名前を他の回の入力から補った回がある
+                </div>
+            </div>
+        </section>
+
+        <!-- 名前と結び付かなかった参加者 -->
+        <section class="card mb-3 d-none" id="card_unlinked">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-question-circle"></i> 名前と結び付かなかった参加者
+                <span class="badge text-bg-secondary" id="unlinked_count"></span>
+            </div>
+            <div class="card-body">
+                <p class="small text-body-secondary">
+                    名前を入力しなかった（または初期値の「匿名」のままだった）ブラウザです。参画度の集計には含まれません。
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>授業回</th>
+                                <th>ブラウザID</th>
+                                <th class="num">滞在</th>
+                                <th class="num">コメント</th>
+                                <th class="num">アンケート回答</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unlinked_body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 計算方法 -->
+        <section class="card mb-3 d-none" id="card_method">
+            <div class="card-header d-flex align-items-center">
+                <span class="fw-semibold"><i class="bi bi-info-circle"></i> 計算方法（学生への説明用）</span>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" id="button_copy_method">
+                    <i class="bi bi-clipboard"></i> コピー
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="method_text"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="score.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
