@@ -891,6 +891,11 @@ function buildTrayMenu() {
             label: "ダッシュボード",
             click: () => openExternalUrl(dashboardUrl())
         },
+        {
+            // 授業ログはブラウザ内で読み込むので、トークンは渡さない
+            label: "授業参画度",
+            click: () => openExternalUrl(`${currentBaseUrl}/engagement/`)
+        },
         buildCameraMenu(),
         { type: 'separator' },
         {

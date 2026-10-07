@@ -528,6 +528,10 @@
                                         title="ユーザー別集計CSVをダウンロード">
                                         <i class="bi bi-file-earmark-spreadsheet"></i>
                                     </button>
+                                    <a class="btn btn-sm btn-outline-success me-1" href="/engagement/" target="_blank"
+                                        rel="noopener" title="授業参画度を計算するページを開く（ダウンロードした授業ログを読み込みます）">
+                                        <i class="bi bi-person-check"></i>
+                                    </a>
                                     <button class="btn btn-sm btn-outline-secondary" id="button_clear_comments"
                                         title="表示をクリア（記録は消えません）">
                                         <i class="bi bi-trash"></i>
@@ -1179,6 +1183,8 @@
                     return `[投稿制限解除] ${ev.unrestricted ? 'ON' : 'OFF'}`;
                 case 'delete_comment':
                     return '[コメント削除]';
+                case 'name_change':
+                    return `[名前変更] ${ev.previous || '（未入力）'} → ${ev.name || '（未入力）'}`;
                 default:
                     return null;
             }

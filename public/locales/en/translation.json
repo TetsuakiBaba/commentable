@@ -5,6 +5,7 @@
     "emoji_reaction_title": "Emoji Reaction Buttons",
     "emoji_reaction_description": "There are two types of buttons for Emoji Reaction: green and red. Green is the silent reaction, where the emoji just appears on the streaming screen. The red button is a sound reaction, which makes a sound when pressed. Please refer to the list below to see what sounds are actually played.",
     "anonymous": "Anonymous",
+    "name_warning": "Your name is empty or still the default (Anonymous). In class, please enter the name you were asked to use (e.g. your student ID). It is used to record attendance and survey responses.",
     "comment_send_title": "Send comment",
     "comment_send_description_1": "Any text can be displayed on the streamer's screen. Open the drop-down menu next to the button to see the text colour, outline colour and speech-to-text function",
     "comment_send_description_2": "button) can be switched on or off. If Speech-to-Speech is checked, the text you have entered will be read out loud by the streamer.",

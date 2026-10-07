@@ -11,8 +11,9 @@ var flg_sound_mute = false;
 // ========== 描画スケジューラ ==========
 // 画面全体の透明キャンバスを毎フレーム描き直すのは重いので、
 // 動くものがある間だけ draw ループを回し、何もなければ止める。
+// カメラ映像だけのときはループを止め、カメラの新しいフレームが届くたびに描き直す
+// （固定の30fpsで回すとカメラのフレームとタイミングがずれ、映像がカタつく）
 const FRAME_RATE_ANIMATION = 60; // コメント・エフェクトが動いているとき
-const FRAME_RATE_CAMERA = 30;    // カメラ映像だけのとき（カメラ自体が30fps程度）
 var clockTimer = null;
 
 // アニメーションを開始する（止まっていればループを再開）
@@ -44,11 +45,24 @@ function hasActiveAnimation() {
 function scheduleNextFrame() {
     if (hasActiveAnimation() || cameraFadeInProgress()) {
         frameRate(FRAME_RATE_ANIMATION);
-    } else if (isCameraVisible()) {
-        frameRate(FRAME_RATE_CAMERA);
     } else {
-        noLoop();
+        noLoop(); // カメラ映像は onCameraFrame から描き直す
     }
+}
+
+// カメラの新しいフレームごとに呼ばれる（ループ中は draw が最新フレームを描くので何もしない）
+function watchCameraFrames(capture) {
+    const video = capture.elt;
+    const onCameraFrame = () => {
+        if (cameraCapture !== capture) return; // カメラが停止・切り替えされた
+        if (cameraFadeInProgress()) {
+            requestRender(); // ホバーのフェードは deltaTime が必要なのでループで描く
+        } else if (isCameraVisible()) {
+            requestRedraw();
+        }
+        video.requestVideoFrameCallback(onCameraFrame);
+    };
+    video.requestVideoFrameCallback(onCameraFrame);
 }
 
 // 時計は分が変わるときだけ描き直す
@@ -704,7 +718,9 @@ function drawCamera() {
     const { vidWidth, vidHeight } = getCameraDisplaySize();
 
     // マウスがホバーしている場合はふわっと透過（フレームレートに依存しないイージング）
-    cameraAlpha += (cameraTargetAlpha() - cameraAlpha) * (1 - Math.exp(-deltaTime / CAMERA_FADE_TIME));
+    // ループ再開直後は deltaTime が大きくなるので上限を設ける
+    const dt = Math.min(deltaTime, 50);
+    cameraAlpha += (cameraTargetAlpha() - cameraAlpha) * (1 - Math.exp(-dt / CAMERA_FADE_TIME));
 
     let source = cameraCapture.elt;
     if (cameraSegmentationEnabled) {
@@ -1020,6 +1036,7 @@ async function startCamera(deviceId) {
             updateCameraPosition();
             requestRender();
         });
+        watchCameraFrames(cameraCapture);
 
         cameraCapture.elt.addEventListener('error', (e) => {
             console.error('Camera error:', e);
@@ -1113,6 +1130,7 @@ async function requestSegmentation() {
         outCtx.drawImage(segmentationMaskCanvas, 0, 0, vw, vh);
         outCtx.restore();
         segmentationReady = true;
+        requestRedraw(); // 切り抜き結果をすぐに表示
     } catch (error) {
         console.error('Segmentation error:', error);
     } finally {
