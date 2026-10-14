@@ -17,6 +17,8 @@
     let result = null;
     let sort = { key: 'name', dir: 1 };
     let expanded = new Set();
+    const openCharts = new Set();    // グラフを開いている授業回のキー
+    const chartBinMinutes = {};      // 授業回のキー → 集計の幅（分）
 
     // ---------- 設定 ----------
 
@@ -194,7 +196,8 @@
                 <td><input type="time" class="form-control form-control-sm" style="width: 7rem;"></td>
                 <td class="num"></td>
                 <td class="num"></td>
-                <td class="num"></td>`;
+                <td class="num"></td>
+                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary text-nowrap"></button></td>`;
             const cells = tr.children;
             const include = cells[0].querySelector('input');
             include.checked = s.include;
@@ -222,12 +225,266 @@
                     const st = Number.isFinite(s.start) ? s.start : s.autoStart;
                     const en = Number.isFinite(s.end) ? s.end : s.autoEnd;
                     cells[5].textContent = minutes(en - st);
+                    if (openCharts.has(s.key)) renderSessions();
                     recompute();
                 });
             };
             onTime(startInput, 'start', s.autoStart);
             onTime(endInput, 'end', s.autoEnd);
+
+            // 盛り上がりのグラフ（授業回が多いと邪魔になるので、ボタンで開く）
+            const chartButton = cells[8].querySelector('button');
+            const setButton = () => {
+                chartButton.innerHTML = openCharts.has(s.key)
+                    ? '<i class="bi bi-chevron-up"></i> 閉じる'
+                    : '<i class="bi bi-bar-chart-line"></i> グラフ';
+                chartButton.setAttribute('aria-expanded', openCharts.has(s.key));
+            };
+            setButton();
+            chartButton.addEventListener('click', () => {
+                if (openCharts.has(s.key)) openCharts.delete(s.key);
+                else openCharts.add(s.key);
+                renderSessions();
+            });
             body.appendChild(tr);
+            if (openCharts.has(s.key)) body.appendChild(sessionChartRow(s));
+        });
+    }
+
+    // ---------- 授業回の盛り上がりグラフ ----------
+
+    const ACTIVITY_SERIES = [
+        { key: 'comments', label: 'コメント', cls: 'sc-comments' },
+        { key: 'reactions', label: 'リアクション', cls: 'sc-reactions' },
+        { key: 'answers', label: 'アンケート回答', cls: 'sc-answers' }
+    ];
+
+    // 目盛りのきりのよい上限（1・2・5 × 10^n）
+    function niceMax(value) {
+        if (value <= 0) return 1;
+        const exp = Math.pow(10, Math.floor(Math.log10(value)));
+        return [1, 2, 5, 10].map(m => m * exp).find(v => v >= value);
+    }
+
+    function autoBinMinutes(duration) {
+        const min = duration / 60000;
+        return min <= 30 ? 1 : min <= 120 ? 2 : 5;
+    }
+
+    function sessionChartRow(session) {
+        const tr = el('tr', 'session-chart-row');
+        const td = el('td');
+        td.colSpan = 9;
+        tr.appendChild(td);
+        // 表が横にスクロールしても、グラフは見えている幅に収める
+        const cell = el('div', 'fit-visible');
+        td.appendChild(cell);
+
+        const start = Number.isFinite(session.start) ? session.start : session.autoStart;
+        const end = Number.isFinite(session.end) ? session.end : session.autoEnd;
+        const binMinutes = chartBinMinutes[session.key] || autoBinMinutes(end - start);
+        const data = S.sessionActivity(session, binMinutes * 60000);
+        const n = data.bins.length;
+        const duration = Math.max(1, data.end - data.start);
+        const pos = t => Math.max(0, Math.min(100, (t - data.start) / duration * 100));
+
+        // 見出し：集計の幅と凡例
+        const head = el('div', 'd-flex flex-wrap gap-3 align-items-center mb-2');
+        const binLabel = el('label', 'small d-flex align-items-center gap-1', '集計の幅');
+        const binSelect = el('select', 'form-select form-select-sm w-auto');
+        [1, 2, 5, 10].forEach(m => {
+            const option = el('option', '', `${m}分`);
+            option.value = m;
+            option.selected = m === binMinutes;
+            binSelect.appendChild(option);
+        });
+        binSelect.addEventListener('change', () => {
+            chartBinMinutes[session.key] = Number(binSelect.value);
+            renderSessions();
+        });
+        binLabel.appendChild(binSelect);
+        const legend = el('div', 'tl-legend mt-0');
+        ACTIVITY_SERIES.forEach(series => {
+            const item = el('span', 'tl-legend-item');
+            item.append(el('span', `tl-key sc-key ${series.cls}`), document.createTextNode(series.label));
+            legend.appendChild(item);
+        });
+        if (data.surveys.length) {
+            const item = el('span', 'tl-legend-item');
+            item.append(el('span', 'tl-key tl-key-survey'), document.createTextNode('アンケート実施中'));
+            legend.appendChild(item);
+        }
+        const totals = ACTIVITY_SERIES.map(sr => `${sr.label} ${data.bins.reduce((a, b) => a + b[sr.key], 0)}`).join(' ／ ');
+        head.append(binLabel, legend, el('span', 'small text-body-secondary ms-auto', `合計：${totals}`));
+        cell.appendChild(head);
+
+        // 投稿数（積み上げ棒）
+        const maxTotal = Math.max(0, ...data.bins.map(b => b.comments + b.reactions + b.answers));
+        const yMax = niceMax(maxTotal);
+        const chart = el('div', 'sc');
+        chart.appendChild(yAxis([yMax, yMax / 2, 0], `件/${binMinutes}分`));
+        const plot = el('div', 'sc-plot');
+        [0, 50, 100].forEach(p => {
+            const line = el('div', `sc-grid${p === 0 ? ' base' : ''}`);
+            line.style.bottom = `${p}%`;
+            plot.appendChild(line);
+        });
+        data.surveys.forEach(sv => {
+            const band = el('div', 'sc-survey');
+            band.style.left = `${pos(sv.start)}%`;
+            band.style.width = `${Math.max(0.5, pos(sv.end) - pos(sv.start))}%`;
+            plot.appendChild(band);
+        });
+        const bars = el('div', `sc-bars${n > 60 ? ' dense' : ''}`);
+        data.bins.forEach(bin => {
+            const col = el('div', 'sc-col');
+            // 最後の区間が短いときは、その分だけ細くする
+            col.style.flexGrow = (bin.end - bin.start) / data.binMs;
+            const stack = el('div', 'sc-stack');
+            ACTIVITY_SERIES.forEach(series => {
+                if (!bin[series.key]) return;
+                const seg = el('div', `sc-seg ${series.cls}`);
+                seg.style.height = `${bin[series.key] / yMax * 100}%`;
+                stack.appendChild(seg);
+            });
+            col.appendChild(stack);
+            bars.appendChild(col);
+        });
+        plot.appendChild(bars);
+        chart.appendChild(plot);
+        cell.appendChild(chart);
+
+        // 在室者数（別の目盛りなので別のグラフにする）
+        const maxPresent = niceMax(Math.max(0, ...data.bins.map(b => b.present)));
+        const chart2 = el('div', 'sc sc-small');
+        chart2.appendChild(yAxis([maxPresent, 0], '在室（人）'));
+        const plot2 = el('div', 'sc-plot');
+        [0, 100].forEach(p => {
+            const line = el('div', `sc-grid${p === 0 ? ' base' : ''}`);
+            line.style.bottom = `${p}%`;
+            plot2.appendChild(line);
+        });
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', `0 0 ${duration} ${maxPresent}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.classList.add('sc-line');
+        let d = '';
+        data.bins.forEach((bin, i) => {
+            const x0 = bin.start - data.start;
+            const x1 = bin.end - data.start;
+            const y = maxPresent - bin.present;
+            d += `${i === 0 ? 'M' : 'L'}${x0},${y}L${x1},${y}`;
+        });
+        const area = document.createElementNS(svgNS, 'path');
+        area.setAttribute('d', `${d}L${duration},${maxPresent}L0,${maxPresent}Z`);
+        area.setAttribute('class', 'sc-area');
+        const line = document.createElementNS(svgNS, 'path');
+        line.setAttribute('d', d);
+        line.setAttribute('class', 'sc-stroke');
+        line.setAttribute('vector-effect', 'non-scaling-stroke');
+        svg.append(area, line);
+        plot2.appendChild(svg);
+        chart2.appendChild(plot2);
+        cell.appendChild(chart2);
+
+        // 時間軸
+        const axisWrap = el('div', 'sc sc-axis-row');
+        axisWrap.appendChild(el('div', 'sc-y'));
+        const axis = el('div', 'tl-axis sc-axis');
+        const totalMin = Math.ceil(duration / 60000);
+        // ラベルが重ならないよう、表示幅に合わせて目盛りの数を決める（1つあたり約60px）
+        const maxTicks = Math.max(3, Math.min(9, Math.floor(($('card_sessions').clientWidth - 120) / 60)));
+        const tickStep = [5, 10, 15, 30, 60].find(m => totalMin / m <= maxTicks) || 120;
+        for (let m = 0; m <= totalMin; m += tickStep) {
+            const tick = el('div', `tl-tick${m === 0 ? ' first' : ''}`, `+${m}分`);
+            tick.style.left = `${pos(data.start + m * 60000)}%`;
+            if (m > 0 && pos(data.start + m * 60000) > 95) tick.classList.add('last');
+            axis.appendChild(tick);
+        }
+        axisWrap.appendChild(axis);
+        cell.appendChild(axisWrap);
+
+        bindSessionChartHover([plot, plot2], data);
+
+        // 表で見る
+        const details = el('details', 'tl-list');
+        details.appendChild(el('summary', 'small', '表で見る'));
+        const table = el('table', 'table table-sm table-borderless small mb-0');
+        table.innerHTML = '<thead><tr><th>時刻</th><th class="num">コメント</th><th class="num">リアクション</th><th class="num">アンケート回答</th><th class="num">在室</th><th>コメントの例</th></tr></thead><tbody></tbody>';
+        const tbody = table.querySelector('tbody');
+        data.bins.forEach(bin => {
+            const row = el('tr');
+            row.append(
+                el('td', 'num', `${timeOf(bin.start)}〜`),
+                el('td', 'num', bin.comments), el('td', 'num', bin.reactions), el('td', 'num', bin.answers),
+                el('td', 'num', bin.present),
+                el('td', 'text-break', bin.texts.slice(0, 3).join(' ／ '))
+            );
+            tbody.appendChild(row);
+        });
+        details.appendChild(table);
+        cell.appendChild(details);
+        return tr;
+    }
+
+    function yAxis(values, unit) {
+        const axis = el('div', 'sc-y');
+        values.forEach((v, i) => {
+            const label = el('div', 'sc-y-label', String(v));
+            label.style.bottom = `${(values.length - 1 - i) / (values.length - 1) * 100}%`;
+            axis.appendChild(label);
+        });
+        axis.appendChild(el('div', 'sc-y-unit', unit));
+        return axis;
+    }
+
+    // ポインタのある区間の内訳をツールチップに出す（2つのグラフで同じ区間を強調する）
+    function bindSessionChartHover(plots, data) {
+        const n = data.bins.length;
+        const duration = Math.max(1, data.end - data.start);
+        const highlights = plots.map(plot => {
+            const h = el('div', 'sc-hover d-none');
+            plot.appendChild(h);
+            return h;
+        });
+        const hide = () => {
+            highlights.forEach(h => h.classList.add('d-none'));
+            tooltip.classList.add('d-none');
+        };
+        const move = e => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const t = data.start + Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * duration;
+            const i = Math.min(n - 1, Math.floor((t - data.start) / data.binMs));
+            const bin = data.bins[i];
+            const left = (bin.start - data.start) / duration * 100;
+            const width = (bin.end - bin.start) / duration * 100;
+            highlights.forEach(h => {
+                h.style.left = `${left}%`;
+                h.style.width = `${width}%`;
+                h.classList.remove('d-none');
+            });
+
+            tooltip.textContent = '';
+            tooltip.appendChild(el('div', 'fw-semibold', `${timeOf(bin.start)}〜${timeOf(bin.end)}（+${Math.round((bin.start - data.start) / 60000)}分）`));
+            ACTIVITY_SERIES.forEach(series => {
+                const row = el('div', 'tl-tip-row align-items-center');
+                row.append(el('span', `tl-key sc-key ${series.cls}`), el('span', 'fw-semibold', bin[series.key]), el('span', 'text-body-secondary', series.label));
+                tooltip.appendChild(row);
+            });
+            tooltip.appendChild(el('div', 'text-body-secondary', `在室 ${bin.present} 人`));
+            const survey = data.surveys.find(sv => sv.start < bin.end && sv.end > bin.start);
+            if (survey) tooltip.appendChild(el('div', 'text-body-secondary', `アンケート：${survey.question || ''}`));
+            bin.texts.slice(0, 4).forEach(text => {
+                tooltip.appendChild(el('div', 'text-break small mt-1', `「${text.length > 60 ? text.slice(0, 60) + '…' : text}」`));
+            });
+            if (bin.texts.length > 4) tooltip.appendChild(el('div', 'text-body-secondary small', `ほか ${bin.texts.length - 4} 件`));
+            showTooltip(e.clientX, e.clientY);
+        };
+        plots.forEach(plot => {
+            plot.addEventListener('pointermove', move);
+            plot.addEventListener('pointerdown', move);
+            plot.addEventListener('pointerleave', hide);
         });
     }
 
@@ -400,9 +657,242 @@
             });
             tbody.appendChild(row);
         });
-        td.appendChild(table);
+        const cell = el('div', 'fit-visible');
+        const scroller = el('div', 'overflow-x-auto');
+        scroller.appendChild(table);
+        cell.appendChild(scroller);
+        td.appendChild(cell);
+        const attended = result.sessions.map((sr, i) => [sr, student.perSession[i]]).filter(([, r]) => r && r.present);
+        if (attended.length) {
+            // 凡例は授業回ごとに繰り返さず、タイムラインの最初に1回だけ出す
+            const legend = timelineLegend(attended.some(([sr]) => sr.surveyPeriods.length > 0));
+            legend.classList.add('timeline-legend-top');
+            cell.appendChild(legend);
+        }
+        attended.forEach(([sr, r]) => cell.appendChild(timelineBlock(sr, r)));
         tr.appendChild(td);
         return tr;
+    }
+
+    // ---------- タイムライン ----------
+
+    const COMMENT_STATUS = {
+        substantive: { label: '実質', marker: 'tl-mark-substantive' },
+        valid: { label: '有効', marker: 'tl-mark-valid' },
+        invalid: { label: '無効', marker: 'tl-mark-invalid' }
+    };
+    const INVALID_REASON = { short: '短すぎる', duplicate: '直前と同じ文', rapid: '連打' };
+    const elapsedLabel = ms => `+${Math.floor(ms / 60000)}分`;
+    const clockOf = ms => { const d = new Date(ms); return `${timeOf(ms)}:${pad(d.getSeconds())}`; };
+
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
+
+    // 1回分のタイムライン（活動区間・在室・コメント・アンケート回答）と投稿の一覧
+    function timelineBlock(sr, r) {
+        const tl = r.timeline;
+        const duration = Math.max(1, sr.end - sr.start);
+        const pos = t => Math.max(0, Math.min(100, (t - sr.start) / duration * 100));
+
+        const block = el('div', 'timeline-block');
+        const title = el('div', 'd-flex flex-wrap gap-2 align-items-baseline mb-1');
+        title.append(
+            el('span', 'fw-semibold', `${dateOf(sr.start)} ${timeOf(sr.start)}〜${timeOf(sr.end)}`),
+            el('span', 'text-body-secondary', `${fixed(r.score)} 点 ／ 活動区間 ${tl.activeSlots.length} / ${sr.slotCount}`)
+        );
+        block.appendChild(title);
+
+        const chart = el('div', 'tl');
+        const labels = el('div', 'tl-labels');
+        const tracks = el('div', 'tl-tracks');
+        chart.append(labels, tracks);
+
+        const addRow = (label, track) => {
+            labels.appendChild(el('div', `tl-label ${track.dataset.size}`, label));
+            tracks.appendChild(track);
+        };
+
+        // 活動区間：区間ごとのセル（活動あり／なし）
+        const slots = el('div', 'tl-track tl-slots');
+        slots.dataset.size = 'tl-h-slot';
+        const active = new Set(tl.activeSlots);
+        for (let k = 0; k < sr.slotCount; k++) {
+            const cell = el('div', `tl-slot${active.has(k) ? ' active' : ''}`);
+            // 最後の区間は授業の終わりまで（長さが違うことがある）
+            const slotEnd = k === sr.slotCount - 1 ? sr.end : sr.start + (k + 1) * sr.slotMs;
+            cell.style.flexGrow = (slotEnd - (sr.start + k * sr.slotMs)) / sr.slotMs;
+            slots.appendChild(cell);
+        }
+        addRow('活動区間', slots);
+
+        // 在室
+        const presence = el('div', 'tl-track tl-presence');
+        presence.dataset.size = 'tl-h-bar';
+        tl.intervals.forEach(([a, b]) => {
+            const bar = el('div', 'tl-bar');
+            bar.style.left = `${pos(a)}%`;
+            bar.style.width = `${Math.max(0.3, pos(b) - pos(a))}%`;
+            presence.appendChild(bar);
+        });
+        addRow('在室', presence);
+
+        // コメント
+        const comments = el('div', 'tl-track tl-points');
+        comments.dataset.size = 'tl-h-point';
+        tl.comments.forEach(c => {
+            const m = el('div', `tl-mark ${COMMENT_STATUS[c.status].marker}`);
+            m.style.left = `${pos(c.t)}%`;
+            comments.appendChild(m);
+        });
+        addRow('コメント', comments);
+
+        // アンケート回答（実施中の期間を背景に敷く）
+        const answers = el('div', 'tl-track tl-points');
+        answers.dataset.size = 'tl-h-point';
+        sr.surveyPeriods.forEach(sp => {
+            const band = el('div', 'tl-survey');
+            band.style.left = `${pos(sp.start)}%`;
+            band.style.width = `${Math.max(0.5, pos(sp.end) - pos(sp.start))}%`;
+            answers.appendChild(band);
+        });
+        tl.answers.forEach(a => {
+            const m = el('div', 'tl-mark tl-mark-answer');
+            m.style.left = `${pos(a.t)}%`;
+            answers.appendChild(m);
+        });
+        addRow('回答', answers);
+
+        // 時間軸（区間の区切りごと。込み合うときは間引く）
+        const axis = el('div', 'tl-axis');
+        const step = Math.max(1, Math.ceil(sr.slotCount / 8));
+        for (let k = 0; k <= sr.slotCount; k += step) {
+            const t = Math.min(sr.start + k * sr.slotMs, sr.end);
+            const tick = el('div', 'tl-tick', elapsedLabel(t - sr.start));
+            tick.style.left = `${pos(t)}%`;
+            if (k === 0) tick.classList.add('first');
+            else if (pos(t) > 95) tick.classList.add('last');
+            axis.appendChild(tick);
+        }
+        labels.appendChild(el('div', 'tl-label tl-h-axis'));
+        tracks.appendChild(axis);
+
+        const crosshair = el('div', 'tl-crosshair d-none');
+        tracks.appendChild(crosshair);
+        bindTimelineHover(tracks, crosshair, sr, r);
+        block.appendChild(chart);
+        block.appendChild(postList(sr, r));
+        return block;
+    }
+
+    function timelineLegend(withSurvey) {
+        const legend = el('div', 'tl-legend');
+        const item = (cls, label) => {
+            const span = el('span', 'tl-legend-item');
+            span.append(el('span', `tl-key ${cls}`), document.createTextNode(label));
+            legend.appendChild(span);
+        };
+        item('tl-key-slot', `活動のあった区間（${settings.slotMinutes}分ごと）`);
+        item('tl-key-bar', '在室');
+        item('tl-mark tl-mark-substantive', '実質コメント');
+        item('tl-mark tl-mark-valid', '有効コメント');
+        item('tl-mark tl-mark-invalid', '無効コメント');
+        item('tl-mark tl-mark-answer', 'アンケート回答');
+        if (withSurvey) item('tl-key-survey', 'アンケート実施中');
+        return legend;
+    }
+
+    // ポインタ位置の時刻と、その付近の投稿をツールチップに出す
+    function bindTimelineHover(tracks, crosshair, sr, r) {
+        const tl = r.timeline;
+        const duration = Math.max(1, sr.end - sr.start);
+        const items = [
+            ...tl.comments.map(c => ({ t: c.t, key: COMMENT_STATUS[c.status].marker, text: c.text, note: c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label })),
+            ...tl.answers.map(a => ({ t: a.t, key: 'tl-mark-answer', text: a.choices.join(' / '), note: a.question ? `回答：${a.question}` : '回答' }))
+        ].sort((a, b) => a.t - b.t);
+        const active = new Set(tl.activeSlots);
+
+        const move = e => {
+            const rect = tracks.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+            const t = sr.start + x / rect.width * duration;
+            crosshair.style.left = `${x}px`;
+            crosshair.classList.remove('d-none');
+
+            const slot = Math.min(sr.slotCount - 1, Math.floor((t - sr.start) / sr.slotMs));
+            const present = tl.intervals.some(([a, b]) => t >= a && t <= b);
+            // 幅の3%（最低1分）以内の投稿を近いとみなす
+            const near = Math.max(60000, duration * 0.03);
+            const nearby = items.filter(it => Math.abs(it.t - t) <= near);
+
+            tooltip.textContent = '';
+            const head = el('div', 'fw-semibold', `${elapsedLabel(t - sr.start)}（${timeOf(t)}）`);
+            const meta = el('div', 'text-body-secondary', `区間${slot + 1}：${active.has(slot) ? '活動あり' : '活動なし'} ／ ${present ? '在室' : '不在'}`);
+            tooltip.append(head, meta);
+            nearby.slice(0, 5).forEach(it => {
+                const row = el('div', 'tl-tip-row');
+                row.append(el('span', `tl-key tl-mark ${it.key}`));
+                const body = el('div');
+                body.append(el('div', 'fw-semibold text-break', it.text.length > 80 ? it.text.slice(0, 80) + '…' : it.text));
+                body.append(el('div', 'text-body-secondary', `${clockOf(it.t)} ${it.note}`));
+                row.appendChild(body);
+                tooltip.appendChild(row);
+            });
+            if (nearby.length > 5) tooltip.appendChild(el('div', 'text-body-secondary', `ほか ${nearby.length - 5} 件`));
+            showTooltip(e.clientX, e.clientY);
+        };
+        tracks.addEventListener('pointermove', move);
+        tracks.addEventListener('pointerdown', move);
+        tracks.addEventListener('pointerleave', () => {
+            crosshair.classList.add('d-none');
+            tooltip.classList.add('d-none');
+        });
+        // 行の開閉に反応しないように
+        tracks.addEventListener('click', e => e.stopPropagation());
+    }
+
+    const tooltip = el('div', 'tl-tooltip d-none');
+    document.body.appendChild(tooltip);
+    function showTooltip(x, y) {
+        tooltip.classList.remove('d-none');
+        const w = tooltip.offsetWidth;
+        const h = tooltip.offsetHeight;
+        const left = x + 14 + w > window.innerWidth - 8 ? x - 14 - w : x + 14;
+        const top = Math.min(window.innerHeight - h - 8, y + 14);
+        tooltip.style.left = `${Math.max(8, left)}px`;
+        tooltip.style.top = `${Math.max(8, top)}px`;
+    }
+
+    // 投稿・回答の一覧（タイムラインの表形式）
+    function postList(sr, r) {
+        const tl = r.timeline;
+        const rows = [
+            ...tl.comments.map(c => ({ t: c.t, marker: COMMENT_STATUS[c.status].marker, label: c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label, text: c.text })),
+            ...tl.answers.map(a => ({ t: a.t, marker: 'tl-mark-answer', label: 'アンケート回答', text: [a.question, a.choices.join(' / ')].filter(Boolean).join(' → ') }))
+        ].sort((a, b) => a.t - b.t);
+
+        const details = el('details', 'tl-list');
+        details.open = rows.length > 0 && rows.length <= 15;
+        details.appendChild(el('summary', 'small', `投稿・回答の一覧（${rows.length}件）`));
+        if (rows.length === 0) {
+            details.appendChild(el('div', 'small text-body-secondary py-1', 'この回の投稿・回答はありません'));
+            return details;
+        }
+        const table = el('table', 'table table-sm table-borderless small mb-0');
+        table.innerHTML = '<thead><tr><th>時刻</th><th class="d-none d-sm-table-cell">経過</th><th>判定</th><th>内容</th></tr></thead><tbody></tbody>';
+        const tbody = table.querySelector('tbody');
+        rows.forEach(row => {
+            const tr = el('tr');
+            const judge = el('td', 'text-nowrap');
+            judge.append(el('span', `tl-key tl-mark ${row.marker}`), document.createTextNode(row.label));
+            tr.append(el('td', 'num', clockOf(row.t)), el('td', 'num d-none d-sm-table-cell', elapsedLabel(row.t - sr.start)), judge, el('td', 'text-break', row.text));
+            tbody.appendChild(tr);
+        });
+        details.appendChild(table);
+        return details;
     }
 
     function renderUnlinked() {
@@ -544,9 +1034,19 @@
 
     // ---------- 初期化 ----------
 
+    // 横スクロールする表の中で、グラフ・詳細を見えている幅に合わせるための幅
+    function watchScrollerWidths() {
+        if (!window.ResizeObserver) return;
+        const observer = new ResizeObserver(entries => {
+            entries.forEach(entry => entry.target.style.setProperty('--visible-width', `${entry.target.clientWidth}px`));
+        });
+        document.querySelectorAll('.table-responsive').forEach(node => observer.observe(node));
+    }
+
     function init() {
         buildWeightInputs();
         renderSettings();
+        watchScrollerWidths();
         bindSettings();
 
         const dropZone = $('drop_zone');

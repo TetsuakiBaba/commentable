@@ -210,24 +210,30 @@
         return [...String(text || '')].length;
     }
 
-    // 有効コメントを選ぶ（短すぎる・直前と同じ文・連打を除く）
-    function validComments(comments, settings) {
-        const result = [];
+    // コメントを1件ずつ判定する（タイムラインと一覧にも使う）
+    //   status: 'substantive'（実質）/ 'valid'（有効）/ 'invalid'（数えない）
+    //   reason: invalid の理由 'short'（短すぎる）/ 'duplicate'（直前と同じ文）/ 'rapid'（連打）
+    function classifyComments(comments, settings) {
         let prevText = null;
         let lastValidAt = -Infinity;
-        comments.forEach(ev => {
+        return comments.map(ev => {
             const text = String(ev.text || '').trim();
             const t = Date.parse(ev.t);
-            const ok = charLength(text.replace(/\s/g, '')) >= settings.commentMinChars
-                && text !== prevText
-                && t - lastValidAt >= settings.commentMinIntervalSec * 1000;
+            let reason = null;
+            if (charLength(text.replace(/\s/g, '')) < settings.commentMinChars) reason = 'short';
+            else if (text === prevText) reason = 'duplicate';
+            else if (t - lastValidAt < settings.commentMinIntervalSec * 1000) reason = 'rapid';
             prevText = text;
-            if (ok) {
-                lastValidAt = t;
-                result.push(ev);
-            }
+            if (reason) return { ev, status: 'invalid', reason };
+            lastValidAt = t;
+            const substantive = charLength(substantiveText(text)) >= settings.qualityMinChars;
+            return { ev, status: substantive ? 'substantive' : 'valid', reason: null };
         });
-        return result;
+    }
+
+    // 有効コメントを選ぶ（短すぎる・直前と同じ文・連打を除く）
+    function validComments(comments, settings) {
+        return classifyComments(comments, settings).filter(c => c.status !== 'invalid').map(c => c.ev);
     }
 
     const ratio = (value, full) => (full > 0 ? Math.min(1, value / full) : 1);
@@ -314,8 +320,9 @@
             const intervals = clipIntervals(p.intervals, start, end);
             const presenceRate = duration > 0 ? unionLength(intervals) / duration : 0;
 
-            const valid = validComments(p.comments, settings);
-            const substantive = valid.filter(ev => charLength(substantiveText(ev.text)) >= settings.qualityMinChars);
+            const classified = classifyComments(p.comments, settings);
+            const valid = classified.filter(c => c.status !== 'invalid').map(c => c.ev);
+            const substantive = classified.filter(c => c.status === 'substantive').map(c => c.ev);
 
             const answered = new Set(p.answers.map(a => a.survey_id));
             const eligible = surveys.filter(s => answered.has(s.id) || overlaps(intervals, s.start, s.end));
@@ -361,7 +368,17 @@
                     activeSlots: activeSlots.size,
                     slotCount
                 },
-                score: weightedScore(normalized, settings)
+                score: weightedScore(normalized, settings),
+                // タイムライン用（時刻はミリ秒）
+                timeline: {
+                    intervals: intervals.sort((a, b) => a[0] - b[0]),
+                    activeSlots: [...activeSlots].sort((a, b) => a - b),
+                    comments: classified.map(c => ({ t: Date.parse(c.ev.t), text: c.ev.text, status: c.status, reason: c.reason })),
+                    answers: p.answers.map(a => {
+                        const survey = surveys.find(s => s.id === a.survey_id);
+                        return { t: Date.parse(a.t), question: survey ? survey.question : '', choices: a.choice_labels || [] };
+                    })
+                }
             });
         });
 
@@ -374,6 +391,8 @@
             duration,
             surveys: surveys.length,
             slotCount,
+            slotMs,
+            surveyPeriods: surveys.map(s => ({ start: s.start, end: s.end, question: s.question })),
             results
         };
     }
@@ -389,6 +408,54 @@
             weight += w;
         });
         return weight > 0 ? (sum / weight) * 100 : 0;
+    }
+
+    // ---------- 授業回の盛り上がり ----------
+
+    // 授業時間を binMs ごとに区切り、参加者のコメント・リアクション・アンケート回答の数と在室者数を数える
+    function sessionActivity(session, binMs) {
+        const start = Number.isFinite(session.start) ? session.start : session.autoStart;
+        const end = Number.isFinite(session.end) ? session.end : session.autoEnd;
+        const duration = Math.max(1, end - start);
+        const count = Math.max(1, Math.ceil(duration / binMs));
+        const bins = Array.from({ length: count }, (_, i) => ({
+            start: start + i * binMs,
+            end: Math.min(end, start + (i + 1) * binMs),
+            comments: 0,
+            reactions: 0,
+            answers: 0,
+            present: 0,
+            texts: []
+        }));
+        const surveys = [];
+        session.events.forEach(ev => {
+            const t = Date.parse(ev.t);
+            if (ev.type === 'survey_start' && t >= start && t <= end) {
+                surveys.push({ id: ev.survey_id, question: ev.question, start: t, end });
+            } else if (ev.type === 'survey_end') {
+                const sv = surveys.find(x => x.id === ev.survey_id);
+                if (sv) sv.end = t;
+            }
+            if (ev.actor !== 'participant' || t < start || t > end) return;
+            const bin = bins[Math.min(count - 1, Math.floor((t - start) / binMs))];
+            if (ev.type === 'comment' && ev.hidden === undefined) {
+                bin.comments++;
+                bin.texts.push(String(ev.text || ''));
+            } else if (ev.type === 'reaction') {
+                bin.reactions++;
+            } else if (ev.type === 'survey_answer') {
+                bin.answers++;
+            }
+        });
+        // 在室者数：区間の中ほどで在室していたブラウザの数
+        const presence = presenceIntervals(session, end);
+        bins.forEach(bin => {
+            const mid = (bin.start + bin.end) / 2;
+            presence.forEach(intervals => {
+                if (intervals.some(([a, b]) => a <= mid && b >= mid)) bin.present++;
+            });
+        });
+        return { start, end, binMs, bins, surveys };
     }
 
     // ---------- 全体の集計 ----------
@@ -458,11 +525,13 @@
         groupSessions,
         isDefaultName,
         substantiveText,
+        classifyComments,
         validComments,
         unionLength,
         presenceIntervals,
         analyzeSession,
         weightedScore,
+        sessionActivity,
         analyze
     };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
