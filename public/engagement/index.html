@@ -93,14 +93,489 @@
             font-size: .875rem;
         }
 
-        .table-responsive {
-            max-height: 70vh;
+        .tl-list th:not(:last-child),
+        .tl-list td:not(:last-child) {
+            width: 1%;
+            white-space: nowrap;
+            padding-right: 1rem;
         }
 
-        .table thead th {
+        @media (max-width: 575.98px) {
+            .tl-list td:not(:last-child) {
+                white-space: normal;
+                padding-right: .5rem;
+            }
+
+            .tl-list td.num {
+                white-space: nowrap;
+            }
+        }
+
+        /* ---------- グラフの色（コメント＝青、リアクション＝橙、アンケート回答＝緑青） ---------- */
+        :root {
+            --viz-s1: #2a78d6;
+            --viz-s2: #eb6834;
+            --viz-s3: #1baf7a;
+            --viz-slot-active: #9ec5f4;
+            --viz-idle: #f0efec;
+            --viz-muted: #898781;
+            --viz-grid: #e1e0d9;
+            --viz-axis: #c3c2b7;
+            --viz-ring: var(--bs-body-bg);
+        }
+
+        [data-bs-theme="dark"] {
+            --viz-s1: #3987e5;
+            --viz-s2: #d95926;
+            --viz-s3: #199e70;
+            --viz-slot-active: #1c5cab;
+            --viz-idle: #2c2c2a;
+            --viz-grid: #2c2c2a;
+            --viz-axis: #383835;
+        }
+
+        :root {
+            --viz-survey: color-mix(in srgb, var(--viz-s3) 16%, transparent);
+        }
+
+        tr.detail-row,
+        tr.session-chart-row {
+            --viz-ring: var(--bs-tertiary-bg);
+        }
+
+        .fit-visible {
             position: sticky;
+            left: .5rem;
+            width: calc(var(--visible-width, 100%) - 1.5rem);
+        }
+
+        tr.detail-row .fit-visible {
+            width: calc(var(--visible-width, 100%) - .75rem);
+            left: .25rem;
+        }
+
+        tr.session-chart-row>td {
+            background: var(--bs-tertiary-bg);
+            padding: .75rem;
+        }
+
+        /* ---------- 参加者のタイムライン ---------- */
+        .timeline-legend-top {
+            margin-top: 1rem;
+            padding-top: .75rem;
+            border-top: 1px solid var(--bs-border-color);
+        }
+
+        .timeline-legend-top+.timeline-block {
+            border-top: 0;
+            margin-top: .5rem;
+            padding-top: 0;
+        }
+
+        .timeline-block {
+            margin-top: 1rem;
+            padding-top: .75rem;
+            border-top: 1px solid var(--bs-border-color);
+        }
+
+        .tl {
+            display: grid;
+            grid-template-columns: 4.5rem 1fr;
+            column-gap: .5rem;
+        }
+
+        .tl-label {
+            font-size: .75rem;
+            color: var(--bs-secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 4px;
+        }
+
+        .tl-track {
+            margin-bottom: 4px;
+        }
+
+        .tl-h-slot,
+        .tl-slots {
+            height: 16px;
+        }
+
+        .tl-h-bar,
+        .tl-presence {
+            height: 14px;
+        }
+
+        .tl-h-point,
+        .tl-points {
+            height: 24px;
+        }
+
+        .tl-h-axis,
+        .tl-axis {
+            height: 18px;
+        }
+
+        .tl-tracks {
+            position: relative;
+            cursor: crosshair;
+            touch-action: pan-y;
+        }
+
+        .tl-slots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .tl-slot {
+            flex: 1 1 0;
+            background: var(--viz-idle);
+            border-radius: 2px;
+        }
+
+        .tl-slot.active {
+            background: var(--viz-slot-active);
+        }
+
+        .tl-presence {
+            position: relative;
+            background: linear-gradient(var(--viz-grid), var(--viz-grid)) center / 100% 1px no-repeat;
+        }
+
+        .tl-bar {
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            background: var(--viz-muted);
+            border-radius: 4px;
+        }
+
+        .tl-points {
+            position: relative;
+            border-bottom: 1px solid var(--viz-grid);
+        }
+
+        .tl-survey {
+            position: absolute;
             top: 0;
-            z-index: 1;
+            bottom: 0;
+            background: var(--viz-survey);
+            border-radius: 2px;
+        }
+
+        .tl-mark {
+            position: absolute;
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 2px var(--viz-ring);
+            box-sizing: border-box;
+        }
+
+        .tl-mark-substantive {
+            background: var(--viz-s1);
+        }
+
+        .tl-mark-valid {
+            background: var(--viz-ring);
+            border: 2px solid var(--viz-s1);
+        }
+
+        .tl-mark-invalid {
+            width: 8px;
+            height: 8px;
+            background: var(--viz-ring);
+            border: 1.5px solid var(--viz-muted);
+        }
+
+        .tl-mark-answer {
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            background: var(--viz-s3);
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .tl-axis {
+            position: relative;
+        }
+
+        .tl-tick {
+            position: absolute;
+            top: 2px;
+            transform: translateX(-50%);
+            font-size: .6875rem;
+            color: var(--bs-secondary-color);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tl-tick.first {
+            transform: none;
+        }
+
+        .tl-tick.last {
+            transform: translateX(-100%);
+        }
+
+        .tl-crosshair {
+            position: absolute;
+            top: 0;
+            bottom: 22px;
+            width: 1px;
+            background: var(--bs-body-color);
+            opacity: .45;
+            pointer-events: none;
+        }
+
+        .tl-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .25rem 1rem;
+            font-size: .75rem;
+            color: var(--bs-secondary-color);
+            margin-top: .25rem;
+        }
+
+        .tl-legend-item {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* 凡例・ツールチップ・一覧の中の記号は流し込みで置く */
+        .tl-key {
+            display: inline-block;
+            flex: none;
+            margin-right: .35rem;
+            vertical-align: middle;
+        }
+
+        .tl-key.tl-mark {
+            position: relative;
+            top: auto;
+            left: auto;
+            transform: none;
+        }
+
+        .tl-key.tl-mark-answer {
+            transform: rotate(45deg);
+        }
+
+        .tl-key-slot,
+        .tl-key-survey {
+            width: 14px;
+            height: 10px;
+            border-radius: 2px;
+            background: var(--viz-slot-active);
+        }
+
+        .tl-key-survey {
+            background: var(--viz-survey);
+        }
+
+        .tl-key-bar {
+            width: 16px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--viz-muted);
+        }
+
+        .tl-list summary {
+            cursor: pointer;
+            color: var(--bs-secondary-color);
+            margin-top: .5rem;
+        }
+
+        .tl-list .table>:not(caption)>*>* {
+            background: transparent;
+        }
+
+        .tl-tooltip {
+            position: fixed;
+            z-index: 1080;
+            max-width: 320px;
+            background: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            border: 1px solid var(--bs-border-color);
+            border-radius: .5rem;
+            padding: .5rem .65rem;
+            font-size: .8125rem;
+            box-shadow: var(--bs-box-shadow);
+            pointer-events: none;
+        }
+
+        .tl-tip-row {
+            display: flex;
+            gap: .4rem;
+            margin-top: .35rem;
+            align-items: flex-start;
+        }
+
+        .tl-tip-row .tl-key.tl-mark {
+            margin-top: .3rem;
+        }
+
+        /* ---------- 授業回の盛り上がりグラフ ---------- */
+        .sc {
+            display: grid;
+            grid-template-columns: 4rem 1fr;
+            column-gap: .5rem;
+            margin-top: 1.25rem;
+        }
+
+        .sc-y,
+        .sc-plot {
+            position: relative;
+            height: 140px;
+        }
+
+        .sc-small .sc-y,
+        .sc-small .sc-plot {
+            height: 56px;
+        }
+
+        .sc-small {
+            margin-top: 1.5rem;
+        }
+
+        .sc-axis-row {
+            margin-top: 2px;
+        }
+
+        .sc-axis-row .sc-y,
+        .sc-axis {
+            height: 18px;
+        }
+
+        .sc-y-label {
+            position: absolute;
+            right: 0;
+            transform: translateY(50%);
+            font-size: .6875rem;
+            color: var(--bs-secondary-color);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .sc-y-unit {
+            position: absolute;
+            top: -1.15rem;
+            right: 0;
+            font-size: .6875rem;
+            color: var(--bs-secondary-color);
+            white-space: nowrap;
+        }
+
+        .sc-plot {
+            cursor: crosshair;
+            touch-action: pan-y;
+        }
+
+        .sc-grid {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--viz-grid);
+        }
+
+        .sc-grid.base {
+            background: var(--viz-axis);
+        }
+
+        .sc-survey {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: var(--viz-survey);
+        }
+
+        .sc-bars {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            gap: 2px;
+        }
+
+        .sc-bars.dense {
+            gap: 1px;
+        }
+
+        .sc-col {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .sc-stack {
+            height: 100%;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .sc-seg {
+            flex: none;
+        }
+
+        /* 積み上げの区切りに背景色の隙間を入れる */
+        .sc-seg+.sc-seg {
+            border-bottom: 2px solid var(--viz-ring);
+        }
+
+        .sc-stack>.sc-seg:last-child {
+            border-radius: 2px 2px 0 0;
+        }
+
+        .sc-comments {
+            background: var(--viz-s1);
+        }
+
+        .sc-reactions {
+            background: var(--viz-s2);
+        }
+
+        .sc-answers {
+            background: var(--viz-s3);
+        }
+
+        .sc-key {
+            width: 12px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .tl-tooltip .sc-key {
+            width: 12px;
+            height: 3px;
+        }
+
+        .sc-hover {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: var(--bs-body-color);
+            opacity: .08;
+            pointer-events: none;
+        }
+
+        .sc-line {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .sc-area {
+            fill: var(--viz-muted);
+            opacity: .2;
+        }
+
+        .sc-stroke {
+            fill: none;
+            stroke: var(--viz-muted);
+            stroke-width: 2;
         }
     </style>
 </head>
@@ -154,6 +629,7 @@
                                 <th class="num">時間</th>
                                 <th class="num">参加者</th>
                                 <th class="num">アンケート</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="session_table"></tbody>
