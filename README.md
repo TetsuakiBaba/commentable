@@ -51,6 +51,8 @@ cd macos
 以下は Electron 版の手順です。
 
 ### Build
+Electron 版のビルドには Node.js 22.13 以降が必要です（Electron 45・Electron Forge 8）。`npm install` のあとに Electron 本体が自動でダウンロードされます。
+
 以下の手順で自身でビルドすることもできます。また別のサーバにデプロイしている場合は、electron/main.js の url を変更してください。ローカル環境でテストさせる場合はmain.js内の const USE_LOCAL_SERVER = true; を設定してください。
 
 ```

@@ -8,6 +8,7 @@
     "prestart": "node native/person-segmentation/build.js --if-missing",
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "install-electron",
     "build:native": "node native/person-segmentation/build.js",
     "prepackage": "npm run build:native",
     "package": "electron-forge package",
@@ -26,18 +27,21 @@
   },
   "homepage": "https://tetsuakibaba.github.io/commentable/",
   "devDependencies": {
-    "@electron-forge/cli": "^6.4.2",
-    "@electron-forge/maker-deb": "^6.4.2",
-    "@electron-forge/maker-rpm": "^6.4.2",
-    "@electron-forge/maker-squirrel": "^6.4.2",
-    "@electron-forge/maker-zip": "^6.4.2",
-    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
-    "@electron-forge/publisher-github": "^6.1.1",
-    "electron": "^41.10.7"
+    "@electron-forge/cli": "^8.0.1",
+    "@electron-forge/maker-deb": "^8.0.1",
+    "@electron-forge/maker-rpm": "^8.0.1",
+    "@electron-forge/maker-squirrel": "^8.0.1",
+    "@electron-forge/maker-zip": "^8.0.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^8.0.1",
+    "@electron-forge/publisher-github": "^8.0.1",
+    "electron": "^45.0.0"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",
     "electron-squirrel-startup": "^1.0.0",
     "update-electron-app": "^2.0.1"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.4": true
   }
 }
