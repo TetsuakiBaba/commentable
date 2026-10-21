@@ -24,7 +24,7 @@
   "bugs": {
     "url": "https://github.com/TetsuakiBaba/commentable/issues"
   },
-  "homepage": "https://commentable.carrd.co/",
+  "homepage": "https://tetsuakibaba.github.io/commentable/",
   "devDependencies": {
     "@electron-forge/cli": "^6.4.2",
     "@electron-forge/maker-deb": "^6.4.2",

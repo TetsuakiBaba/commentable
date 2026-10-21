@@ -438,7 +438,10 @@ function pushedSendButton() {
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
     const result = CommentApp.sendComment({ comment: _str_comment, myName: _str_my_name, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
     if (!result.ok) {
-        if (result.reason === 'interval') {
+        if (result.reason === 'inappropriate') {
+            // 入力はそのまま残して、直してから送り直してもらう
+            showInappropriateDialog(result.words);
+        } else if (result.reason === 'interval') {
             const remain = 5 - parseInt((performance.now() - CommentApp.state.lastSend) / 1000);
             // i18nextが初期化されている場合は翻訳を使用
             const message = window.i18next
@@ -460,8 +463,8 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     // 自分で送信したhidden=100のコメントに対してもDOM作成
     if (_hidden === 100) {
         const selfCommentData = {
-            comment: maskedComment,
-            my_name: maskedName,
+            comment: _str_comment,
+            my_name: _str_my_name,
             hidden: _hidden
         };
         // newComment関数を直接呼び出して同じDOM処理を実行
@@ -471,6 +474,27 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
     clearTextBox();
 }
 
+
+// 不適切な表現が含まれていたことを知らせる（閉じたら直せるように入力欄に戻す）
+function showInappropriateDialog(words) {
+    const modalElement = document.getElementById('inappropriate_modal');
+    const list = document.getElementById('inappropriate_words');
+    if (!modalElement || !list || !window.bootstrap) {
+        alert((window.i18next ? window.i18next.t('inappropriate_message') : '不適切な表現が含まれているため送信できません。') + '\n\n' + words.join('、'));
+        return;
+    }
+    list.innerHTML = '';
+    for (const word of words) {
+        const badge = document.createElement('span');
+        badge.className = 'badge text-bg-danger fs-6 me-1 mb-1';
+        badge.textContent = word;
+        list.appendChild(badge);
+    }
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('text_comment')?.focus();
+    }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
+}
 
 // 旧：お手紙機能 / グローバルキー監視は未使用のため削除
 

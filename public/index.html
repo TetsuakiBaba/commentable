@@ -121,6 +121,12 @@
                                         data-i18n="comment_send_description_2">ボタン）のON/OFFを選択することができます。音声読み上げにチェックが入っていると入力したテキストが配信者側で読み上げられます。</span>
                                 </p>
 
+                                <h5 data-i18n="inappropriate_help_title">不適切な表現</h5>
+                                <p>
+                                    <span
+                                        data-i18n="inappropriate_help_description">コメントや名前に不適切な表現が含まれている場合は送信できません。表示されたダイアログの内容を確認して、修正してから送信してください。</span>
+                                </p>
+
                                 <h5><i class="bi bi-terminal"></i> コメントコマンド機能</h5>
                                 <p>
                                     コメント入力欄で <code>=</code> で始まる特殊なコマンドを入力することで、配信画面上に様々な表現を追加できます。
@@ -406,9 +412,33 @@
         </div>
     </div>
 
+    <!-- 不適切な表現が含まれていたときのダイアログ（直すまで送信できない） -->
+    <div class="modal fade" id="inappropriate_modal" tabindex="-1" aria-labelledby="inappropriate_modal_label"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inappropriate_modal_label"><i
+                            class="bi bi-exclamation-triangle-fill text-danger"></i> <span
+                            data-i18n="inappropriate_title">送信できません</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p data-i18n="inappropriate_message">不適切な表現が含まれているため送信できません。コメント（または名前）を修正してから、もう一度送信してください。</p>
+                    <div id="inappropriate_words"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                        data-i18n="inappropriate_fix">修正する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- p5 依存除去済み -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="utils.js"></script>
+    <script src="word_filter.js"></script>
     <script src="comment_app.js"></script>
     <script src="survey.js"></script>
     <script src="sketch.js"></script>

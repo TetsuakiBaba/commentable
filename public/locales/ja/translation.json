@@ -42,5 +42,10 @@
     "survey_submit": "回答を送信",
     "survey_thanks": "回答を送信しました",
     "survey_single_hint": "1つ選んでください",
-    "survey_multiple_hint": "複数選択できます"
+    "survey_multiple_hint": "複数選択できます",
+    "inappropriate_title": "送信できません",
+    "inappropriate_message": "不適切な表現が含まれているため送信できません。コメント（または名前）を修正してから、もう一度送信してください。",
+    "inappropriate_fix": "修正する",
+    "inappropriate_help_title": "不適切な表現",
+    "inappropriate_help_description": "コメントや名前に不適切な表現が含まれている場合は送信できません。表示されたダイアログの内容を確認して、修正してから送信してください。"
 }
