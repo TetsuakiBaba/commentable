@@ -539,6 +539,21 @@
                                 </div>
                             </div>
                             <div class="card-body">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span id="class_state_badge" class="badge bg-secondary">授業外</span>
+                                    <span id="class_state_text" class="small text-muted"></span>
+                                    <button class="btn btn-sm btn-success ms-auto" id="button_class_start"
+                                        title="ここから新しい授業回として記録する">
+                                        <i class="bi bi-play-fill"></i> 授業開始
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger ms-auto d-none" id="button_class_end"
+                                        title="授業回の記録をここで終える">
+                                        <i class="bi bi-stop-fill"></i> 授業終了
+                                    </button>
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    「授業開始」から「授業終了」までが1つの授業回になります。授業前の動作確認などは含まれません。
+                                </p>
                                 <select class="form-select form-select-sm mb-2" id="select_log_session"
                                     title="表示・ダウンロードする授業回">
                                     <option value="current">現在の授業回</option>
@@ -678,6 +693,12 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-check mt-2 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_chime_class" checked>
+                                    <label class="form-check-label small" for="checkbox_chime_class">
+                                        チャイムに合わせて授業開始・授業終了を記録する
+                                    </label>
+                                </div>
                                 <p class="mt-2 mb-0 small text-muted">
                                     授業の開始時間と終了時間を設定すると、自動的にチャイムが鳴ります。
                                 </p>
@@ -800,6 +821,7 @@
         let sessionEvents = [];
         let sessionEventIds = new Set();
         let viewingSession = 'current'; // 'current' | 'all' | 授業回ID
+        let classState = { in_class: false, session_id: null, started_at: null }; // サーバーから届く授業中かどうか
 
         // 参加者数統計関連の変数
         let userStatsChart = null;
@@ -1161,6 +1183,10 @@
             switch (ev.type) {
                 case 'session_start':
                     return `──── 授業回 ${ev.session_id} ────`;
+                case 'class_start':
+                    return `──── 授業開始${ev.trigger === 'chime' ? '（チャイム）' : ''} ────`;
+                case 'class_end':
+                    return `──── 授業終了${ev.trigger === 'chime' ? '（チャイム）' : ''} ────`;
                 case 'comment': {
                     const label = ev.actor === 'ai' ? '[AI]' : ev.actor === 'host' ? '[配信者]' : '[コメント]';
                     return `${label} ${name}: ${ev.text}`;
@@ -1218,6 +1244,7 @@
             }
             sessionEvents.push(ev);
             sessionEventIds.add(ev.event_id);
+            if (ev.type === 'class_end') loadLogSessions(); // 一覧の終了時刻を更新
             const line = formatLogLine(ev, buildNameIndex(sessionEvents));
             if (line) {
                 textareaCommentLog.value += (textareaCommentLog.value ? '\n' : '') + line;
@@ -1259,6 +1286,38 @@
             const filename = `${roomName ? roomName + '_' : ''}${sessionLabelForFile()}.jsonl`;
             downloadBlob([jsonLines], filename, 'application/x-ndjson;charset=utf-8');
             addLog(`授業ログをダウンロードしました: ${filename}`, 'info');
+        }
+
+        // ========== 授業の開始・終了 ==========
+        // 授業回の区切りはサーバーが記録する。ここでは状態を表示し、開始・終了を知らせるだけ
+        function setClassState(state) {
+            classState = state || { in_class: false, session_id: null, started_at: null };
+            const badge = document.getElementById('class_state_badge');
+            badge.textContent = classState.in_class ? '授業中' : '授業外';
+            badge.className = `badge ${classState.in_class ? 'bg-success' : 'bg-secondary'}`;
+            document.getElementById('class_state_text').textContent =
+                classState.in_class && classState.started_at ? `${formatLocalTime(classState.started_at).slice(0, 5)} 〜` : '';
+            document.getElementById('button_class_start').classList.toggle('d-none', classState.in_class);
+            document.getElementById('button_class_end').classList.toggle('d-none', !classState.in_class);
+        }
+
+        function startClass(trigger = 'manual') {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていないため、授業開始を記録できません', 'error');
+                return;
+            }
+            socket.emit('class start', { trigger });
+            addLog(`授業開始を記録しました${trigger === 'chime' ? '（チャイム）' : ''}`, 'info');
+        }
+
+        function endClass(trigger = 'manual') {
+            if (!socket || !isConnected) {
+                addLog('サーバに接続されていないため、授業終了を記録できません', 'error');
+                return;
+            }
+            if (!classState.in_class) return;
+            socket.emit('class end', { trigger });
+            addLog(`授業終了を記録しました${trigger === 'chime' ? '（チャイム）' : ''}`, 'info');
         }
 
         // ========== 設定の保存・リセット ==========
@@ -1781,11 +1840,15 @@
                 const list = await response.json();
                 const select = document.getElementById('select_log_session');
                 const selected = select.value;
-                select.innerHTML = '<option value="current">現在の授業回</option><option value="all">すべての授業回（合計）</option>';
+                // 「授業開始」で始めた回があれば、合計には授業外の記録（動作確認など）を含めない
+                const allLabel = list.some(item => item.class) ? 'すべての授業（合計・授業外を除く）' : 'すべての授業回（合計）';
+                select.innerHTML = `<option value="current">現在の授業回</option><option value="all">${allLabel}</option>`;
                 list.forEach(item => {
                     const option = document.createElement('option');
                     option.value = item.session_id;
-                    option.textContent = `${item.started_at ? formatLocalTime(item.started_at, true) : item.session_id} 〜（${item.events}件）`;
+                    const start = item.class_started_at || item.started_at;
+                    const end = item.class_ended_at ? ` ${formatLocalTime(item.class_ended_at)}` : '';
+                    option.textContent = `${item.class ? '【授業】' : '（授業外）'}${start ? formatLocalTime(start, true) : item.session_id} 〜${end}（${item.events}件）`;
                     select.appendChild(option);
                 });
                 select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
@@ -1806,7 +1869,9 @@
                 if (viewingSession === 'all') {
                     const response = await fetch(`${logApiBase()}/sessions`, roomFetchOptions());
                     const list = response.ok ? await response.json() : [];
-                    events = (await Promise.all(list.map(item => fetchSessionEvents(item.session_id)))).flat();
+                    const classes = list.filter(item => item.class);
+                    const targets = classes.length > 0 ? classes : list;
+                    events = (await Promise.all(targets.map(item => fetchSessionEvents(item.session_id)))).flat();
                 } else {
                     events = await fetchSessionEvents(viewingSession);
                 }
@@ -2030,6 +2095,11 @@
             lastChimeKey = key;
             addLog(`自動チャイム: ${hhmm}`, 'info');
             playSoundEffect(AUTO_CHIME_SOUND);
+
+            if (document.getElementById('checkbox_chime_class').checked) {
+                if (hhmm === start) startClass('chime');
+                else endClass('chime');
+            }
         }
 
         function setAutoChime(enabled) {
@@ -2049,7 +2119,8 @@
             try {
                 localStorage.setItem(AUTO_CHIME_STORAGE_KEY, JSON.stringify({
                     start: document.getElementById('time_chime_start').value,
-                    end: document.getElementById('time_chime_end').value
+                    end: document.getElementById('time_chime_end').value,
+                    recordClass: document.getElementById('checkbox_chime_class').checked
                 }));
             } catch (error) {
                 addLog(`自動チャイム設定の保存エラー: ${error.message}`, 'error');
@@ -2060,17 +2131,20 @@
             const checkbox = document.getElementById('checkbox_auto_chime');
             const startInput = document.getElementById('time_chime_start');
             const endInput = document.getElementById('time_chime_end');
+            const classInput = document.getElementById('checkbox_chime_class');
             try {
                 const saved = JSON.parse(localStorage.getItem(AUTO_CHIME_STORAGE_KEY));
                 if (saved) {
                     if (saved.start) startInput.value = saved.start;
                     if (saved.end) endInput.value = saved.end;
+                    if (typeof saved.recordClass === 'boolean') classInput.checked = saved.recordClass;
                 }
             } catch (error) {
                 // 保存された設定が壊れている場合は既定値を使う
             }
             startInput.addEventListener('change', saveAutoChimeSettings);
             endInput.addEventListener('change', saveAutoChimeSettings);
+            classInput.addEventListener('change', saveAutoChimeSettings);
             checkbox.addEventListener('change', function () {
                 setAutoChime(this.checked);
                 addLog(`自動チャイム: ${this.checked ? `ON（${startInput.value} / ${endInput.value}）` : 'OFF'}`, 'info');
@@ -2979,6 +3053,7 @@
 
             socket.on('log snapshot', onLogSnapshot);
             socket.on('log event', onLogEvent);
+            socket.on('class state', setClassState);
             socket.on('survey log', setSurveyLog);
             socket.on('admin message', setAdminMessageStatus);
             socket.on('survey update', upsertSurveyRecord);
@@ -3064,6 +3139,13 @@
         });
 
         document.getElementById('select_log_session').addEventListener('change', loadSelectedSession);
+
+        document.getElementById('button_class_start').addEventListener('click', () => startClass());
+
+        document.getElementById('button_class_end').addEventListener('click', () => {
+            if (!confirm('授業を終了しますか？これ以降のコメントなどは次の授業回として記録されます。')) return;
+            endClass();
+        });
 
         // 参加者数統計のダウンロード
         document.getElementById('button_download_user_stats').addEventListener('click', () => {
