@@ -441,6 +441,20 @@ io.on('connection', (socket) => {
         if (!isHostSocket()) return;
         socket.join(logWatchRoom(room));
         socket.emit('log snapshot', eventLog.currentSessionEvents(room));
+        socket.emit('class state', eventLog.classState(room));
+    });
+
+    // 授業の開始・終了（ダッシュボードから）。授業回の区切りとして授業ログに記録する
+    socket.on('class start', (data) => {
+        if (!isHostSocket()) return;
+        eventLog.startClass(room, { trigger: data && data.trigger === 'chime' ? 'chime' : 'manual' });
+        io.to(logWatchRoom(room)).emit('class state', eventLog.classState(room));
+    });
+
+    socket.on('class end', (data) => {
+        if (!isHostSocket()) return;
+        eventLog.endClass(room, { trigger: data && data.trigger === 'chime' ? 'chime' : 'manual' });
+        io.to(logWatchRoom(room)).emit('class state', eventLog.classState(room));
     });
 
     socket.on('letter', (data) => {
@@ -609,6 +623,21 @@ io.on('connection', (socket) => {
 // 記録した出来事を購読中のダッシュボード・配信画面に送る
 eventLog.onEvent((roomName, event) => {
     io.to(logWatchRoom(roomName)).emit('log event', event);
+});
+
+// 新しい授業回の始めに、接続中の人を入室として記録する（授業開始前から入っていた人の在室時間のため）
+eventLog.setPresenceProvider((roomName) => {
+    const ids = io.sockets.adapter.rooms.get(roomName) || new Set();
+    return [...ids]
+        .map(id => io.sockets.sockets.get(id))
+        .filter(s => s && s.role)
+        .map(s => ({
+            actor: s.role === 'participant' ? 'participant' : 'host',
+            role: s.role,
+            ...participantFields(s),
+            connection_id: s.id,
+            connections: ids.size
+        }));
 });
 
 

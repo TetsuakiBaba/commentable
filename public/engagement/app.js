@@ -143,9 +143,11 @@
 
     function rebuildSessions() {
         sessions = S.groupSessions(files.flatMap(f => f.events));
+        // 「授業開始」で始めた回があれば、それ以外（授業前の動作確認など）は初めから外す
+        const hasClass = sessions.some(s => s.isClass);
         sessions.forEach(s => {
             const edit = sessionEdits[s.key] || {};
-            s.include = edit.include !== false;
+            s.include = typeof edit.include === 'boolean' ? edit.include : (!hasClass || s.isClass);
             s.start = Number.isFinite(edit.start) ? edit.start : undefined;
             s.end = Number.isFinite(edit.end) ? edit.end : undefined;
         });
@@ -202,6 +204,12 @@
             const include = cells[0].querySelector('input');
             include.checked = s.include;
             cells[1].textContent = `${dateOf(s.autoStart)}（${s.sessionId}）`;
+            if (!s.isClass) {
+                const badge = el('span', 'badge text-bg-secondary ms-1');
+                badge.textContent = '授業外';
+                badge.title = 'ダッシュボードの「授業開始」で始めた回ではありません';
+                cells[1].appendChild(badge);
+            }
             cells[2].textContent = s.room;
             const startInput = cells[3].querySelector('input');
             const endInput = cells[4].querySelector('input');

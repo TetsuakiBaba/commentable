@@ -6,6 +6,10 @@
 //  "t":"2026-10-06T14:03:33.123Z","elapsed_s":12.3,"type":"comment","actor":"participant",
 //  "participant_id":"…","name":"24123456","text":"なるほど"}
 //
+// 配信者がダッシュボードで「授業開始」を押すと新しい授業回が始まり（class_start）、
+// 「授業終了」（class_end）以降の出来事は次の授業回になる。押さなかった場合は、
+// 出来事が SESSION_GAP_MS 途切れたところで自動的に区切る（class_start のない授業回）。
+//
 // ファイルは公開フォルダの外（logs/events/<部屋キー>/<セッションID>.jsonl）に置き、
 // 読み出しは API（/api/rooms/:room/...）経由で行う。
 
@@ -18,6 +22,8 @@ const SCHEMA_VERSION = 1;
 const EVENTS_DIR = path.join(__dirname, 'logs', 'events');
 // この時間イベントがなければ、次のイベントから新しい授業回として記録する
 const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
+// 入退室だけでは授業回を続けない・始めない（つなぎっぱなしの画面の再接続で、授業回が何日も続かないように）
+const PRESENCE_TYPES = new Set(['join', 'leave']);
 // セッションIDに使うタイムゾーン（授業の開始時刻がそのまま読めるように）
 const SESSION_TIMEZONE = process.env.LOG_TIMEZONE || 'Asia/Tokyo';
 const SESSION_ID_PATTERN = /^\d{8}-\d{6}$/;
@@ -73,38 +79,81 @@ function listSessionIds(room) {
     }
 }
 
-// 部屋ごとの現在の授業回 { id, startedAt, lastAt }
+// 部屋ごとの現在の授業回 { id, startedAt, lastAt, inClass, closed }
+//   lastAt: 入退室以外の最後の出来事の時刻
+//   inClass: 配信者が「授業開始」で始めた授業回で、まだ終了していない
+//   closed: 「授業終了」済み（入退室だけはこの回に記録し、ほかの出来事は新しい授業回にする）
 const sessions = new Map();
 const listeners = [];
+// 授業回を新しく始めたときに、その時点で接続している人を入室として記録するための関数
+let presenceProvider = () => [];
 
 function appendEvent(room, sessionId, event) {
     fs.mkdirSync(roomDir(room), { recursive: true });
     fs.appendFileSync(sessionFile(room, sessionId), JSON.stringify(event) + '\n', 'utf8');
 }
 
-// 現在の授業回を返す（なければ作る）。サーバーが再起動しても、直前の授業回が続いていれば引き継ぐ
-function currentSession(room, now) {
+// サーバーの再起動後に、最後の授業回の状態をファイルから戻す
+function restoreSession(room) {
+    const latest = listSessionIds(room).pop();
+    if (!latest) return null;
+    const events = readEvents(sessionFile(room, latest));
+    const activity = events.filter(ev => !PRESENCE_TYPES.has(ev.type));
+    if (activity.length === 0) return null;
+    const ended = events.some(ev => ev.type === 'class_end');
+    return {
+        id: latest,
+        startedAt: Date.parse(events[0].t),
+        lastAt: Date.parse(activity[activity.length - 1].t),
+        inClass: !ended && events.some(ev => ev.type === 'class_start'),
+        closed: ended
+    };
+}
+
+function latestSession(room) {
     let session = sessions.get(room);
     if (!session) {
-        const latest = listSessionIds(room).pop();
-        if (latest) {
-            const events = readEvents(sessionFile(room, latest));
-            const first = events[0];
-            const last = events[events.length - 1];
-            if (first && last && now - Date.parse(last.t) < SESSION_GAP_MS) {
-                session = { id: latest, startedAt: Date.parse(first.t), lastAt: Date.parse(last.t) };
-                sessions.set(room, session);
-            }
-        }
+        session = restoreSession(room);
+        if (session) sessions.set(room, session);
     }
-    if (session && now - session.lastAt < SESSION_GAP_MS) {
-        return session;
-    }
+    return session || null;
+}
 
-    session = { id: formatSessionId(now), startedAt: now, lastAt: now };
+function isLive(session, now) {
+    return !!session && now - session.lastAt < SESSION_GAP_MS;
+}
+
+// 新しい授業回を始める。接続中の人は入室したものとして記録する（在室時間の計算に使う）
+function openSession(room, now, excludeConnectionId) {
+    // 同じ秒に授業回が続けて始まってもファイルが重ならないようにする
+    let ms = now;
+    while (fs.existsSync(sessionFile(room, formatSessionId(ms)))) ms += 1000;
+    const session = { id: formatSessionId(ms), startedAt: now, lastAt: now, inClass: false, closed: false };
     sessions.set(room, session);
     writeEvent(room, session, now, { type: 'session_start', actor: 'system' });
+    let present = [];
+    try {
+        present = presenceProvider(room) || [];
+    } catch (error) {
+        console.error('Presence provider error:', error);
+    }
+    present
+        .filter(fields => !excludeConnectionId || fields.connection_id !== excludeConnectionId)
+        .forEach(fields => writeEvent(room, session, now, { ...fields, type: 'join', carried_over: true }));
     return session;
+}
+
+// 出来事を記録する授業回を返す（なければ作る）。サーバーが再起動しても、直前の授業回が続いていれば引き継ぐ
+function currentSession(room, now, fields) {
+    const session = latestSession(room);
+    if (PRESENCE_TYPES.has(fields.type)) {
+        // 入退室は直前の授業回に記録する（入退室だけで授業回を作らない）
+        return session || openSession(room, now, fields.connection_id);
+    }
+    if (isLive(session, now) && !session.closed) {
+        return session;
+    }
+    return openSession(room, now);
 }
 
 function writeEvent(room, session, now, fields) {
@@ -118,7 +167,7 @@ function writeEvent(room, session, now, fields) {
         ...fields
     };
     appendEvent(room, session.id, event);
-    session.lastAt = now;
+    if (!PRESENCE_TYPES.has(event.type)) session.lastAt = now;
     listeners.forEach(fn => {
         try { fn(room, event); } catch (error) { console.error('Event listener error:', error); }
     });
@@ -130,11 +179,66 @@ function logEvent(room, fields) {
     if (!room) return null;
     try {
         const now = Date.now();
-        return writeEvent(room, currentSession(room, now), now, fields);
+        return writeEvent(room, currentSession(room, now, fields), now, fields);
     } catch (error) {
         console.error('Error writing event log:', error);
         return null;
     }
+}
+
+// 授業を始める：新しい授業回を作り、授業の開始を記録する（授業前の動作確認などは前の授業回に残る）
+// 授業中に呼ばれた場合は、いまの授業を終えてから新しい授業回を始める
+function startClass(room, fields = {}) {
+    if (!room) return null;
+    try {
+        const now = Date.now();
+        const previous = latestSession(room);
+        if (previous && previous.inClass && isLive(previous, now)) {
+            endSession(room, previous, now, { actor: 'host', reason: 'next_class' });
+        }
+        const session = openSession(room, now);
+        session.inClass = true;
+        return writeEvent(room, session, now, { actor: 'host', ...fields, type: 'class_start' });
+    } catch (error) {
+        console.error('Error starting class:', error);
+        return null;
+    }
+}
+
+function endSession(room, session, now, fields) {
+    session.inClass = false;
+    session.closed = true;
+    return writeEvent(room, session, now, { ...fields, type: 'class_end' });
+}
+
+// 授業を終える：授業の終了を記録する。これ以降の出来事（入退室を除く）は新しい授業回になる
+function endClass(room, fields = {}) {
+    if (!room) return null;
+    try {
+        const now = Date.now();
+        const session = latestSession(room);
+        if (!session || !session.inClass || !isLive(session, now)) return null;
+        return endSession(room, session, now, { actor: 'host', ...fields });
+    } catch (error) {
+        console.error('Error ending class:', error);
+        return null;
+    }
+}
+
+// 授業中かどうか（ダッシュボードの表示用）
+function classState(room) {
+    const session = latestSession(room);
+    const inClass = !!session && session.inClass && isLive(session, Date.now());
+    return {
+        in_class: inClass,
+        session_id: inClass ? session.id : null,
+        started_at: inClass ? new Date(session.startedAt).toISOString() : null
+    };
+}
+
+// fn(room) は、その部屋に接続している人の入室イベント用の項目（actor, role, participant_id など）の配列を返す
+function setPresenceProvider(fn) {
+    presenceProvider = fn;
 }
 
 // 記録された出来事を受け取る（ダッシュボードへの配信用）
@@ -150,11 +254,18 @@ function currentSessionEvents(room) {
 function listSessions(room) {
     return listSessionIds(room).map(id => {
         const events = readEvents(sessionFile(room, id));
+        const activity = events.filter(ev => !PRESENCE_TYPES.has(ev.type));
+        const classStart = events.find(ev => ev.type === 'class_start');
+        const classEnd = events.find(ev => ev.type === 'class_end');
         return {
             session_id: id,
             started_at: events[0] ? events[0].t : null,
-            last_at: events.length ? events[events.length - 1].t : null,
-            events: events.length
+            last_at: activity.length ? activity[activity.length - 1].t : null,
+            events: events.length,
+            // 配信者が「授業開始」で始めた授業回か（false は授業前の動作確認や授業外の記録）
+            class: !!classStart,
+            class_started_at: classStart ? classStart.t : null,
+            class_ended_at: classEnd ? classEnd.t : null
         };
     }).reverse();
 }
@@ -239,6 +350,10 @@ module.exports = {
     SCHEMA_VERSION,
     roomKey,
     logEvent,
+    startClass,
+    endClass,
+    classState,
+    setPresenceProvider,
     onEvent,
     currentSessionEvents,
     listSessions,

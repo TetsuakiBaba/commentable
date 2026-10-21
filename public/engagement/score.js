@@ -93,9 +93,16 @@
         return [...sessions.values()]
             .map(s => {
                 s.events.sort((a, b) => Date.parse(a.t) - Date.parse(b.t));
-                const startEvent = s.events.find(ev => ev.type === 'session_start') || s.events[0];
+                // ダッシュボードの「授業開始」「授業終了」があればその時刻を授業時間にする
+                const classStart = s.events.find(ev => ev.type === 'class_start');
+                const classEnd = s.events.find(ev => ev.type === 'class_end');
+                const startEvent = classStart || s.events.find(ev => ev.type === 'session_start') || s.events[0];
+                // 終了は入退室を除いた最後の出来事（授業後もつなぎっぱなしの画面の再接続で延びないように）
+                const activity = s.events.filter(ev => ev.type !== 'join' && ev.type !== 'leave');
+                const endEvent = classEnd || activity[activity.length - 1] || s.events[s.events.length - 1];
+                s.isClass = !!classStart;
                 s.autoStart = Date.parse(startEvent.t);
-                s.autoEnd = Date.parse(s.events[s.events.length - 1].t);
+                s.autoEnd = Date.parse(endEvent.t);
                 return s;
             })
             .sort((a, b) => a.autoStart - b.autoStart);

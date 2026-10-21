@@ -1005,6 +1005,21 @@ app.whenReady().then(() => {
             submenu: [
                 { role: 'quit', label: `${app.name} を終了` }
             ]
+        },
+        // macOS ではコピー・ペースト・全選択などのショートカットは編集メニュー経由で動く
+        {
+            label: '編集',
+            submenu: [
+                { role: 'undo', label: '取り消す' },
+                { role: 'redo', label: 'やり直す' },
+                { type: 'separator' },
+                { role: 'cut', label: 'カット' },
+                { role: 'copy', label: 'コピー' },
+                { role: 'paste', label: 'ペースト' },
+                { role: 'pasteAndMatchStyle', label: 'ペーストしてスタイルを合わせる' },
+                { role: 'delete', label: '削除' },
+                { role: 'selectAll', label: 'すべてを選択' }
+            ]
         }
     ]));
 
