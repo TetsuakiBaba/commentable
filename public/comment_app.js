@@ -73,6 +73,9 @@
         area.setRangeText(newLine, state.displayCacheLength, state.displayCacheLength, 'end');
         state.displayCacheLength += newLineLength;
 
+        // 最新のコメントにスクロールする
+        area.scrollTop = area.scrollHeight;
+
         const perfEnd = performance.now();
         if (typeof debugLog === 'function') {
             debugLog(`  updateHistoryDisplayIncremental took ${(perfEnd - perfStart).toFixed(2)}ms`);
