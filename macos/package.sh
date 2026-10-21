@@ -57,7 +57,13 @@ fi
 echo "==> 公証を申請しています（数分かかります）"
 xcrun notarytool submit "$ZIP" "${NOTARY_ARGS[@]}" --wait
 xcrun stapler staple "$APP"
-xcrun stapler validate "$APP"
+# staple のあとの確認は Apple のサーバーに問い合わせるので、通信が一時的に切れることがある（数回試す）
+for attempt in 1 2 3; do
+    xcrun stapler validate "$APP" && break
+    [ "$attempt" = 3 ] && fail "公証の結果を確認できませんでした"
+    echo "==> 公証の結果の確認に失敗したので、もう一度試します（$attempt 回目）"
+    sleep 10
+done
 spctl --assess --type execute --verbose=2 "$APP"
 
 # 公証の結果を添付したアプリで zip を作り直す
