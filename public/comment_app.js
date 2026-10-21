@@ -285,9 +285,20 @@
 
     function recordSend() { state.lastSend = performance.now(); }
 
+    // コメントと名前に含まれる不適切な語（リアクションボタンの定型文は調べないが、名前は調べる）
+    function findInappropriate(params) {
+        if (!global.WordFilter) return [];
+        const found = global.WordFilter.find(params.myName);
+        if (!params.emoji) found.push(...global.WordFilter.find(params.comment));
+        return [...new Set(found)];
+    }
+
     function sendComment(params) {
-        if (!canSend()) return { ok: false, reason: 'interval' };
         if (!params.comment || params.comment.length === 0) return { ok: false, reason: 'empty' };
+        // 不適切な語が含まれていたら送信しない（直してから送り直してもらう）
+        const inappropriate = findInappropriate(params);
+        if (inappropriate.length > 0) return { ok: false, reason: 'inappropriate', words: inappropriate };
+        if (!canSend()) return { ok: false, reason: 'interval' };
         if (params.comment.length > 80 && params.hidden !== 100) return { ok: false, reason: 'length' };
         state.count += 1;
         const data = buildData(params);

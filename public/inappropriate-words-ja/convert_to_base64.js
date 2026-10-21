@@ -1,10 +1,13 @@
 const fs = require('fs');
 
+// blocklist.txt: 投稿ページで使うリスト（「入っていたら間違いなく不適切」な語だけに絞ったもの）
+// Sexual*.txt: 元にしたリスト（https://github.com/MosasoM/inappropriate-words-ja）。投稿ページでは使っていない
 const files = [
+    'blocklist.txt',
     'Sexual.txt',
     'Sexual_with_mask.txt',
     'Sexual_with_bopo.txt'
-];
+].filter(file => fs.existsSync(file));
 
 files.forEach(filePath => {
     try {

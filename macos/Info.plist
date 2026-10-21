@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ja</string>
+	<key>CFBundleDisplayName</key>
+	<string>Commentable</string>
+	<key>CFBundleExecutable</key>
+	<string>Commentable</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
+	<!-- Electron 版（commentable-desktop）と同じ ID にして、Electron 版の自動アップデートで
+	     Swift 版に入れ替わるようにしている（Squirrel は同じ ID・同じチームの署名でないと入れ替えない） -->
+	<key>CFBundleIdentifier</key>
+	<string>com.electron.commentable-desktop</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Commentable</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<!-- build.sh が macos/VERSION とビルドした年で置き換える -->
+	<key>CFBundleShortVersionString</key>
+	<string>__VERSION__</string>
+	<key>CFBundleVersion</key>
+	<string>__VERSION__</string>
+	<key>CommentableCopyrightYear</key>
+	<string>__YEAR__</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© __YEAR__ Tetsuaki Baba</string>
+	<!-- Electron 版（Electron 41）と同じく macOS 12 から動かす（移行したアプリが起動しなくならないように） -->
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<!-- Dock に出さずメニューバーから操作する -->
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>配信画面に自分のカメラ映像を重ねて表示するために使用します。</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>授業ログを 書類/Commentable/logs に保存するために使用します。</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- ローカルのサーバー（http://localhost:3000）で試すため -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

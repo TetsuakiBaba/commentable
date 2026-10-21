@@ -1,0 +1,111 @@
+# macOS 版（Swift ネイティブ版）のビルドとリリース
+#
+# - macos/ を変更して push / プルリクエストしたとき: ビルドできるかだけを確認する（署名しない）
+# - Actions タブの「Run workflow」から手動で実行したとき:
+#     Developer ID で署名し、Apple の公証を受けた zip を作る
+#     「release」にチェックを入れると、v<macos/VERSION> の下書きリリースも作る
+#
+# 必要なシークレットは macos/README.md の「GitHub Actions でのリリース」を参照
+name: macOS app
+
+on:
+  push:
+    branches: [master]
+    paths: ['macos/**', '.github/workflows/macos.yml']
+  pull_request:
+    paths: ['macos/**', '.github/workflows/macos.yml']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'GitHub に下書きリリースを作る（オフなら署名・公証した zip を Artifacts に置くだけ）'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: ビルド（アドホック署名）
+        run: ./macos/build.sh universal
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    permissions:
+      contents: write # 下書きリリースの作成
+    steps:
+      - uses: actions/checkout@v4
+
+      # 署名用の証明書を一時的なキーチェーンに読み込む（ジョブの最後に削除する）
+      - name: 署名用の証明書を読み込む
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_CERTIFICATE_P12" ]; then
+            echo "::error::シークレット MACOS_CERTIFICATE_P12 がありません"
+            exit 1
+          fi
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/certificate.p12"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      # 公証は App Store Connect API キーを使う（なければ Apple ID と App 用パスワード）
+      - name: 公証の資格情報を用意する
+        env:
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          if [ -n "$NOTARY_API_KEY_P8" ]; then
+            echo "$NOTARY_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+            {
+              echo "NOTARY_KEY=$RUNNER_TEMP/AuthKey.p8"
+              echo "NOTARY_KEY_ID=$NOTARY_API_KEY_ID"
+              echo "NOTARY_ISSUER=$NOTARY_API_ISSUER_ID"
+            } >> "$GITHUB_ENV"
+          elif [ -n "$APPLE_ID" ]; then
+            {
+              echo "APPLE_ID=$APPLE_ID"
+              echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+              echo "APPLE_APP_PASSWORD=$APPLE_APP_PASSWORD"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::error::公証のシークレット（NOTARY_API_KEY_P8 など、または APPLE_ID など）がありません"
+            exit 1
+          fi
+
+      - name: ビルド・署名・公証
+        if: ${{ !inputs.release }}
+        run: ./macos/package.sh
+
+      - name: ビルド・署名・公証して下書きリリースを作る
+        if: ${{ inputs.release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./macos/release.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Commentable-darwin-universal
+          path: macos/build/Commentable-darwin-universal-*.zip
+          if-no-files-found: error
+
+      - name: キーチェーンと鍵を削除する
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2> /dev/null || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
