@@ -78,7 +78,7 @@ struct WindowPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("共有用ウィンドウ").font(.title).bold()
-            Text("コメントを重ねて共有したいウィンドウ（例: PowerPoint のスライドショー）を選んでください。選んだウィンドウにコメントを重ねた「共有用ウィンドウ」が開くので、Zoom などではこの共有用ウィンドウを、アプリのウィンドウとして共有してください。")
+            Text("コメントを重ねて共有したいウィンドウ（例: PowerPoint のスライドショー）を選んでください。選んだウィンドウにコメントを重ねた「Commentable 共有用」のウィンドウが、そのウィンドウの後ろに用意されます（画面には見えません）。Zoom などではこの「Commentable 共有用」のウィンドウを、アプリのウィンドウとして共有してください。配信者はいつもどおり、選んだウィンドウを操作してください。")
                 .fixedSize(horizontal: false, vertical: true)
                 .foregroundColor(.secondary)
 
@@ -125,7 +125,6 @@ private final class ShareContentView: NSView {
     let captureLayer = CALayer()
     private let captureView = NSView()
     let overlay = OverlayView(hoverEnabled: false)
-    let messageLabel = NSTextField(wrappingLabelWithString: "")
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -137,12 +136,7 @@ private final class ShareContentView: NSView {
         captureView.layer = captureLayer
         captureView.wantsLayer = true
 
-        messageLabel.textColor = .white
-        messageLabel.alignment = .center
-        messageLabel.font = .systemFont(ofSize: 15)
-        messageLabel.isHidden = true
-
-        for view in [captureView, overlay, messageLabel] as [NSView] {
+        for view in [captureView, overlay] as [NSView] {
             view.frame = bounds
             view.autoresizingMask = [.width, .height]
             addSubview(view)
@@ -151,17 +145,12 @@ private final class ShareContentView: NSView {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    override func layout() {
-        super.layout()
-        messageLabel.frame = bounds.insetBy(dx: 24, dy: bounds.height / 2 - 40)
-    }
-
-    func showMessage(_ text: String?) {
-        messageLabel.stringValue = text ?? ""
-        messageLabel.isHidden = text == nil
-    }
 }
 
+// 共有用ウィンドウは対象のウィンドウと同じ位置・同じ大きさにして、そのすぐ後ろに隠しておく
+// （配信者はデスクトップ上に流れるコメントを見ながら対象のウィンドウをそのまま操作し、
+//   Zoom などではこの共有用ウィンドウを共有してもらう）
+// 隠れていても ScreenCaptureKit では中身を取り込める。画面の外に置いたり透明にしたりすると取り込めない
 @available(macOS 12.3, *)
 final class ShareWindowController: NSObject, NSWindowDelegate, SCStreamOutput, SCStreamDelegate {
     let window: NSWindow
@@ -173,8 +162,11 @@ final class ShareWindowController: NSObject, NSWindowDelegate, SCStreamOutput, S
     private var stream: SCStream?
     private let queue = DispatchQueue(label: "commentable.share-capture")
     private var capturedSize: CGSize // 対象のウィンドウの大きさ（ポイント）
-    private var sizeTimer: Timer?
+    private var captureScale: CGFloat // 対象のウィンドウがあるディスプレイの倍率
+    private var followTimer: Timer?
+    private var lastOrderCheck = Date.distantPast
     private var activity: NSObjectProtocol?
+    private var closing = false
 
     var targetDescription: String {
         let app = target.owningApplication?.applicationName ?? ""
@@ -186,57 +178,72 @@ final class ShareWindowController: NSObject, NSWindowDelegate, SCStreamOutput, S
         self.target = target
         self.overlays = overlays
         capturedSize = target.frame.size
+        captureScale = Self.screen(containing: Self.cocoaRect(fromCG: target.frame))?.backingScaleFactor ?? 2
 
-        window = NSWindow(contentRect: NSRect(origin: .zero, size: Self.initialSize(for: target.frame.size)),
-                          styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: Self.cocoaRect(fromCG: target.frame), styleMask: [.borderless], backing: .buffered, defer: false)
         super.init()
-        // Zoom の共有の一覧ではこのタイトルで表示される
+        // Zoom の共有の一覧ではこのタイトルで表示される（タイトルバーはないので共有先には映らない）
         window.title = "Commentable 共有用 – \(targetDescription)"
         window.contentView = content
-        window.contentAspectRatio = capturedSize
         window.backgroundColor = .black
+        window.isOpaque = true
+        window.hasShadow = false
+        window.ignoresMouseEvents = true // 万一見えてもクリックは下に通す
+        window.isExcludedFromWindowsMenu = true
+        window.animationBehavior = .none
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.center()
         overlays.attach(content.overlay)
     }
 
-    // 画面の 7 割に収まる大きさ
-    private static func initialSize(for size: CGSize) -> CGSize {
-        let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
-        let scale = min(1, visible.width * 0.7 / max(size.width, 1), visible.height * 0.7 / max(size.height, 1))
-        return CGSize(width: round(size.width * scale), height: round(size.height * scale))
+    // ========== 座標 ==========
+    // CGWindowList / ScreenCaptureKit の座標（メインディスプレイの左上が原点）を AppKit の座標（左下が原点）に
+    private static func cocoaRect(fromCG rect: CGRect) -> NSRect {
+        let mainHeight = NSScreen.screens.first?.frame.height ?? 0
+        return NSRect(x: rect.minX, y: mainHeight - rect.maxY, width: rect.width, height: rect.height)
     }
 
+    // いちばん大きく重なっているディスプレイ
+    private static func screen(containing rect: NSRect) -> NSScreen? {
+        NSScreen.screens.max { a, b in
+            let x = a.frame.intersection(rect), y = b.frame.intersection(rect)
+            return (x.isNull ? 0 : x.width * x.height) < (y.isNull ? 0 : y.width * y.height)
+        }
+    }
+
+    // ========== 開始 ==========
     func start() {
         // 共有中はアプリが App Nap で止められないようにする
-        activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated], reason: "共有用ウィンドウを表示中")
+        activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated], reason: "共有用ウィンドウで共有中")
 
         let filter = SCContentFilter(desktopIndependentWindow: target)
         let stream = SCStream(filter: filter, configuration: makeConfiguration(), delegate: self)
         do {
             try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
         } catch {
-            content.showMessage("ウィンドウを取り込めませんでした: \(error.localizedDescription)")
+            finish("ウィンドウを取り込めませんでした: \(error.localizedDescription)")
             return
         }
         self.stream = stream
         stream.startCapture { [weak self] error in
             guard let error else { return }
-            DispatchQueue.main.async { self?.content.showMessage("ウィンドウを取り込めませんでした: \(error.localizedDescription)") }
+            DispatchQueue.main.async { self?.finish("ウィンドウを取り込めませんでした: \(error.localizedDescription)") }
         }
 
-        // 対象のウィンドウの大きさが変わったら、取り込む大きさと共有用ウィンドウの縦横比を合わせる
-        sizeTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in self?.followTargetSize() }
+        followTarget()
+        // 対象のウィンドウの位置・大きさ・重なり順に合わせ続ける
+        followTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in self?.followTarget() }
+        overlays.showNotification("Zoom などで「Commentable 共有用」のウィンドウを共有してください")
     }
 
     private func makeConfiguration() -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
-        // Retina の解像度で取り込む（長辺は 3840 ピクセルまで）
-        let backingScale = NSScreen.screens.map(\.backingScaleFactor).max() ?? 2
-        let scale = min(backingScale, 3840 / max(capturedSize.width, capturedSize.height, 1))
+        // 対象のウィンドウがあるディスプレイの解像度で取り込む（長辺は 3840 ピクセルまで）
+        // 別の倍率のディスプレイで計算すると、映像が小さく（大きく）取り込まれてしまう
+        let scale = min(captureScale, 3840 / max(capturedSize.width, capturedSize.height, 1))
         configuration.width = max(2, Int(capturedSize.width * scale))
         configuration.height = max(2, Int(capturedSize.height * scale))
+        configuration.scalesToFit = true // 大きさがずれても、出力いっぱいに合わせる
         configuration.pixelFormat = kCVPixelFormatType_32BGRA
         configuration.colorSpaceName = CGColorSpace.sRGB
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: 30)
@@ -245,24 +252,58 @@ final class ShareWindowController: NSObject, NSWindowDelegate, SCStreamOutput, S
         return configuration
     }
 
-    private func followTargetSize() {
+    // ========== 対象のウィンドウに合わせる ==========
+    private func followTarget() {
+        guard !closing else { return }
         guard let info = (CGWindowListCopyWindowInfo([.optionIncludingWindow], target.windowID) as? [[String: Any]])?.first,
               let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
-              let bounds = CGRect(dictionaryRepresentation: boundsDict) else { return }
-        let size = bounds.size
-        guard abs(size.width - capturedSize.width) > 1 || abs(size.height - capturedSize.height) > 1, size.width > 1, size.height > 1 else { return }
-        capturedSize = size
-        window.contentAspectRatio = size
-        // 幅はそのままで縦横比を合わせる
-        var frame = window.frame
-        let contentWidth = window.contentRect(forFrameRect: frame).width
-        let newContent = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: contentWidth, height: round(contentWidth * size.height / size.width)))
-        frame.origin.y += frame.height - newContent.height
-        frame.size.height = newContent.height
-        window.setFrame(frame, display: true)
-        stream?.updateConfiguration(makeConfiguration()) { error in
-            if let error { NSLog("Share window: cannot update configuration: %@", error.localizedDescription) }
+              let bounds = CGRect(dictionaryRepresentation: boundsDict) else {
+            finish("対象のウィンドウが閉じられたので、共有用ウィンドウでの共有を終了しました")
+            return
         }
+        let onScreen = (info[kCGWindowIsOnscreen as String] as? Bool) ?? false
+        let frame = Self.cocoaRect(fromCG: bounds)
+
+        // 全画面表示（専用の操作スペース）でも後ろに入れるように、そのときだけすべてのスペースに出す
+        let fullScreen = NSScreen.screens.contains { $0.frame == frame }
+        let behavior: NSWindow.CollectionBehavior = fullScreen
+            ? [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+            : [.fullScreenAuxiliary, .transient, .ignoresCycle]
+        if window.collectionBehavior != behavior { window.collectionBehavior = behavior }
+
+        var moved = false
+        if window.frame != frame {
+            window.setFrame(frame, display: true)
+            moved = true
+        }
+
+        // 大きさや表示するディスプレイ（倍率）が変わったら、取り込む大きさを合わせる
+        let scale = Self.screen(containing: frame)?.backingScaleFactor ?? captureScale
+        if abs(bounds.width - capturedSize.width) > 0.5 || abs(bounds.height - capturedSize.height) > 0.5 || scale != captureScale {
+            capturedSize = bounds.size
+            captureScale = scale
+            stream?.updateConfiguration(makeConfiguration()) { error in
+                if let error { NSLog("Share window: cannot update configuration: %@", error.localizedDescription) }
+            }
+        }
+
+        // 対象のウィンドウのすぐ後ろに置く（見えていないとき＝最小化や別のスペースでは最背面に下げる）
+        guard moved || Date().timeIntervalSince(lastOrderCheck) > 0.5 else { return }
+        lastOrderCheck = Date()
+        if onScreen {
+            if !isDirectlyBelowTarget() {
+                window.order(.below, relativeTo: Int(target.windowID))
+            }
+        } else {
+            window.orderBack(nil) // 見えていないと Zoom の共有の一覧に出ないので、閉じずに最背面に置く
+        }
+    }
+
+    private func isDirectlyBelowTarget() -> Bool {
+        guard window.isVisible,
+              let below = CGWindowListCopyWindowInfo([.optionOnScreenBelowWindow], target.windowID) as? [[String: Any]],
+              let next = below.first?[kCGWindowNumber as String] as? Int else { return false }
+        return next == window.windowNumber
     }
 
     // ========== SCStreamOutput ==========
@@ -274,24 +315,29 @@ final class ShareWindowController: NSObject, NSWindowDelegate, SCStreamOutput, S
               let pixelBuffer = sampleBuffer.imageBuffer,
               let surface = CVPixelBufferGetIOSurface(pixelBuffer)?.takeUnretainedValue() else { return }
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
             // IOSurface をそのままレイヤーに載せる（コピーしないので軽い）
-            self.content.captureLayer.contents = surface
-            self.content.showMessage(nil)
+            self?.content.captureLayer.contents = surface
         }
     }
 
     // ========== SCStreamDelegate ==========
     func stream(_ stream: SCStream, didStopWithError error: Error) {
         DispatchQueue.main.async { [weak self] in
-            self?.sizeTimer?.invalidate()
-            self?.content.showMessage("ウィンドウを取り込めなくなりました（ウィンドウが閉じられた可能性があります）。\nメニューの「共有用ウィンドウ...」から選び直してください。")
+            self?.finish("ウィンドウを取り込めなくなったので、共有用ウィンドウでの共有を終了しました")
         }
     }
 
-    // ========== NSWindowDelegate ==========
+    // ========== 終了 ==========
+    // 共有用ウィンドウは見えないので、終わった理由はデスクトップの通知で知らせる
+    private func finish(_ message: String) {
+        guard !closing else { return }
+        overlays.showNotification(message)
+        close()
+    }
+
     func windowWillClose(_ notification: Notification) {
-        sizeTimer?.invalidate()
+        closing = true
+        followTimer?.invalidate()
         stream?.stopCapture { _ in }
         stream = nil
         overlays.detach(content.overlay)

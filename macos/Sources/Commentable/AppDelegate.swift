@@ -309,9 +309,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if self?.shareWindow === controller { self?.shareWindow = nil }
         }
         shareWindow = controller
-        controller.start()
-        NSApp.activate(ignoringOtherApps: true)
-        controller.window.makeKeyAndOrderFront(nil)
+        controller.start() // 共有用ウィンドウは対象のウィンドウの後ろに置くので、前面には出さない
     }
 
     private func buildShareMenu() -> [NSMenuItem] {
@@ -319,11 +317,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if #available(macOS 12.3, *), let controller = shareWindow as? ShareWindowController {
             items.append(.separator())
             items.append(disabled("共有中: \(controller.targetDescription)"))
-            items.append(ActionMenuItem("共有用ウィンドウを前面に表示") {
-                NSApp.activate(ignoringOtherApps: true)
-                controller.window.makeKeyAndOrderFront(nil)
-            })
-            items.append(ActionMenuItem("共有用ウィンドウを閉じる") { controller.close() })
+            items.append(disabled("Zoom などで「Commentable 共有用」のウィンドウを共有してください"))
+            items.append(ActionMenuItem("共有用ウィンドウでの共有をやめる") { controller.close() })
         }
         return items
     }
