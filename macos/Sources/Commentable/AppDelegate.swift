@@ -72,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         session?.stop()
         camera.stop()
+        updateChecker.applicationWillTerminate() // 「あとで」を選んだアップデートを入れ替える
     }
 
     // 部屋に入ったらオーバーレイ表示を開始する
@@ -96,7 +97,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         overlay.setQR(position: qrPosition, text: qrText())
         window.orderFrontRegardless()
         setupStatusItem()
-        updateChecker.checkInBackground()
+        if CommandLine.arguments.contains("--update-now") {
+            // 新しいバージョンがあれば確認なしで入れ替えて再起動する（動作確認用）
+            updateChecker.check(manual: true, installImmediately: true)
+        } else {
+            updateChecker.checkInBackground()
+        }
         openShareWindowFromArguments()
     }
 
@@ -460,7 +466,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         })
         items.append(submenu("カメラ", buildCameraMenu()))
         items.append(.separator())
-        items.append(ActionMenuItem("アップデートを確認...") { [weak self] in self?.updateChecker.check(manual: true) })
+        if let ready = updateChecker.ready {
+            items.append(ActionMenuItem("再起動して \(ready.version) に更新") { [weak self] in self?.updateChecker.check(manual: true, installImmediately: true) })
+        } else {
+            items.append(ActionMenuItem("アップデートを確認...") { [weak self] in self?.updateChecker.check(manual: true) })
+        }
         items.append(ActionMenuItem("About") { [weak self] in self?.openAboutWindow() })
         items.append(ActionMenuItem("Quit") { NSApp.terminate(nil) })
         return items
