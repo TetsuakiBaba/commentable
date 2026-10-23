@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using Windows.Media.Core;
+using Windows.Media.Playback;
+using Windows.Media.SpeechSynthesis;
+
+namespace Commentable;
+
+// コメントの効果音と読み上げ
+sealed class SoundPlayer
+{
+    // id_sound の番号順。複数あるものはランダムに1つ鳴らす
+    private static readonly string[][] SoundFiles =
+    [
+        ["camera1.mp3", "camera2.mp3", "camera3.mp3"],
+        ["clap1.mp3", "clap2.mp3", "clap3.mp3", "clap4.mp3", "clap5.mp3", "clap6.mp3", "clap7.mp3", "clap8.mp3"],
+        ["cracker.mp3"],
+        ["kansei.mp3"],
+        ["he.wav"],
+        ["chottomatte.wav"],
+        ["OK.wav"],
+        ["punch.mp3"],
+        ["laugh3.mp3"],
+        ["kusa00.mp3", "kusa01.mp3", "kusa02.mp3", "kusa03.mp3", "kusa04.mp3", "kusa05.mp3"],
+    ];
+
+    public double Volume { get; set; } = 0.1;
+    public bool IsMuted { get; set; }
+
+    private readonly Dictionary<string, byte[]> cache = new();
+    private readonly HashSet<MediaPlayer> playing = new(); // 再生が終わるまで保持する（同じ音を重ねて鳴らせる）
+    private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+    private SpeechSynthesizer? synthesizer;
+    private Task speechQueue = Task.CompletedTask; // 読み上げは順番に行う
+
+    public SoundPlayer()
+    {
+        // 最初のコメントで遅れないように読み込んでおく
+        foreach (var name in SoundFiles.SelectMany(files => files).Append("protofessional.mp3"))
+        {
+            if (AppResources.Sound(name) is { } data) cache[name] = data;
+            else Log.Write($"Sound not found: {name}");
+        }
+    }
+
+    public static bool IsValidSoundID(int id) => id >= 0 && id < SoundFiles.Length;
+
+    public void PlayComment(int soundID)
+    {
+        if (!IsValidSoundID(soundID)) return;
+        var files = SoundFiles[soundID];
+        Play(files[Random.Shared.Next(files.Length)], Volume);
+    }
+
+    public void Play(string name, double volume)
+    {
+        if (IsMuted || !cache.TryGetValue(name, out var data)) return;
+        var contentType = name.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? "audio/wav" : "audio/mpeg";
+        Start(MediaSource.CreateFromStream(new MemoryStream(data).AsRandomAccessStream(), contentType), volume);
+    }
+
+    private MediaPlayer Start(MediaSource source, double volume)
+    {
+        var player = new MediaPlayer
+        {
+            Source = source,
+            Volume = volume,
+            AudioCategory = MediaPlayerAudioCategory.SoundEffects,
+            AutoPlay = false,
+        };
+        player.CommandManager.IsEnabled = false; // メディアの操作（音量の表示など）には出さない
+        void Finish() => dispatcher.BeginInvoke(() =>
+        {
+            if (playing.Remove(player)) player.Dispose();
+        });
+        player.MediaEnded += (_, _) => Finish();
+        player.MediaFailed += (_, e) =>
+        {
+            Log.Write($"Sound error: {e.Error} {e.ErrorMessage} {e.ExtendedErrorCode?.Message}");
+            Finish();
+        };
+        playing.Add(player);
+        player.Play();
+        return player;
+    }
+
+    public void Speak(string text)
+    {
+        if (IsMuted) return;
+        speechQueue = speechQueue.ContinueWith(_ => SpeakAsync(text), TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
+    }
+
+    private async Task SpeakAsync(string text)
+    {
+        try
+        {
+            if (synthesizer == null)
+            {
+                synthesizer = new SpeechSynthesizer();
+                if (SpeechSynthesizer.AllVoices.FirstOrDefault(voice => voice.Language.Equals("ja-JP", StringComparison.OrdinalIgnoreCase)) is { } voice)
+                {
+                    synthesizer.Voice = voice;
+                }
+            }
+            var stream = await synthesizer.SynthesizeTextToStreamAsync(text);
+            var finished = new TaskCompletionSource();
+            var player = Start(MediaSource.CreateFromStream(stream, stream.ContentType), Volume);
+            player.MediaEnded += (_, _) => finished.TrySetResult();
+            player.MediaFailed += (_, _) => finished.TrySetResult();
+            await Task.WhenAny(finished.Task, Task.Delay(TimeSpan.FromMinutes(1)));
+        }
+        catch (Exception e)
+        {
+            Log.Write($"Speech error: {e.Message}");
+        }
+    }
+}

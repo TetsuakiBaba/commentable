@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Commentable のデスクトップアプリ（配信者用オーバーレイ）の Windows ネイティブ版 -->
+  <!-- ビルドは build.ps1、配布用の zip は package.ps1 を使う -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- Windows.Graphics.Capture・MediaCapture などの WinRT の API を使う（動作は Windows 10 2004 以降。Windows 11 の API は確認してから使う） -->
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Commentable</AssemblyName>
+    <RootNamespace>Commentable</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
+    <!-- 高 DPI の設定は WPF のために app.manifest で行う -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+
+    <!-- バージョンは VERSION ファイルで管理する（リリースのタグは windows-v<VERSION>） -->
+    <CommentableVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\VERSION').Trim())</CommentableVersion>
+    <Version>$(CommentableVersion)</Version>
+    <FileVersion>$(CommentableVersion).0</FileVersion>
+    <InformationalVersion>$(CommentableVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Commentable</Product>
+    <AssemblyTitle>Commentable</AssemblyTitle>
+    <Company>Tetsuaki Baba</Company>
+    <Copyright>© $([System.DateTime]::Now.Year) Tetsuaki Baba</Copyright>
+
+    <!-- 配布用は 1 つの exe にまとめる（.NET のランタイムも同梱するので、インストールは不要） -->
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 著作権表示の年はビルドした年 -->
+    <AssemblyMetadata Include="CopyrightYear" Value="$([System.DateTime]::Now.Year)" />
+    <!-- package.ps1 で作った配布用のビルドだけが自動アップデートで自分を入れ替える -->
+    <AssemblyMetadata Include="Distribution" Value="true" Condition="'$(CommentableDistribution)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 効果音・画像は exe に埋め込む（アップデートは exe を入れ替えるだけで済む） -->
+    <EmbeddedResource Include="Resources\sounds\*" LogicalName="sounds/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources\images\*" LogicalName="images/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources\icon.ico" LogicalName="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- QR コードの生成（MIT ライセンス） -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+</Project>

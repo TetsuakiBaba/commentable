@@ -48,6 +48,16 @@ cd macos
 ./build.sh      # 手元でのビルド
 ```
 
+### Windows 版（ネイティブ版）
+Windows 向けは、macOS 版と同じ機能を C#（.NET 8 / WPF）で書いたネイティブ版（[windows/](windows/)）があります。
+ビルド・バージョン管理（`windows/VERSION`）・GitHub へのリリース手順は [windows/README.md](windows/README.md) を参照してください。
+リリース用のビルドは GitHub Actions（Actions タブの「Windows app」→「Run workflow」）で行います。リリースのタグは `windows-v<VERSION>` です。
+
+```
+cd windows
+./build.ps1     # 手元でのビルド（.NET 8 SDK が必要）
+```
+
 以下は Electron 版の手順です。
 
 ### Build

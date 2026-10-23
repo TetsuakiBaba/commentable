@@ -1,0 +1,85 @@
+# Windows 版（C# / WPF ネイティブ版）のビルドとリリース
+#
+# - windows/ を変更して push / プルリクエストしたとき: ビルドできるかだけを確認する（署名しない）
+# - Actions タブの「Run workflow」から手動で実行したとき:
+#     配布用の zip（x64 版・ARM 版）を作る。コード署名の証明書がシークレットにあれば署名する
+#     「release」にチェックを入れると、windows-v<windows/VERSION> の下書きリリースも作る
+#
+# シークレットは windows/README.md の「GitHub Actions でのリリース」を参照
+name: Windows app
+
+on:
+  push:
+    branches: [master]
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'GitHub に下書きリリースを作る（オフなら zip を Artifacts に置くだけ）'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: ビルド
+        shell: pwsh
+        run: ./windows/build.ps1
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    permissions:
+      contents: write # 下書きリリースの作成
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # 署名用の証明書（.pfx）を一時的なファイルに書き出す（ジョブの最後に削除する）
+      - name: 署名用の証明書を用意する
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PFX_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE_PFX_BASE64) {
+            Write-Host '::warning::シークレット WINDOWS_CERTIFICATE_PFX がないので、署名せずに作ります'
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'certificate.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX_BASE64))
+          "WINDOWS_CERTIFICATE_PFX=$pfx" >> $env:GITHUB_ENV
+          "WINDOWS_CERTIFICATE_PASSWORD=$env:WINDOWS_CERTIFICATE_PASSWORD" >> $env:GITHUB_ENV
+
+      - name: ビルド・署名
+        if: ${{ !inputs.release }}
+        shell: pwsh
+        run: ./windows/package.ps1
+
+      - name: ビルド・署名して下書きリリースを作る
+        if: ${{ inputs.release }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./windows/release.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Commentable-win32
+          path: windows/build/Commentable-win32-*.zip
+          if-no-files-found: error
+
+      - name: 証明書を削除する
+        if: always()
+        shell: pwsh
+        run: Remove-Item (Join-Path $env:RUNNER_TEMP 'certificate.pfx') -ErrorAction SilentlyContinue
