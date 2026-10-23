@@ -1,142 +1,96 @@
 <!DOCTYPE html>
 <!--
-  SNS で共有したときの画像（OGP）の元データ
-  書き出し（1200×630 の ogp.png を作る）:
+  SNS で共有したときの画像（OGP）の元データ。Web サイトの最初の画面と同じ見た目にしている
+  書き出し（1200×630 の ogp.png を作る。Web フォントを読み込むので少し待つ）:
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
-      --window-size=1200,630 --screenshot=docs/assets/images/ogp.png docs/assets/ogp/ogp.html
+      --window-size=1200,630 --virtual-time-budget=5000 \
+      --screenshot=docs/assets/images/ogp.png docs/assets/ogp/ogp.html
 -->
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?display=swap&family=Manrope:wght@300;400&family=Roboto:wght@300;400" rel="stylesheet">
 <style>
+  /* Web サイト（assets/main.css）と同じ色 */
   :root {
-    --cyan: #45d8f9;
-    --yellow: #f2dc50;
-    --beige: #dcc4ab;
-    --ink: #1d2433;
+    --background: #F2F2FA;
+    --title: #4C4C61;
+    --text: #A19FB3;
+    --accent: #597EFC;
+    --accent-soft: rgba(89, 126, 252, 0.102);
+    --purple: #815CFF;
+    --button: #494D52;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 1200px; height: 630px; overflow: hidden; }
   body {
-    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-    color: var(--ink);
-    background: #fffdf7;
+    background: var(--background);
+    font-family: 'Roboto', "Hiragino Sans", sans-serif;
+    font-weight: 300;
     position: relative;
   }
-  /* 背景の色帯（ロゴの3色） */
-  .band { position: absolute; }
-  .band.cyan { left: 0; top: 0; width: 1200px; height: 14px; background: var(--cyan); }
-  .band.yellow { left: 0; bottom: 0; width: 600px; height: 14px; background: var(--yellow); }
-  .band.beige { left: 600px; bottom: 0; width: 600px; height: 14px; background: var(--beige); }
 
-  /* 左: ロゴと説明 */
-  .brand { position: absolute; left: 64px; top: 64px; display: flex; align-items: center; gap: 18px; }
-  .brand img { width: 76px; height: 76px; border-radius: 18px; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-  .brand .name { font-size: 46px; font-weight: 800; letter-spacing: .5px; }
-  .headline {
-    position: absolute; left: 64px; top: 186px; width: 560px;
-    font-size: 54px; font-weight: 900; line-height: 1.28; letter-spacing: -.5px;
+  /* 中央: Web サイトの最初の画面と同じ構成 */
+  .hero {
+    position: absolute; left: 0; right: 0; top: 66px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
   }
-  .headline em { font-style: normal; background: linear-gradient(transparent 62%, var(--yellow) 62%); }
+  .kicker {
+    color: var(--accent); font-family: 'Manrope', "Hiragino Sans", sans-serif; font-weight: 400;
+    font-size: 21px; letter-spacing: 0.32em;
+  }
+  .logo { margin-top: 26px; width: 120px; height: 120px; } /* 角丸と影は画像に含まれている */
+  .title {
+    margin-top: 18px; color: var(--title);
+    font-family: 'Manrope', sans-serif; font-weight: 300; font-size: 92px; letter-spacing: 0.02em; line-height: 1.1;
+  }
   .lead {
-    position: absolute; left: 64px; top: 366px; width: 540px;
-    font-size: 23px; font-weight: 600; line-height: 1.6; color: #4a5266;
+    margin-top: 22px; color: var(--text);
+    font-family: "Hiragino Sans", sans-serif; font-weight: 300; font-size: 25px; letter-spacing: 0.06em; line-height: 1.7;
   }
-  .tags { position: absolute; left: 64px; top: 492px; display: flex; gap: 12px; }
-  .tag {
-    font-size: 20px; font-weight: 800; padding: 9px 18px; border-radius: 999px;
-    background: var(--ink); color: #fff;
+  .pills { margin-top: 26px; display: flex; gap: 14px; }
+  .pill {
+    font-family: "Hiragino Sans", sans-serif; font-weight: 400; font-size: 21px;
+    padding: 12px 30px; border-radius: 999px;
   }
-  .tag.free { background: #ff5a6e; }
+  .pill.soft { background: var(--accent-soft); color: var(--accent); }
+  .pill.dark { background: var(--button); color: #fff; }
 
-  /* 右: 発表者の画面（スライドにコメントが流れる） */
-  .screen {
-    position: absolute; left: 650px; top: 70px; width: 490px; height: 340px;
-    background: #fff; border-radius: 18px; border: 4px solid var(--ink);
-    box-shadow: 0 18px 40px rgba(29,36,51,.22); overflow: hidden;
-  }
-  .screen .slide-title { position: absolute; left: 30px; top: 28px; font-size: 26px; font-weight: 800; }
-  .screen .line { position: absolute; left: 30px; height: 12px; border-radius: 6px; background: #e3e7ee; }
-  .screen .chart { position: absolute; right: 30px; bottom: 30px; display: flex; align-items: flex-end; gap: 10px; }
-  .screen .chart div { width: 26px; border-radius: 5px 5px 0 0; }
-  .stand { position: absolute; left: 860px; top: 410px; width: 50px; height: 26px; background: var(--ink); }
-  .stand-base { position: absolute; left: 820px; top: 434px; width: 130px; height: 10px; border-radius: 5px; background: var(--ink); }
-
-  /* 流れるコメント（アプリと同じ縁取り文字） */
+  /* まわり: 画面に流れるコメント（アプリと同じ縁取り文字）とリアクション */
   .comment {
-    position: absolute; font-weight: 900; white-space: nowrap; color: #fff;
+    position: absolute; white-space: nowrap; color: #fff;
+    font-family: "Hiragino Sans", sans-serif; font-weight: 800;
     -webkit-text-stroke: 6px var(--c); paint-order: stroke fill;
   }
-  /* リアクション */
   .reaction {
-    position: absolute; width: 74px; height: 74px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 40px;
-    background: #fff; box-shadow: 0 8px 20px rgba(29,36,51,.18);
+    position: absolute; width: 70px; height: 70px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 36px;
+    background: #fff; box-shadow: 0 6px 18px rgba(76, 76, 97, 0.12);
   }
-  .reaction.sound { background: #ffe1e5; }
-  .note { position: absolute; font-size: 34px; font-weight: 900; color: #ff5a6e; }
-  /* スマホ */
-  .phone {
-    position: absolute; left: 1010px; top: 330px; width: 150px; height: 270px;
-    background: var(--ink); border-radius: 28px; padding: 12px; transform: rotate(8deg);
-    box-shadow: 0 16px 30px rgba(29,36,51,.3);
-  }
-  .phone .inner { width: 100%; height: 100%; background: #fff; border-radius: 18px; padding: 14px 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-content: start; }
-  .phone .btn { height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; }
-  .phone .btn.g { background: #dff5e7; }
-  .phone .btn.r { background: #ffe1e5; }
-  .phone .send { grid-column: span 3; margin-top: 8px; height: 30px; border-radius: 8px; background: var(--cyan); }
+  .note { position: absolute; color: var(--accent); font-size: 30px; font-family: "Hiragino Sans", sans-serif; font-weight: 600; }
 </style>
 </head>
 <body>
-  <div class="band cyan"></div>
-  <div class="band yellow"></div>
-  <div class="band beige"></div>
+  <div class="comment" style="--c: var(--accent); left: 60px; top: 116px; font-size: 38px;">なるほど！</div>
+  <div class="comment" style="--c: var(--purple); left: 900px; top: 126px; font-size: 34px;">わかりやすい👏</div>
+  <div class="comment" style="--c: var(--title); left: 70px; top: 470px; font-size: 32px;">質問です🙋</div>
+  <div class="comment" style="--c: var(--accent); left: 1010px; top: 470px; font-size: 32px;">www</div>
 
-  <div class="brand">
-    <img src="../images/image03.png" alt="">
-    <div class="name">Commentable</div>
-  </div>
-  <div class="headline">コメントと<em>音</em>で、<br>授業がにぎやかに。</div>
-  <div class="lead">スマホから送ったコメントやリアクションが<br>発表者の画面に流れて、音が鳴る。</div>
-  <div class="tags">
-    <div class="tag free">無料</div>
-    <div class="tag">授業・学会・イベント</div>
-    <div class="tag">Zoom でも</div>
-  </div>
+  <div class="reaction" style="left: 116px; top: 226px;">👏</div>
+  <div class="reaction" style="left: 62px; top: 330px; width: 60px; height: 60px; font-size: 30px;">👍</div>
+  <div class="reaction" style="left: 1030px; top: 226px;">🎉</div>
+  <div class="reaction" style="left: 1080px; top: 326px; width: 60px; height: 60px; font-size: 30px;">📸</div>
+  <div class="note" style="left: 194px; top: 210px;">♪</div>
+  <div class="note" style="left: 996px; top: 306px; font-size: 24px;">♫</div>
 
-  <div class="screen">
-    <div class="slide-title">第5回 プロトタイピング</div>
-    <div class="line" style="top: 84px; width: 300px;"></div>
-    <div class="line" style="top: 110px; width: 250px;"></div>
-    <div class="line" style="top: 136px; width: 270px;"></div>
-    <div class="chart">
-      <div style="height: 60px; background: var(--beige);"></div>
-      <div style="height: 96px; background: var(--yellow);"></div>
-      <div style="height: 140px; background: var(--cyan);"></div>
-    </div>
-  </div>
-  <div class="stand"></div>
-  <div class="stand-base"></div>
-
-  <div class="comment" style="--c: #ff5a6e; left: 690px; top: 190px; font-size: 40px;">なるほど！</div>
-  <div class="comment" style="--c: #2f80ed; left: 850px; top: 248px; font-size: 34px;">わかりやすい👏</div>
-  <div class="comment" style="--c: #16a34a; left: 680px; top: 316px; font-size: 32px;">質問です🙋</div>
-  <div class="comment" style="--c: #9b51e0; left: 940px; top: 128px; font-size: 30px;">www</div>
-
-  <div class="reaction sound" style="left: 616px; top: 420px;">👏</div>
-  <div class="reaction sound" style="left: 706px; top: 470px;">🎉</div>
-  <div class="reaction" style="left: 796px; top: 452px; width: 64px; height: 64px; font-size: 34px;">👍</div>
-  <div class="reaction sound" style="left: 880px; top: 492px; width: 64px; height: 64px; font-size: 34px;">📸</div>
-  <div class="note" style="left: 676px; top: 398px;">♪</div>
-  <div class="note" style="left: 770px; top: 438px; font-size: 26px;">♫</div>
-
-  <div class="phone">
-    <div class="inner">
-      <div class="btn g">👍</div><div class="btn g">🙏</div><div class="btn g">🙋</div>
-      <div class="btn r">👏</div><div class="btn r">🎉</div><div class="btn r">📸</div>
-      <div class="btn r">😮</div><div class="btn r">🤔</div><div class="btn r">👌</div>
-      <div class="send"></div>
+  <div class="hero">
+    <div class="kicker">音を鳴らせるコメント共有アプリケーション</div>
+    <img class="logo" src="../images/image03.png" alt="">
+    <div class="title">Commentable</div>
+    <div class="lead">スマホから送ったコメントやリアクションが<br>発表者の画面に流れて、音が鳴る。</div>
+    <div class="pills">
+      <div class="pill soft">授業・学会・イベントに</div>
+      <div class="pill dark">無料で使えます</div>
     </div>
   </div>
 </body>
