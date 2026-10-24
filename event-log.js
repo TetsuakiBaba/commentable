@@ -333,14 +333,35 @@ function createRouter({ legacyCommentLogFile, authorize }) {
         fs.createReadStream(file).pipe(res);
     });
 
-    // これまでのコメントログ（参加者ページの履歴同期用。従来と同じ形式）
+    // 今の授業回のコメント（参加者ページの履歴同期用。従来と同じ形式）
+    // 部屋名を知っていれば誰でも読めるので、過去の授業回の分（最大 21 日分）は返さず、
+    // 途中から参加した人が今の授業のコメントを見られる範囲にとどめる。接続 ID も返さない
     router.get('/api/rooms/:room/comments', (req, res) => {
-        const file = legacyCommentLogFile(req.params.room);
+        const room = req.params.room;
+        const file = legacyCommentLogFile(room);
         if (!fs.existsSync(file)) {
             return res.status(404).send('no comments');
         }
+        const now = Date.now();
+        const session = latestSession(room);
+        const since = isLive(session, now) ? session.startedAt : now - SESSION_GAP_MS;
+        const lines = [];
+        for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+            if (!line) continue;
+            try {
+                const entry = JSON.parse(line);
+                if (Date.parse(entry.timestamp) < since) continue;
+                delete entry.socketid;
+                lines.push(JSON.stringify(entry));
+            } catch (error) {
+                // 壊れた行は飛ばす
+            }
+        }
+        if (lines.length === 0) {
+            return res.status(404).send('no comments');
+        }
         res.type('application/x-ndjson; charset=utf-8');
-        fs.createReadStream(file).pipe(res);
+        res.send(lines.join('\n') + '\n');
     });
 
     return router;

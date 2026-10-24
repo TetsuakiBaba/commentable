@@ -379,6 +379,7 @@ async function newComment(data) {
             card_code = document.createElement("a");
             card_code.setAttribute("href", data.comment);
             card_code.setAttribute("target", "_blank");
+            card_code.setAttribute("rel", "noopener noreferrer");
             card_code.id = `codeBlock${CommentApp.state.count}`;
             card_code.textContent = data.comment;
             card_body.appendChild(card_code);

@@ -124,7 +124,8 @@ final class RoomSession {
 
     // ========== コメント ==========
     private func newComment(_ data: [String: Any]) {
-        let comment = data["comment"] as? String ?? ""
+        // 長すぎるコメントで描画が重くならないように切り詰める（サーバーでも 300 文字に制限している）
+        let comment = String((data["comment"] as? String ?? "").prefix(Self.maxCommentLength))
         let fill = NSColor(hex: data["color_text"] as? String) ?? .white
         let stroke = NSColor(hex: data["color_text_stroke"] as? String) ?? .black
 
@@ -151,7 +152,8 @@ final class RoomSession {
                                  fill: fill, stroke: stroke) else { return }
 
         let flgSound = Self.bool(data["flg_sound"])
-        let soundID = Self.number(data["id_sound"]).map { Int($0) }
+        // 数値でない・範囲外の値（nan や 1e300）を Int にすると強制終了するので、範囲を確かめてから変換する
+        let soundID = Self.number(data["id_sound"]).flatMap { $0.isFinite && $0 >= 0 && $0 < 1000 ? Int($0) : nil }
         if flgSound && soundID == 0 { // camera
             overlay.flash()
         }
@@ -180,12 +182,15 @@ final class RoomSession {
             NSLog("Command not allowed: %@", name)
             return false
         }
-        if args.count >= 3, let x = Double(args[1]), let y = Double(args[2]) {
+        // 位置は画面に対する比率（0〜1）。nan や inf はレイヤーの位置にできず強制終了するので受け付けない
+        if args.count >= 3, let x = Double(args[1]), let y = Double(args[2]), x.isFinite, y.isFinite {
             let text = args[0].replacingOccurrences(of: "[\"']", with: "", options: .regularExpression)
-            overlay.addTextCommand(text, x: x, y: y, fill: fill, stroke: stroke)
+            overlay.addTextCommand(String(text.prefix(Self.maxCommentLength)), x: min(max(x, 0), 1), y: min(max(y, 0), 1), fill: fill, stroke: stroke)
         }
         return true
     }
+
+    private static let maxCommentLength = 300
 
     // JSON の値を JavaScript の比較と同じように読む
     private static func number(_ value: Any?) -> Double? {

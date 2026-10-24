@@ -13,15 +13,18 @@
         crossorigin="anonymous"></script>
 
     <!-- Packery for draggable grid layout -->
-    <script src="https://unpkg.com/packery@2.1.2/dist/packery.pkgd.min.js"></script>
-    <script src="https://unpkg.com/draggabilly@2.4.1/dist/draggabilly.pkgd.min.js"></script>
+    <script src="https://unpkg.com/packery@2.1.2/dist/packery.pkgd.min.js"
+        integrity="sha384-oDkIpS8P/WkhvJZRketv7d32JVt7Rc2ZpaZV4sEDokacrFvLBs1q1vlgtKm9vxJJ" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/draggabilly@2.4.1/dist/draggabilly.pkgd.min.js"
+        integrity="sha384-ZJQIoikc3tYb9YoKD0Gh4QIDK4n1PW+KC6Zbus3c7z5FIixPNsM/GBhcg59i0k4W" crossorigin="anonymous"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/ed72a65202.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+        integrity="sha384-Ay26V7L8bsJTsX9Sxclnvsn+hkdiwRnrjZJXqKmkIDobPgIIWBOVguEcQQLDuhfN" crossorigin="anonymous">
 
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+        integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 
     <meta charset="utf-8">
     <style>
@@ -799,6 +802,13 @@
         let isAutoPosting = false;
         let autoPostingTimer = null;
         let lmStudioUrl = 'http://127.0.0.1:1234/v1';
+        // CSV に書き出す値。Excel などで開いたときに数式として実行されないように、
+        // = + - @ などで始まる文字列の先頭に ' を付ける（-1.5 のような数値はそのまま）
+        function csvSafe(value) {
+            const str = String(value ?? '');
+            return /^[=+@\t\r]/.test(str) || (/^-/.test(str) && !/^-\d+(\.\d+)?$/.test(str)) ? `'${str}` : str;
+        }
+
         let aiName = localStorage.getItem('aiAssistantName') || '米太郎';
         let aiTextDirection = 'left';
         let aiTextColor = '#FFD700';
@@ -1658,7 +1668,8 @@
                 addLog('ダウンロードするアンケート結果がありません', 'info');
                 return;
             }
-            const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            // Excel などで開いたときに数式として実行されないように、= + - @ で始まる文字列の先頭に ' を付ける
+            const escape = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`;
             const rows = [['開始日時', '終了日時', '質問', '複数選択', '回答者数', '選択肢', '票数', '割合(%)']];
             surveyLog.forEach(record => {
                 record.choices.forEach((choice, i) => {
@@ -1734,7 +1745,7 @@
             }
 
             const escapeCsv = (value) => {
-                const str = String(value ?? '');
+                const str = csvSafe(value); // 数式として実行されないように
                 return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
             };
             const header = ['学修番号/投稿者', 'コメント内容（カンマ区切り）', 'コメント数', '絵文字数', 'テキスト数',
@@ -2457,7 +2468,7 @@
                     addToConversationHistory('user', finalTranscript, '配信者');
 
                     // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
-                    if (isAiNameAutoResponse && finalTranscript.includes(aiName)) {
+                    if (isAiNameAutoResponse && aiName && finalTranscript.includes(aiName)) {
                         addLog(`音声認識で「${aiName}」を検出しました。AI処理を開始します。`, 'info');
 
                         setTimeout(async () => {
@@ -2986,7 +2997,7 @@
             }
 
             // AI名前が含まれているかチェック
-            if (isAutoResponse && data.comment.includes(aiName)) {
+            if (isAutoResponse && aiName && data.comment.includes(aiName)) {
                 addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
 
                 try {

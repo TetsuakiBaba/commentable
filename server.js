@@ -1,5 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+
+// 想定外の例外でサーバー全体が止まらないようにする（各ハンドラでも入力を確かめているが、最後の砦として）
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught exception:', error);
+});
 const eventLog = require('./event-log');
 const roomAuth = require('./room-auth');
 
@@ -107,6 +113,22 @@ var port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 300
 var express = require('express');
 var app = express();
 
+// Render などのプロキシの後ろで動くので、接続元の IP（管理画面の試行回数の制限に使う）をプロキシのヘッダーから取る
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// セキュリティ用のヘッダー
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // 配信者向けの画面は、他のサイトの中に埋め込ませない（クリックジャッキング対策）
+    if (/^\/(dashboard|admin)(\/|$)/.test(req.path)) {
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+    }
+    next();
+});
+
 // JSONボディパーサーを追加（ダッシュボードAPI用）
 app.use(express.json());
 
@@ -145,9 +167,10 @@ app.get('/api/rooms/:room/surveys', (req, res) => {
 
 var server = app.listen(port, () => console.log('listening on', port));
 
+// コメントログ（public/chatlogs）は公開しない。管理画面からは認証付きの API で読み出す
+app.use('/chatlogs', (req, res) => res.sendStatus(404));
 app.use(express.static('./public'));
 
-let broadcaster;
 var socket = require('socket.io');
 const options = {
     serveClient: true,
@@ -169,14 +192,18 @@ var io = socket(server, options);
 // roomState[roomName] = { deactivate_comment_control: boolean }
 const roomState = {};
 
+// 内部用のルーム名の先頭に付ける印。参加者が join する部屋名からは制御文字を取り除くので、
+// 参加者がこれらの部屋に入って配信者向けの情報（授業ログ・アンケートの回答）を受け取ることはできない
+const INTERNAL_ROOM_PREFIX = '\u0000';
+
 // アンケートの回答を受け取る配信者（Electron）用のルーム名
 function surveyHostRoom(roomName) {
-    return `${roomName}::survey-host`;
+    return `${INTERNAL_ROOM_PREFIX}survey-host:${roomName}`;
 }
 
 // アンケート結果をリアルタイムで受け取るダッシュボード用のルーム名
 function surveyWatchRoom(roomName) {
-    return `${roomName}::survey-watch`;
+    return `${INTERNAL_ROOM_PREFIX}survey-watch:${roomName}`;
 }
 
 // ログ・ダッシュボード用のアンケート結果
@@ -214,7 +241,14 @@ function sanitizeSurvey(data) {
 
 // 授業ログをリアルタイムで受け取るダッシュボード・配信画面用のルーム名
 function logWatchRoom(roomName) {
-    return `${roomName}::log-watch`;
+    return `${INTERNAL_ROOM_PREFIX}log-watch:${roomName}`;
+}
+
+// 参加者が指定した部屋名（制御文字を除き、長さを制限する）
+const ROOM_NAME_MAX = 100;
+function sanitizeRoomName(value) {
+    if (typeof value !== 'string') return '';
+    return value.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, ROOM_NAME_MAX);
 }
 
 const CLIENT_ROLES = ['participant', 'overlay', 'dashboard'];
@@ -225,6 +259,66 @@ function sanitizeParticipantId(value) {
 
 function str(value, max = 500) {
     return typeof value === 'string' ? value.slice(0, max) : '';
+}
+
+// ========== コメントの検証 ==========
+// 受け取ったコメントは、知っている項目だけを型と長さを確かめてから記録・中継する
+// （以前は受け取ったものをそのまま全員に送っていたので、巨大なデータや想定外の型で受け取る側が落ちることがあった）
+const COMMENT_MAX = 300;      // 通常のコメント（投稿ページは 80 文字まで、AI の返事は 120 文字まで）
+const MATERIAL_MAX = 20000;   // 配布資料欄（hidden=100）。コードなどの長い文章を送るため
+const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const TEXT_DIRECTIONS = ['still', 'left', 'right', 'up', 'down'];
+const FONT_SIZES = ['small', 'medium', 'large'];
+
+function boundedInt(value, min, max, fallback) {
+    const n = Number(value);
+    return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
+}
+
+function sanitizeComment(data, socket) {
+    if (!data || typeof data !== 'object') return null;
+    const hidden = boundedInt(data.hidden, -1, 100, -1);
+    const comment = str(data.comment, hidden === 100 ? MATERIAL_MAX : COMMENT_MAX);
+    if (comment === '') return null;
+    const comment_data = {
+        room_name: str(data.room_name, ROOM_NAME_MAX),
+        my_name: str(data.my_name, 100),
+        comment,
+        flg_speech: !!data.flg_speech,
+        flg_emoji: !!data.flg_emoji,
+        flg_sound: !!data.flg_sound,
+        id_sound: boundedInt(data.id_sound, 0, 99, 0),
+        flg_img: !!data.flg_img,
+        id_img: boundedInt(data.id_img, 0, 999, 0),
+        flg_image: !!data.flg_image,
+        id_image: boundedInt(data.id_image, 0, 999, 0),
+        color_text: COLOR_PATTERN.test(data.color_text) ? data.color_text : '#ffffff',
+        color_text_stroke: COLOR_PATTERN.test(data.color_text_stroke) ? data.color_text_stroke : '#000000',
+        hidden,
+        socketid: socket.id
+    };
+    if (TEXT_DIRECTIONS.includes(data.text_direction)) comment_data.text_direction = data.text_direction;
+    if (FONT_SIZES.includes(data.font_size)) comment_data.font_size = data.font_size;
+    // 配信者・AI の印は、配信者として認証された接続からのものだけを信じる（参加者のなりすまし防止）
+    if (socket.isHost && (data.origin === 'host' || data.origin === 'ai')) {
+        comment_data.origin = data.origin;
+        if (data.origin === 'ai') comment_data.trigger = str(data.trigger, 20) || undefined;
+    }
+    return comment_data;
+}
+
+// 1つの接続から短時間に大量のイベントが来たときは捨てる（10 件/秒、まとめて 30 件まで）
+function createRateLimiter(ratePerSecond = 10, burst = 30) {
+    let tokens = burst;
+    let last = Date.now();
+    return () => {
+        const now = Date.now();
+        tokens = Math.min(burst, tokens + (now - last) / 1000 * ratePerSecond);
+        last = now;
+        if (tokens < 1) return false;
+        tokens -= 1;
+        return true;
+    };
 }
 
 // 参加者が名前欄に入れた名前（学修番号など）。未入力や初期値の判定は読み出す側で行う
@@ -291,7 +385,22 @@ function getRoomUserCount(roomName) {
 io.on('connection', (socket) => {
     console.log('connection', socket.id);
     var room = "";
-    var room_master = "-master";
+
+    // 短時間に大量に送ってくる接続のイベントは捨てる
+    const allowEvent = createRateLimiter();
+    socket.use((packet, next) => {
+        if (allowEvent()) next();
+    });
+
+    // ハンドラの中で例外が起きても、その接続のイベントを無視するだけにする（サーバーを止めない）
+    const addHandler = socket.on.bind(socket);
+    socket.on = (event, handler) => addHandler(event, (...args) => {
+        try {
+            handler(...args);
+        } catch (error) {
+            console.error(`Error in "${event}" handler:`, error);
+        }
+    });
     // ルームの制御フラグは roomState に集約（ソケット毎に保持しない）
 
     // 接続者に対してコネクションを作ったことを知らせるメッセージ
@@ -304,7 +413,8 @@ io.on('connection', (socket) => {
 
     // join(部屋名, { role, participantId, hostKey, token }) ※第2引数のない古いクライアントは参加者として扱う
     socket.on("join", (room_to_join, info) => {
-        if (typeof room_to_join !== 'string' || room_to_join == "") room_to_join = "undefined-room"
+        room_to_join = sanitizeRoomName(room_to_join);
+        if (room_to_join === "") room_to_join = "undefined-room";
         const requestedRole = info && CLIENT_ROLES.includes(info.role) ? info.role : 'participant';
 
         // 配信画面は部屋の鍵、ダッシュボードはトークンで認証する（違えば入室させない）
@@ -370,29 +480,11 @@ io.on('connection', (socket) => {
             socket.emit('admin message', roomState[room].adminMessage);
         }
     });
-    socket.on("join-as-master", (room_to_join) => {
-        if (room_to_join == "") room_to_join = "undefined-room"
-        socket.join(room_to_join);
-        //console.log(socket.id, "joined master to ", room_to_join);
-        room_master = room_to_join;
-    });
-
-    // when the client emits 'new message', this listens and executes
-    socket.on('new message', (data) => {
-        // we tell the client to execute 'new message'
-        socket.to(room).emit('new message', {
-            username: socket.username,
-            message: data
-        });
-    });
-
-
-
-
-    // when the client emits 'new message', this listens and executes
-    socket.on('comment', (data) => {
-        // we tell the client to execute 'new message'
-        data.socketid = socket.id;
+    // コメント（中身を確かめてから記録し、部屋の全員に送る）
+    socket.on('comment', (raw) => {
+        if (room === "") return;
+        const data = sanitizeComment(raw, socket);
+        if (!data) return;
 
         // 名前欄を変えた直後にコメントした場合など、記録している名前をコメントの名前に合わせる
         if (socket.role === 'participant') {
@@ -455,10 +547,6 @@ io.on('connection', (socket) => {
         if (!isHostSocket()) return;
         eventLog.endClass(room, { trigger: data && data.trigger === 'chime' ? 'chime' : 'manual' });
         io.to(logWatchRoom(room)).emit('class state', eventLog.classState(room));
-    });
-
-    socket.on('letter', (data) => {
-        socket.to(room_master).emit('letter', data);
     });
 
 
@@ -602,7 +690,6 @@ io.on('connection', (socket) => {
             username: socket.username,
             numUsers: number_of_users
         });
-        socket.to(broadcaster).emit("disconnectPeer", socket.id, number_of_users);
         // 明示的 leave は不要（Socket.IO が処理）
         if (room !== "" && socket.role === 'overlay') {
             roomAuth.touchHost(room);

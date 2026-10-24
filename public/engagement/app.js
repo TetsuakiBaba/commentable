@@ -952,8 +952,11 @@
 
     // ---------- CSV ----------
 
+    // Excel などで開いたときに数式として実行されないように、= + - @ などで始まる文字列の先頭に ' を付ける
+    // （-1.5 のような数値はそのまま）
     function csvEscape(value) {
-        const s = String(value ?? '');
+        let s = String(value ?? '');
+        if (/^[=+@\t\r]/.test(s) || (/^-/.test(s) && !/^-\d+(\.\d+)?$/.test(s))) s = `'${s}`;
         return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }
 

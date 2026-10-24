@@ -8,7 +8,8 @@
 
     <!-- Bootstrap CSS -->
     <link href="/assets/css/custom.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+        integrity="sha384-Ay26V7L8bsJTsX9Sxclnvsn+hkdiwRnrjZJXqKmkIDobPgIIWBOVguEcQQLDuhfN" crossorigin="anonymous">
 
     <style>
         body {
@@ -420,7 +421,12 @@
                     document.getElementById('loginError').style.display = 'none';
                     loadDashboard();
                 } else {
-                    document.getElementById('loginError').style.display = 'block';
+                    const loginError = document.getElementById('loginError');
+                    if (!loginError.dataset.defaultHtml) loginError.dataset.defaultHtml = loginError.innerHTML;
+                    loginError.innerHTML = response.status === 429
+                        ? '<i class="bi bi-exclamation-triangle"></i> パスワードを続けてまちがえたため、しばらくログインできません。15分ほど待ってからやり直してください。'
+                        : loginError.dataset.defaultHtml;
+                    loginError.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -630,9 +636,20 @@
         document.getElementById('modalCommentFilter').addEventListener('input', renderLogComments);
 
         // ログのダウンロード
-        document.getElementById('downloadLogBtn').addEventListener('click', () => {
-            if (currentLogFile) {
-                window.location.href = `/chatlogs/${currentLogFile}`;
+        document.getElementById('downloadLogBtn').addEventListener('click', async () => {
+            if (!currentLogFile) return;
+            // コメントログは公開していないので、認証付きの API から取得して保存する
+            try {
+                const response = await apiRequest(`/api/dashboard/logs/${encodeURIComponent(currentLogFile)}?download=1`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const url = URL.createObjectURL(await response.blob());
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentLogFile;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (error) {
+                alert('ログをダウンロードできませんでした: ' + error.message);
             }
         });
 
@@ -750,7 +767,7 @@
                 '"': '&quot;',
                 "'": '&#039;'
             };
-            return text.replace(/[&<>"']/g, m => map[m]);
+            return String(text ?? '').replace(/[&<>"']/g, m => map[m]);
         }
     </script>
 

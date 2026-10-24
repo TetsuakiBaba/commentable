@@ -206,6 +206,11 @@ final class UpdateChecker {
     // （置き場所と名前はそのまま。Electron 版から移行した commentable-desktop.app もそのまま入れ替える）
     @discardableResult
     private func startInstaller(_ update: ReadyUpdate, relaunch: Bool) -> Bool {
+        // ダウンロードしてから時間がたっていることがあるので、入れ替える直前にもう一度署名を確かめる
+        guard Self.satisfiesOwnSignature(update.app) else {
+            NSLog("Update: the downloaded app no longer satisfies the signature requirement")
+            return false
+        }
         let script = """
         pid="$1"; new="$2"; dest="$3"; relaunch="$4"
         while kill -0 "$pid" 2> /dev/null; do sleep 0.2; done

@@ -212,6 +212,8 @@ final class OverlayView: NSView {
 
     // コメントコマンド =text("文字", x, y)（位置は画面に対する比率、10 秒間表示）
     func addTextCommand(_ text: String, x: CGFloat, y: CGFloat, fill: NSColor, stroke: NSColor) {
+        // 同時に表示できるのは 20 件まで（大量に送られても重くならないように）
+        guard (commandsLayer.sublayers?.count ?? 0) < 20 else { return }
         let style = TextStyle(font: TextImage.font(size: H / 15), fill: fill, stroke: stroke, strokeWidth: 5)
         guard let rendered = TextImage.render(text, style: style, scale: scale) else { return }
         let layer = addImageLayer(rendered, to: commandsLayer)

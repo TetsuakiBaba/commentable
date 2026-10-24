@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 
 // ダッシュボード用APIルーター
@@ -24,10 +25,72 @@ if (!ADMIN_PASSWORD) {
             console.warn('⚠️  This should ONLY be used for development/debugging!');
         }
     } catch (error) {
-        // dashboard-config.jsが存在しない場合はデフォルト値
-        ADMIN_PASSWORD = 'admin123';
-        console.warn('Warning: Using default admin password. Please set ADMIN_PASSWORD environment variable or create dashboard-config.js');
+        if (process.env.RENDER || process.env.NODE_ENV === 'production') {
+            // 本番で設定がないときは、誰でも知っている初期パスワードで開けないように管理画面を閉じる
+            ADMIN_PASSWORD = null;
+            console.error('ADMIN_PASSWORD is not set. The admin dashboard is disabled.');
+        } else {
+            // ローカルでの開発用の初期値
+            ADMIN_PASSWORD = 'admin123';
+            console.warn('Warning: Using default admin password. Please set ADMIN_PASSWORD environment variable or create dashboard-config.js');
+        }
     }
+}
+if (SKIP_AUTH && (process.env.RENDER || process.env.NODE_ENV === 'production')) {
+    SKIP_AUTH = false;
+    console.error('skipAuth is ignored in production.');
+}
+
+// パスワードの照合（かかる時間から内容を推測されないように、ハッシュを一定時間で比べる）
+function passwordMatches(password) {
+    if (!ADMIN_PASSWORD || typeof password !== 'string') return false;
+    const a = crypto.createHash('sha256').update(password).digest();
+    const b = crypto.createHash('sha256').update(String(ADMIN_PASSWORD)).digest();
+    return crypto.timingSafeEqual(a, b);
+}
+
+// パスワードの総当たり対策: 同じ IP から 15 分間に 10 回まちがえたら、しばらく受け付けない
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILURES = 10;
+const failures = new Map(); // IP → { count, since }
+
+function isLockedOut(ip) {
+    const record = failures.get(ip);
+    if (!record) return false;
+    if (Date.now() - record.since > FAILURE_WINDOW_MS) {
+        failures.delete(ip);
+        return false;
+    }
+    return record.count >= MAX_FAILURES;
+}
+
+function recordFailure(ip) {
+    const record = failures.get(ip);
+    if (!record || Date.now() - record.since > FAILURE_WINDOW_MS) {
+        failures.set(ip, { count: 1, since: Date.now() });
+    } else {
+        record.count++;
+    }
+    if (failures.size > 10000) failures.clear(); // 記録が増えすぎないように
+}
+
+// 認証の結果（true なら通す。false のときは応答を返し済み）
+function authenticate(req, res, password) {
+    if (isLockedOut(req.ip)) {
+        res.status(429).json({ success: false, error: 'Too many attempts', message: 'Too many attempts. Please try again later.' });
+        return false;
+    }
+    if (!ADMIN_PASSWORD) {
+        res.status(503).json({ success: false, error: 'Admin dashboard is disabled', message: 'ADMIN_PASSWORD is not set' });
+        return false;
+    }
+    if (!passwordMatches(password)) {
+        recordFailure(req.ip);
+        res.status(401).json({ success: false, error: 'Invalid password', message: 'Invalid password' });
+        return false;
+    }
+    failures.delete(req.ip);
+    return true;
 }
 
 // 簡易的な認証チェック用ミドルウェア
@@ -42,12 +105,7 @@ function checkAuth(req, res, next) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const password = authHeader.replace('Bearer ', '');
-    if (password !== ADMIN_PASSWORD) {
-        return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    next();
+    if (authenticate(req, res, authHeader.replace('Bearer ', ''))) next();
 }
 
 // パスワード認証エンドポイント
@@ -57,12 +115,9 @@ router.post('/api/dashboard/auth', (req, res) => {
         return res.json({ success: true, message: 'Authentication skipped (development mode)' });
     }
 
-    const { password } = req.body;
-
-    if (password === ADMIN_PASSWORD) {
+    const password = req.body ? req.body.password : undefined;
+    if (authenticate(req, res, password)) {
         res.json({ success: true, message: 'Authentication successful' });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid password' });
     }
 });
 
@@ -151,6 +206,11 @@ router.get('/api/dashboard/logs/:filename', checkAuth, (req, res) => {
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: 'Log file not found' });
+        }
+
+        // ?download=1 のときはファイルをそのまま返す（管理画面のダウンロード用）
+        if (req.query.download) {
+            return res.download(filePath, filename);
         }
 
         const stats = fs.statSync(filePath);

@@ -58,8 +58,22 @@ enum HostKeyStore {
 
     private static func writeKeys(_ file: URL, _ keys: [String: String]) throws {
         let data = try JSONSerialization.data(withJSONObject: keys, options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: file, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        // 最初から本人だけが読めるファイルとして書き、置き換える（書いた直後に他の人が読める瞬間を作らない）
+        let temporary = file.deletingLastPathComponent().appendingPathComponent(".\(file.lastPathComponent).\(UUID().uuidString)")
+        guard FileManager.default.createFile(atPath: temporary.path, contents: data, attributes: [.posixPermissions: 0o600]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        do {
+            if FileManager.default.fileExists(atPath: file.path) {
+                _ = try FileManager.default.replaceItemAt(file, withItemAt: temporary)
+            } else {
+                try FileManager.default.moveItem(at: temporary, to: file)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
     }
 
     // 部屋の鍵を返す（なければ作る）。保存先のフォルダが見つからないときは例外を投げる
