@@ -76,7 +76,20 @@ sealed class WindowCapture : IDisposable
     }
 
     // ========== フレーム（取り込み用のスレッドで呼ばれる） ==========
+    // このスレッドで例外が起きるとアプリが終了するので、すべて捕まえる
     private void FrameArrived(Direct3D11CaptureFramePool sender)
+    {
+        try
+        {
+            ProcessFrames(sender);
+        }
+        catch (Exception e)
+        {
+            Log.Write($"Share window: capture error: {e}");
+        }
+    }
+
+    private void ProcessFrames(Direct3D11CaptureFramePool sender)
     {
         // たまっていれば最新のものだけを使う
         Direct3D11CaptureFrame? frame = null;

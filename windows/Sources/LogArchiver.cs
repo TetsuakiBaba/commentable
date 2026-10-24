@@ -17,7 +17,8 @@ sealed partial class LogArchiver
 {
     private readonly Dictionary<string, HashSet<string>> archivedEventIDs = new(StringComparer.OrdinalIgnoreCase); // ファイル → 保存済みの event_id
 
-    [GeneratedRegex(@"^\d{8}-\d{6}$")]
+    // .NET の \d は全角などの数字にも、$ は末尾の改行の前にも一致するので、半角の数字と文字列の終わり（\z）で確かめる
+    [GeneratedRegex(@"^[0-9]{8}-[0-9]{6}\z")]
     private static partial Regex SessionPattern();
 
     // サーバーの event-log.js と同じ規則で部屋名からフォルダ名を作る

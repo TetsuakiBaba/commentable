@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Windows.Media.Core;
@@ -29,13 +30,28 @@ sealed class SoundPlayer
     ];
 
     public double Volume { get; set; } = 0.1;
-    public bool IsMuted { get; set; }
+    // ミュートにしたら、待っている読み上げを取り消し、読み上げ中のものも止める
+    private bool isMuted;
+    public bool IsMuted
+    {
+        get => isMuted;
+        set
+        {
+            isMuted = value;
+            if (value) CancelSpeech();
+        }
+    }
 
     private readonly Dictionary<string, byte[]> cache = new();
     private readonly HashSet<MediaPlayer> playing = new(); // 再生が終わるまで保持する（同じ音を重ねて鳴らせる）
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
     private SpeechSynthesizer? synthesizer;
     private Task speechQueue = Task.CompletedTask; // 読み上げは順番に行う
+    // 大量に送られても読み上げ続けないように、待たせるのは 3 件まで（それ以上は捨てる）
+    private const int MaxPendingSpeech = 3;
+    private int pendingSpeech;
+    private CancellationTokenSource speechCancel = new();
+    private MediaPlayer? speaking;
 
     public SoundPlayer()
     {
@@ -63,7 +79,8 @@ sealed class SoundPlayer
         Start(MediaSource.CreateFromStream(new MemoryStream(data).AsRandomAccessStream(), contentType), volume);
     }
 
-    private MediaPlayer Start(MediaSource source, double volume)
+    // onFinished: 再生が終わったとき・失敗したときに呼ぶ（再生用のスレッドから）
+    private MediaPlayer Start(MediaSource source, double volume, Action? onFinished = null)
     {
         var player = new MediaPlayer
         {
@@ -73,10 +90,14 @@ sealed class SoundPlayer
             AutoPlay = false,
         };
         player.CommandManager.IsEnabled = false; // メディアの操作（音量の表示など）には出さない
-        void Finish() => dispatcher.BeginInvoke(() =>
+        void Finish()
         {
-            if (playing.Remove(player)) player.Dispose();
-        });
+            onFinished?.Invoke();
+            dispatcher.BeginInvoke(() =>
+            {
+                if (playing.Remove(player)) player.Dispose();
+            });
+        }
         player.MediaEnded += (_, _) => Finish();
         player.MediaFailed += (_, e) =>
         {
@@ -90,14 +111,34 @@ sealed class SoundPlayer
 
     public void Speak(string text)
     {
-        if (IsMuted) return;
-        speechQueue = speechQueue.ContinueWith(_ => SpeakAsync(text), TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
+        if (IsMuted || pendingSpeech >= MaxPendingSpeech) return;
+        pendingSpeech++;
+        var token = speechCancel.Token;
+        speechQueue = speechQueue.ContinueWith(_ => SpeakAsync(text, token), CancellationToken.None,
+            TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
     }
 
-    private async Task SpeakAsync(string text)
+    private void CancelSpeech()
     {
+        speechCancel.Cancel();
+        speechCancel = new CancellationTokenSource();
+        if (speaking is { } player) Stop(player);
+    }
+
+    private void Stop(MediaPlayer player)
+    {
+        if (!playing.Remove(player)) return;
+        player.Pause();
+        player.Dispose();
+    }
+
+    private async Task SpeakAsync(string text, CancellationToken token)
+    {
+        pendingSpeech--;
+        MediaPlayer? player = null;
         try
         {
+            if (IsMuted || token.IsCancellationRequested) return;
             if (synthesizer == null)
             {
                 synthesizer = new SpeechSynthesizer();
@@ -107,15 +148,23 @@ sealed class SoundPlayer
                 }
             }
             var stream = await synthesizer.SynthesizeTextToStreamAsync(text);
+            if (IsMuted || token.IsCancellationRequested) return;
             var finished = new TaskCompletionSource();
-            var player = Start(MediaSource.CreateFromStream(stream, stream.ContentType), Volume);
-            player.MediaEnded += (_, _) => finished.TrySetResult();
-            player.MediaFailed += (_, _) => finished.TrySetResult();
-            await Task.WhenAny(finished.Task, Task.Delay(TimeSpan.FromMinutes(1)));
+            player = Start(MediaSource.CreateFromStream(stream, stream.ContentType), Volume, () => finished.TrySetResult());
+            speaking = player;
+            await Task.WhenAny(finished.Task, Task.Delay(TimeSpan.FromMinutes(1), token));
         }
         catch (Exception e)
         {
             Log.Write($"Speech error: {e.Message}");
+        }
+        finally
+        {
+            if (player != null)
+            {
+                if (speaking == player) speaking = null;
+                Stop(player);
+            }
         }
     }
 }

@@ -17,7 +17,8 @@ namespace Commentable;
 // GitHub のリリースから Windows 版の最新バージョンを探し、新しければ裏でダウンロードしておき、
 // 「再起動」で exe を入れ替える（Electron 版の自動アップデートと同じ使い勝手）
 //   - ダウンロードしたファイルは、GitHub が示すハッシュ（SHA-256）と一致するときだけ受け付ける。
-//     今の exe が署名されているときは、同じ発行者の有効な署名があることも確かめる
+//     今の exe が署名されているときは、同じ発行者（名前と公開鍵）の有効な署名があることも確かめる
+//   - 入れ替える直前に、確かめた exe が変わっていないかをもう一度確かめる
 //   - 「あとで」を選んだときは、アプリを終了するときに入れ替える
 //   - 入れ替えられないとき（書き込めない場所・開発用のビルド）はダウンロードページを案内する
 //   - 実行中の exe は上書きできないが名前は変えられるので、名前を変えてから新しい exe を置く
@@ -38,7 +39,8 @@ sealed class UpdateChecker
     }
 
     // ダウンロードして確認済みの新しいバージョン
-    public sealed record ReadyUpdate(string Version, string Exe);
+    // Exe は一時フォルダ（Directory）に置いた exe、Sha256 は確かめたときの exe のハッシュ
+    public sealed record ReadyUpdate(string Version, string Exe, string Directory, byte[] Sha256);
 
     private const string LastCheckKey = "update.lastCheck";
     private static readonly HttpClient Http = CreateClient();
@@ -132,8 +134,7 @@ sealed class UpdateChecker
         }
         try
         {
-            var exe = await DownloadAndVerify(asset, release.Version);
-            var update = new ReadyUpdate(release.Version, exe);
+            var update = await DownloadAndVerify(asset, release.Version);
             Ready = update;
             if (installImmediately) Install(update, relaunch: true); else PromptRestart(update);
         }
@@ -144,78 +145,137 @@ sealed class UpdateChecker
         }
     }
 
-    // zip をダウンロードして展開し、中の exe が想定どおりかを確かめる
-    private static async Task<string> DownloadAndVerify(Asset asset, string version)
+    // zip をダウンロードし、中の exe を取り出して想定どおりかを確かめる
+    // （zip はメモリ上で扱い、ハッシュを確かめたものから直接 exe を取り出す。途中でファイルをすり替えられないように）
+    private static async Task<ReadyUpdate> DownloadAndVerify(Asset asset, string version)
     {
-        var dir = Path.Combine(Path.GetTempPath(), $"CommentableUpdate-{version}-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
-        var zip = Path.Combine(dir, "update.zip");
+        byte[] zip;
         using (var response = await Http.GetAsync(asset.Url, HttpCompletionOption.ResponseHeadersRead))
         {
             if (!response.IsSuccessStatusCode) throw new HttpRequestException("ダウンロードできませんでした。");
-            await using var file = File.Create(zip);
-            await response.Content.CopyToAsync(file);
+            if (response.Content.Headers.ContentLength > MaxDownloadSize) throw new InvalidDataException("ダウンロードしたファイルが大きすぎます。");
+            zip = await response.Content.ReadAsByteArrayAsync();
         }
+        if (zip.Length > MaxDownloadSize) throw new InvalidDataException("ダウンロードしたファイルが大きすぎます。");
 
         // GitHub が示すハッシュと比べる（途中で壊れたり差し替えられたりしていないか）
         if (asset.Digest is { } digest && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
         {
-            await using var file = File.OpenRead(zip);
-            var hash = Convert.ToHexString(await SHA256.HashDataAsync(file));
+            var hash = Convert.ToHexString(SHA256.HashData(zip));
             if (!hash.Equals(digest["sha256:".Length..], StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("ダウンロードしたファイルが壊れています。");
         }
-        else if (!IsSigned(Environment.ProcessPath))
+        else if (Signer(Environment.ProcessPath) == null)
         {
             // 署名もハッシュもなければ確かめようがない
             throw new InvalidDataException("ダウンロードしたファイルを確認できませんでした。");
         }
 
-        var extracted = Path.Combine(dir, "extracted");
+        var exeBytes = ExtractExe(zip) ?? throw new InvalidDataException("ダウンロードしたファイルを展開できませんでした。");
+
+        // 署名とバージョンはファイルでないと確かめられないので、自分だけの一時フォルダに置く
+        var dir = Path.Combine(Path.GetTempPath(), $"CommentableUpdate-{version}-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        var exe = Path.Combine(dir, "Commentable.exe");
+        await File.WriteAllBytesAsync(exe, exeBytes);
+        var update = new ReadyUpdate(version, exe, dir, SHA256.HashData(exeBytes));
+        if (ReadVerified(update) == null)
+        {
+            DeleteDirectory(dir);
+            throw new InvalidDataException("ダウンロードしたアプリの内容か署名を確認できませんでした。");
+        }
+        return update;
+    }
+
+    private const long MaxDownloadSize = 512L * 1024 * 1024;
+
+    // zip の中の Commentable.exe の中身（なければ・壊れていれば null）
+    private static byte[]? ExtractExe(byte[] zip)
+    {
         try
         {
-            ZipFile.ExtractToDirectory(zip, extracted);
+            using var archive = new ZipArchive(new MemoryStream(zip), ZipArchiveMode.Read);
+            var entry = archive.Entries.FirstOrDefault(e => e.Name.Equals("Commentable.exe", StringComparison.OrdinalIgnoreCase));
+            if (entry == null || entry.Length > MaxDownloadSize) return null;
+            using var source = entry.Open();
+            using var memory = new MemoryStream((int)entry.Length);
+            source.CopyTo(memory);
+            return memory.ToArray();
         }
         catch (InvalidDataException)
         {
-            throw new InvalidDataException("ダウンロードしたファイルを展開できませんでした。");
+            return null;
         }
-        var exe = Directory.EnumerateFiles(extracted, "Commentable.exe", SearchOption.AllDirectories).FirstOrDefault()
-            ?? throw new InvalidDataException("ダウンロードしたファイルを展開できませんでした。");
-
-        var info = FileVersionInfo.GetVersionInfo(exe);
-        if (info.ProductName != "Commentable" || info.ProductVersion != version)
-        {
-            throw new InvalidDataException("ダウンロードしたアプリの内容が想定と違います。");
-        }
-        if (!SatisfiesOwnSignature(exe))
-        {
-            throw new InvalidDataException("ダウンロードしたアプリの署名を確認できませんでした。");
-        }
-        return exe;
     }
 
-    // 今の exe が署名されていれば、新しい exe にも同じ発行者の有効な署名があるか
+    // 確かめた exe の中身を返す（想定と違えば null）
+    // 確かめている間は、ほかのプログラムが書き換えたり消したりできないように開いたままにする
+    private static byte[]? ReadVerified(ReadyUpdate update)
+    {
+        try
+        {
+            using var file = new FileStream(update.Exe, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var bytes = new byte[file.Length];
+            file.ReadExactly(bytes);
+            if (!SHA256.HashData(bytes).AsSpan().SequenceEqual(update.Sha256))
+            {
+                Log.Write("Update: the downloaded app has been changed");
+                return null;
+            }
+            var info = FileVersionInfo.GetVersionInfo(update.Exe);
+            if (info.ProductName != "Commentable" || info.ProductVersion != update.Version)
+            {
+                Log.Write("Update: the downloaded app is not the expected version");
+                return null;
+            }
+            if (!SatisfiesOwnSignature(update.Exe))
+            {
+                Log.Write("Update: the downloaded app does not satisfy the signature requirement");
+                return null;
+            }
+            return bytes;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Write($"Update: cannot verify the downloaded app: {e.Message}");
+            return null;
+        }
+    }
+
+    // 今の exe が署名されていれば、新しい exe にも同じ発行者（名前と公開鍵）の有効な署名があるか
     private static bool SatisfiesOwnSignature(string exe)
     {
-        var own = SignerSubject(Environment.ProcessPath);
+        var own = Signer(Environment.ProcessPath);
         if (own == null) return true; // 署名していないビルドは、GitHub の HTTPS とハッシュで確かめる
-        return Authenticode.IsTrusted(exe) && SignerSubject(exe) == own;
+        return Authenticode.IsTrusted(exe) && Signer(exe) is { } signer
+            && signer.Subject == own.Value.Subject && signer.PublicKey.AsSpan().SequenceEqual(own.Value.PublicKey);
     }
 
-    private static bool IsSigned(string? path) => SignerSubject(path) != null;
-
-    private static string? SignerSubject(string? path)
+    // 署名した証明書の名前と公開鍵（署名されていなければ null）
+    private static (string Subject, byte[] PublicKey)? Signer(string? path)
     {
         if (path == null) return null;
         try
         {
 #pragma warning disable SYSLIB0057
-            return X509Certificate.CreateFromSignedFile(path).Subject;
+            using var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
 #pragma warning restore SYSLIB0057
+            return (certificate.Subject, certificate.GetPublicKey());
         }
         catch (CryptographicException)
         {
             return null;
+        }
+    }
+
+    private static void DeleteDirectory(string dir)
+    {
+        try
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Write($"Update: cannot delete {dir}: {e.Message}");
         }
     }
 
@@ -282,9 +342,25 @@ sealed class UpdateChecker
 
     // 実行中の exe の名前を変えて（上書きはできないが名前は変えられる）、新しい exe を置く
     // 置き場所と名前はそのまま
+    // ダウンロードしてから時間がたっていることがあるので、入れ替える直前にもう一度確かめ、確かめた中身をそのまま書き込む
     private static bool Replace(ReadyUpdate update)
     {
-        if (Environment.ProcessPath is not { } exe || !File.Exists(update.Exe)) return false;
+        if (Environment.ProcessPath is not { } exe) return false;
+        var bytes = ReadVerified(update);
+        DeleteDirectory(update.Directory); // 一時フォルダはもう使わない
+        if (bytes == null) return false;
+
+        var staged = exe + ".new";
+        try
+        {
+            File.WriteAllBytes(staged, bytes);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Write($"Update: cannot write new app: {e.Message}");
+            return false;
+        }
+
         var old = exe + ".old";
         try
         {
@@ -301,16 +377,18 @@ sealed class UpdateChecker
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Update: cannot move current app: {e.Message}");
+            TryDelete(staged);
             return false;
         }
         try
         {
-            File.Move(update.Exe, exe);
+            File.Move(staged, exe);
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Update: cannot install new app: {e.Message}");
+            TryDelete(staged);
             try
             {
                 File.Move(old, exe);
@@ -323,22 +401,29 @@ sealed class UpdateChecker
         }
     }
 
+    private static void TryDelete(string file)
+    {
+        try
+        {
+            File.Delete(file);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
     // 起動時に呼ぶ: 入れ替える前の exe（Commentable.exe.old）が残っていれば消す
+    // （入れ替えの途中で止まったときの Commentable.exe.new と、使わなかったダウンロードの一時フォルダも消す）
     public static void CleanUpAfterUpdate()
     {
         if (Environment.ProcessPath is not { } exe || Path.GetDirectoryName(exe) is not { } dir) return;
         try
         {
-            foreach (var old in Directory.EnumerateFiles(dir, Path.GetFileName(exe) + ".old*"))
+            foreach (var pattern in new[] { ".old*", ".new" })
             {
-                try
-                {
-                    File.Delete(old);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                }
+                foreach (var file in Directory.EnumerateFiles(dir, Path.GetFileName(exe) + pattern)) TryDelete(file);
             }
+            foreach (var download in Directory.EnumerateDirectories(Path.GetTempPath(), "CommentableUpdate-*")) DeleteDirectory(download);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -351,7 +436,16 @@ sealed class UpdateChecker
         var detail = $"Commentable {release.Version} が公開されています（現在のバージョン: {AppConfig.Version}）。\n\nダウンロードした zip を展開して、今お使いの {Path.GetFileName(Environment.ProcessPath ?? "Commentable.exe")} と入れ替えてください。";
         if (reason != null) detail += $"\n\n（自動で更新できませんでした: {reason}）";
         var response = Dialogs.Message("新しいバージョンがあります", detail, ["ダウンロードページを開く", "あとで"]);
-        if (response == 0 && release.HtmlUrl.Length > 0) Shell.Open(release.HtmlUrl);
+        if (response == 0) Shell.Open(ReleasePageURL(release.HtmlUrl));
+    }
+
+    // GitHub の API から受け取った URL は、このリポジトリのページのときだけ開く（それ以外はリリースの一覧）
+    private static string ReleasePageURL(string url)
+    {
+        var releases = $"https://github.com/{AppConfig.GithubRepository}/releases";
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "github.com"
+            && uri.AbsolutePath.StartsWith($"/{AppConfig.GithubRepository}/releases", StringComparison.OrdinalIgnoreCase)
+            ? uri.AbsoluteUri : releases;
     }
 
     // "1.10.0" と "1.9.2" のような数字の並びを比べる
@@ -406,7 +500,8 @@ static class Authenticode
     private static extern int WinVerifyTrust(IntPtr hwnd, in Guid action, ref WINTRUST_DATA data);
 
     private const uint WTD_UI_NONE = 2;
-    private const uint WTD_REVOKE_NONE = 0;
+    private const uint WTD_REVOKE_WHOLECHAIN = 1;
+    private const uint WTD_REVOCATION_CHECK_CHAIN = 0x40;
     private const uint WTD_CHOICE_FILE = 1;
     private const uint WTD_STATEACTION_VERIFY = 1;
     private const uint WTD_STATEACTION_CLOSE = 2;
@@ -422,7 +517,10 @@ static class Authenticode
             {
                 cbStruct = (uint)Marshal.SizeOf<WINTRUST_DATA>(),
                 dwUIChoice = WTD_UI_NONE,
-                fdwRevocationChecks = WTD_REVOKE_NONE,
+                // 失効した（盗まれた）証明書の署名は受け付けない。失効を確かめられないとき（オフラインなど）も受け付けない
+                // （そのときは自動では入れ替えず、ダウンロードページを案内する）
+                fdwRevocationChecks = WTD_REVOKE_WHOLECHAIN,
+                dwProvFlags = WTD_REVOCATION_CHECK_CHAIN,
                 dwUnionChoice = WTD_CHOICE_FILE,
                 pFile = filePointer,
                 dwStateAction = WTD_STATEACTION_VERIFY,

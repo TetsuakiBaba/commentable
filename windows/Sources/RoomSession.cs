@@ -132,18 +132,19 @@ sealed partial class RoomSession
     // ========== コメント ==========
     private void NewComment(JsonObject data)
     {
-        var comment = SocketIOClient.String(data["comment"]) ?? "";
+        // 長すぎるコメントで描画が重くならないように切り詰める（サーバーでも 300 文字に制限している）
+        var comment = Truncate(SocketIOClient.String(data["comment"]) ?? "", MaxCommentLength);
         var fill = TextImage.ParseHex(SocketIOClient.String(data["color_text"])) ?? Colors.White;
         var stroke = TextImage.ParseHex(SocketIOClient.String(data["color_text_stroke"])) ?? Colors.Black;
+        var hidden = SocketIOClient.Number(data["hidden"]);
 
-        // コメントコマンド（= で始まる場合）
-        if (comment.StartsWith('=') && ExecuteCommentCommand(comment, fill, stroke))
+        // コメントコマンド（= で始まる場合。配布資料（hidden == 100）はコマンドとして扱わない）
+        if (comment.StartsWith('=') && hidden != 100 && ExecuteCommentCommand(comment, fill, stroke))
         {
             Log.Write($"Comment command processed: {comment}");
             return;
         }
 
-        var hidden = SocketIOClient.Number(data["hidden"]);
         if (hidden == 0)
         {
             // 隠しコマンド
@@ -195,13 +196,25 @@ sealed partial class RoomSession
             Log.Write($"Command not allowed: {name}");
             return false;
         }
+        // 位置は画面に対する比率（0〜1）。NaN や Infinity（1e999 など）は要素の位置にできないので受け付けない
         if (args.Length >= 3
             && double.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var x)
-            && double.TryParse(args[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
+            && double.TryParse(args[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var y)
+            && double.IsFinite(x) && double.IsFinite(y))
         {
             var text = args[0].Replace("\"", "").Replace("'", "");
-            overlay.AddTextCommand(text, x, y, fill, stroke);
+            overlay.AddTextCommand(Truncate(text, MaxCommentLength), Math.Clamp(x, 0, 1), Math.Clamp(y, 0, 1), fill, stroke);
         }
         return true;
+    }
+
+    private const int MaxCommentLength = 300;
+
+    // 先頭から max 文字（絵文字などを途中で切らないように、見た目の 1 文字ずつ数える）
+    private static string Truncate(string text, int max)
+    {
+        if (text.Length <= max) return text;
+        var info = new StringInfo(text);
+        return info.LengthInTextElements <= max ? text : info.SubstringByTextElements(0, max);
     }
 }

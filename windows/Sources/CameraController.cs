@@ -231,8 +231,20 @@ sealed class CameraController
         oldCapture?.Dispose();
     }
 
-    // 取り込み用のスレッドで呼ばれる
+    // 取り込み用のスレッドで呼ばれる（このスレッドで例外が起きるとアプリが終了するので、すべて捕まえる）
     private void FrameArrived(MediaFrameReader sender, int frameGeneration)
+    {
+        try
+        {
+            ProcessFrame(sender, frameGeneration);
+        }
+        catch (Exception e)
+        {
+            Log.Write($"Camera: frame error: {e}");
+        }
+    }
+
+    private void ProcessFrame(MediaFrameReader sender, int frameGeneration)
     {
         if (frameGeneration != Volatile.Read(ref generation)) return;
         using var frame = sender.TryAcquireLatestFrame();
@@ -242,9 +254,11 @@ sealed class CameraController
 
         byte[] pixels;
         int width, height;
-        var converted = source.BitmapPixelFormat == BitmapPixelFormat.Bgra8 ? source : SoftwareBitmap.Convert(source, BitmapPixelFormat.Bgra8);
+        SoftwareBitmap? converted = null;
         try
         {
+            // 変換に失敗しても、次のフレームを受け取れるように framePending を戻す（catch で）
+            converted = source.BitmapPixelFormat == BitmapPixelFormat.Bgra8 ? source : SoftwareBitmap.Convert(source, BitmapPixelFormat.Bgra8);
             width = converted.PixelWidth;
             height = converted.PixelHeight;
             pixels = new byte[width * height * 4];
@@ -258,7 +272,7 @@ sealed class CameraController
         }
         finally
         {
-            if (converted != source) converted.Dispose();
+            if (converted != null && converted != source) converted.Dispose();
         }
 
         dispatcher.BeginInvoke(() =>

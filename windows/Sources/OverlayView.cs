@@ -266,13 +266,17 @@ sealed class OverlayView : Grid
     // コメントコマンド =text("文字", x, y)（位置は画面に対する比率、10 秒間表示）
     public void AddTextCommand(string text, double x, double y, Color fill, Color stroke)
     {
-        if (H <= 0) return;
+        // 同時に表示できるのは 20 件まで（大量に送られても重くならないように）
+        if (H <= 0 || commandsLayer.Children.Count >= MaxTextCommands || !double.IsFinite(x) || !double.IsFinite(y)) return;
         var element = new OutlinedText(text, new TextStyle(H / 15, fill, stroke, 5), PixelsPerDip);
         if (element.IsEmpty) return;
-        commandsLayer.Children.Add(element);
+        // 置いてから加える（置けなかったときに左上に残らないように）
         Place(element, x * W, y * H);
+        commandsLayer.Children.Add(element);
         RemoveAfter(element, commandsLayer, TimeSpan.FromSeconds(10));
     }
+
+    private const int MaxTextCommands = 20;
 
     public void ClearComments()
     {

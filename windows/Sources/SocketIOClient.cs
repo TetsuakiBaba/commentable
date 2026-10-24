@@ -77,7 +77,18 @@ sealed class SocketIOClient
     private void Fire(string name, JsonNode? argument = null)
     {
         if (!handlers.TryGetValue(name, out var list)) return;
-        foreach (var handler in list.ToList()) handler(argument);
+        foreach (var handler in list.ToList())
+        {
+            // 1つのイベントの処理に失敗しても受信は止めない
+            try
+            {
+                handler(argument);
+            }
+            catch (Exception e)
+            {
+                Log.Write($"[socket] error in '{name}' handler: {e}");
+            }
+        }
     }
 
     // ========== 接続 ==========
@@ -146,17 +157,27 @@ sealed class SocketIOClient
         {
             reason = e.Message;
         }
+        catch (Exception e)
+        {
+            // 想定外の例外でも、受信が黙って止まらないように必ず切断して再接続する
+            Log.Write($"[socket] unexpected error: {e}");
+            reason = e.Message;
+        }
         HandleClose(current, reason);
     }
+
+    // 1つのメッセージの大きさの上限（授業ログのスナップショットは大きくなることがあるので macOS 版と同じ 64 MB）
+    private const int MaxMessageSize = 64 * 1024 * 1024;
 
     private async Task<string> ReceiveLoopAsync(ClientWebSocket current)
     {
         var buffer = new byte[64 * 1024];
-        using var message = new MemoryStream(); // 授業ログのスナップショットは大きくなることがある
+        using var message = new MemoryStream();
         while (current.State == WebSocketState.Open)
         {
             var result = await current.ReceiveAsync(buffer, CancellationToken.None);
             if (result.MessageType == WebSocketMessageType.Close) return "transport close";
+            if (message.Length + result.Count > MaxMessageSize) return "message too large";
             message.Write(buffer, 0, result.Count);
             if (!result.EndOfMessage) continue;
             var isText = result.MessageType == WebSocketMessageType.Text;
@@ -297,18 +318,20 @@ sealed class SocketIOClient
     }
 
     // ========== JSON の値を JavaScript の比較と同じように読む ==========
+    // 有限でない値（NaN・Infinity・1e999 など）は null
     public static double? Number(JsonNode? node)
     {
         if (node is not JsonValue value) return null;
-        return value.GetValueKind() switch
+        double? number = value.GetValueKind() switch
         {
-            JsonValueKind.Number => value.GetValue<double>(),
+            JsonValueKind.Number => value.TryGetValue(out double parsed) ? parsed : null,
             JsonValueKind.True => 1,
             JsonValueKind.False => 0,
             JsonValueKind.String => double.TryParse(value.GetValue<string>(), System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : null,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : null,
             _ => null,
         };
+        return number is { } n && double.IsFinite(n) ? n : null;
     }
 
     public static bool Bool(JsonNode? node)
@@ -316,7 +339,7 @@ sealed class SocketIOClient
         if (node is not JsonValue value) return false;
         return value.GetValueKind() switch
         {
-            JsonValueKind.Number => value.GetValue<double>() != 0,
+            JsonValueKind.Number => !value.TryGetValue(out double number) || number != 0, // 読めないほど大きい数も 0 ではない
             JsonValueKind.True => true,
             JsonValueKind.String => value.GetValue<string>().Length > 0,
             _ => false,
