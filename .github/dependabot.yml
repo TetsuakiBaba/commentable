@@ -1,0 +1,8 @@
+# ワークフローで使っている外部のアクションは、コミットの SHA で固定している
+# 新しいバージョンが出たら、Dependabot が SHA を書き換えるプルリクエストを作る
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

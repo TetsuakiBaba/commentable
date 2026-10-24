@@ -6,6 +6,7 @@
 #     「release」にチェックを入れると、windows-v<windows/VERSION> の下書きリリースも作る
 #
 # シークレットは windows/README.md の「GitHub Actions でのリリース」を参照
+# 外部のアクションは、中身が差し替えられないようにコミットの SHA で指定している（Dependabot が更新する）
 name: Windows app
 
 on:
@@ -21,13 +22,19 @@ on:
         type: boolean
         default: false
 
+# 既定は読み取りだけ（書き込みが必要なジョブだけで許可する）
+permissions:
+  contents: read
+
 jobs:
   build:
     if: github.event_name != 'workflow_dispatch'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false # チェックアウト後にトークンをディスクに残さない
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: '8.0.x'
       - name: ビルド
@@ -37,11 +44,15 @@ jobs:
   release:
     if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
+    # 署名のシークレットは release 環境に置き、実行のたびに承認してから使う
+    environment: release
     permissions:
       contents: write # 下書きリリースの作成
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false # チェックアウト後にトークンをディスクに残さない
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: '8.0.x'
 
@@ -59,11 +70,12 @@ jobs:
           $pfx = Join-Path $env:RUNNER_TEMP 'certificate.pfx'
           [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX_BASE64))
           "WINDOWS_CERTIFICATE_PFX=$pfx" >> $env:GITHUB_ENV
-          "WINDOWS_CERTIFICATE_PASSWORD=$env:WINDOWS_CERTIFICATE_PASSWORD" >> $env:GITHUB_ENV
 
       - name: ビルド・署名
         if: ${{ !inputs.release }}
         shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: ./windows/package.ps1
 
       - name: ビルド・署名して下書きリリースを作る
@@ -71,13 +83,15 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: ./windows/release.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Commentable-win32
           path: windows/build/Commentable-win32-*.zip
           if-no-files-found: error
+          retention-days: 7
 
       - name: 証明書を削除する
         if: always()

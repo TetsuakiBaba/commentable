@@ -6,6 +6,7 @@
 #     「release」にチェックを入れると、v<macos/VERSION> の下書きリリースも作る
 #
 # 必要なシークレットは macos/README.md の「GitHub Actions でのリリース」を参照
+# 外部のアクションは、中身が差し替えられないようにコミットの SHA で指定している（Dependabot が更新する）
 name: macOS app
 
 on:
@@ -21,22 +22,32 @@ on:
         type: boolean
         default: false
 
+# 既定は読み取りだけ（書き込みが必要なジョブだけで許可する）
+permissions:
+  contents: read
+
 jobs:
   build:
     if: github.event_name != 'workflow_dispatch'
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false # チェックアウト後にトークンをディスクに残さない
       - name: ビルド（アドホック署名）
         run: ./macos/build.sh universal
 
   release:
     if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
+    # 署名・公証のシークレットは release 環境に置き、実行のたびに承認してから使う
+    environment: release
     permissions:
       contents: write # 下書きリリースの作成
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false # チェックアウト後にトークンをディスクに残さない
 
       # 署名用の証明書を一時的なキーチェーンに読み込む（ジョブの最後に削除する）
       - name: 署名用の証明書を読み込む
@@ -60,49 +71,41 @@ jobs:
           rm "$RUNNER_TEMP/certificate.p12"
           security find-identity -v -p codesigning "$KEYCHAIN"
 
-      # 公証は App Store Connect API キーを使う（なければ Apple ID と App 用パスワード）
-      - name: 公証の資格情報を用意する
+      # 公証は App Store Connect API キーを使う。鍵はファイルに書き出し（ジョブの最後に削除する）、
+      # キー ID などは使うステップにだけ渡す（$GITHUB_ENV に書くと後ろのすべてのステップから見えてしまう）
+      - name: 公証の鍵を用意する
         env:
           NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
-          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
-          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          if [ -n "$NOTARY_API_KEY_P8" ]; then
-            echo "$NOTARY_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
-            {
-              echo "NOTARY_KEY=$RUNNER_TEMP/AuthKey.p8"
-              echo "NOTARY_KEY_ID=$NOTARY_API_KEY_ID"
-              echo "NOTARY_ISSUER=$NOTARY_API_ISSUER_ID"
-            } >> "$GITHUB_ENV"
-          elif [ -n "$APPLE_ID" ]; then
-            {
-              echo "APPLE_ID=$APPLE_ID"
-              echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
-              echo "APPLE_APP_PASSWORD=$APPLE_APP_PASSWORD"
-            } >> "$GITHUB_ENV"
-          else
-            echo "::error::公証のシークレット（NOTARY_API_KEY_P8 など、または APPLE_ID など）がありません"
+          if [ -z "$NOTARY_API_KEY_P8" ]; then
+            echo "::error::シークレット NOTARY_API_KEY_P8 がありません"
             exit 1
           fi
+          (umask 077 && echo "$NOTARY_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8")
 
       - name: ビルド・署名・公証
         if: ${{ !inputs.release }}
+        env:
+          NOTARY_KEY: ${{ runner.temp }}/AuthKey.p8
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: ./macos/package.sh
 
       - name: ビルド・署名・公証して下書きリリースを作る
         if: ${{ inputs.release }}
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTARY_KEY: ${{ runner.temp }}/AuthKey.p8
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: ./macos/release.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Commentable-darwin-universal
           path: macos/build/Commentable-darwin-universal-*.zip
           if-no-files-found: error
+          retention-days: 7
 
       - name: キーチェーンと鍵を削除する
         if: always()
