@@ -81,6 +81,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     private var generation = 0 // 停止・切り替え後に古いフレームを表示しないため
 
     // 以下は queue 上で読み書きする
+    private var activeGeneration: Int? // 動いているセッションの世代（停止中は nil）
     private var segmentationEnabled = false
     private var quality: SegmentationQuality = .balanced
     private var sequenceHandler = VNSequenceRequestHandler()
@@ -151,6 +152,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         output.setSampleBufferDelegate(self, queue: queue)
         if session.canAddOutput(output) { session.addOutput(output) }
         session.commitConfiguration()
+        activeGeneration = generation
         session.startRunning()
         DispatchQueue.main.async {
             if generation == self.generation { self.isRunning = true }
@@ -161,13 +163,17 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         generation += 1
         isRunning = false
         queue.async {
+            self.activeGeneration = nil
             if self.session.isRunning { self.session.stopRunning() }
         }
         onFrame?(nil)
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        // 世代は queue 上の値を使う。main の generation をここで読むと、停止直後に処理していたフレームが
+        // 新しい世代として渡り、onFrame(nil) の後に表示されて最後のフレームが残ってしまう
+        guard let currentGeneration = activeGeneration,
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         var image = CIImage(cvPixelBuffer: pixelBuffer)
 
         if segmentationEnabled {
@@ -199,7 +205,6 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         }
 
         guard let cgImage = ciContext.createCGImage(image, from: CGRect(origin: .zero, size: CVImageBufferGetDisplaySize(pixelBuffer))) else { return }
-        let currentGeneration = generation
         DispatchQueue.main.async { [weak self] in
             guard let self, currentGeneration == self.generation else { return }
             self.onFrame?(cgImage)
