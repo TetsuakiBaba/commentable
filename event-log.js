@@ -79,8 +79,9 @@ function listSessionIds(room) {
     }
 }
 
-// 部屋ごとの現在の授業回 { id, startedAt, lastAt, inClass, closed }
+// 部屋ごとの現在の授業回 { id, startedAt, lastAt, inClass, closed, classStartedAt }
 //   lastAt: 入退室以外の最後の出来事の時刻
+//   classStartedAt: 授業の開始時刻（後から記録した場合は授業回の始まりより後になる）
 //   inClass: 配信者が「授業開始」で始めた授業回で、まだ終了していない
 //   closed: 「授業終了」済み（入退室だけはこの回に記録し、ほかの出来事は新しい授業回にする）
 const sessions = new Map();
@@ -93,20 +94,31 @@ function appendEvent(room, sessionId, event) {
     fs.appendFileSync(sessionFile(room, sessionId), JSON.stringify(event) + '\n', 'utf8');
 }
 
+// 入退室以外の最後の出来事の時刻（後から記録した授業開始などは時刻順に並んでいないので、行の順ではなく時刻で見る）
+// 出来事がなければ null
+function lastActivityAt(events) {
+    const last = events
+        .filter(ev => !PRESENCE_TYPES.has(ev.type))
+        .reduce((max, ev) => Math.max(max, Date.parse(ev.t)), -Infinity);
+    return Number.isFinite(last) ? last : null;
+}
+
 // サーバーの再起動後に、最後の授業回の状態をファイルから戻す
 function restoreSession(room) {
     const latest = listSessionIds(room).pop();
     if (!latest) return null;
     const events = readEvents(sessionFile(room, latest));
-    const activity = events.filter(ev => !PRESENCE_TYPES.has(ev.type));
-    if (activity.length === 0) return null;
+    const lastAt = lastActivityAt(events);
+    if (lastAt === null) return null;
     const ended = events.some(ev => ev.type === 'class_end');
+    const classStart = events.find(ev => ev.type === 'class_start');
     return {
         id: latest,
         startedAt: Date.parse(events[0].t),
-        lastAt: Date.parse(activity[activity.length - 1].t),
-        inClass: !ended && events.some(ev => ev.type === 'class_start'),
-        closed: ended
+        lastAt,
+        inClass: !ended && !!classStart,
+        closed: ended,
+        classStartedAt: classStart ? Date.parse(classStart.t) : null
     };
 }
 
@@ -167,7 +179,7 @@ function writeEvent(room, session, now, fields) {
         ...fields
     };
     appendEvent(room, session.id, event);
-    if (!PRESENCE_TYPES.has(event.type)) session.lastAt = now;
+    if (!PRESENCE_TYPES.has(event.type)) session.lastAt = Math.max(session.lastAt, now);
     listeners.forEach(fn => {
         try { fn(room, event); } catch (error) { console.error('Event listener error:', error); }
     });
@@ -198,6 +210,7 @@ function startClass(room, fields = {}) {
         }
         const session = openSession(room, now);
         session.inClass = true;
+        session.classStartedAt = now;
         return writeEvent(room, session, now, { actor: 'host', ...fields, type: 'class_start' });
     } catch (error) {
         console.error('Error starting class:', error);
@@ -225,6 +238,49 @@ function endClass(room, fields = {}) {
     }
 }
 
+// 「授業開始」を押し忘れた授業回を、後から授業として記録する（記録済みの行は書き換えず、授業開始・終了を書き足す）
+//   startMs: 授業の開始時刻。endMs: 終了時刻（null なら終了を記録しない。いまの授業回なら授業中になる）
+// 戻り値は { ok: true } か { ok: false, error: 理由 }
+function recordClass(room, sessionId, startMs, endMs, fields = {}) {
+    if (!room || !SESSION_ID_PATTERN.test(String(sessionId))) return { ok: false, error: '授業回が見つかりません' };
+    const file = sessionFile(room, sessionId);
+    if (!fs.existsSync(file)) return { ok: false, error: '授業回が見つかりません' };
+    try {
+        const events = readEvents(file);
+        if (events.some(ev => ev.type === 'class_start' || ev.type === 'class_end')) {
+            return { ok: false, error: 'この授業回はすでに授業として記録されています' };
+        }
+        const now = Date.now();
+        const sessionStart = Date.parse(events[0].t);
+        // 分単位で入力した開始時刻が授業回の始まりの少し前になった場合は、授業回の始まりにそろえる
+        if (startMs < sessionStart && sessionStart - startMs < 60 * 1000) startMs = sessionStart;
+        if (!Number.isFinite(startMs) || startMs < sessionStart || startMs > now) {
+            return { ok: false, error: '開始時刻は授業回の始まりから現在までの間にしてください' };
+        }
+        if (endMs !== null && (!Number.isFinite(endMs) || endMs <= startMs || endMs > now)) {
+            return { ok: false, error: '終了時刻は開始時刻より後で、現在より前にしてください' };
+        }
+        const latest = latestSession(room);
+        const isCurrent = !!latest && latest.id === sessionId;
+        // 過去の授業回は、書き込み用に一時的な状態を作る（現在の授業回の状態は変えない）
+        const session = isCurrent ? latest : { id: sessionId, startedAt: sessionStart, lastAt: lastActivityAt(events) };
+        const recorded = { actor: 'host', ...fields, trigger: 'recovered', recorded_at: new Date(now).toISOString() };
+        writeEvent(room, session, startMs, { ...recorded, type: 'class_start' });
+        if (endMs !== null) {
+            writeEvent(room, session, endMs, { ...recorded, type: 'class_end' });
+        }
+        if (isCurrent) {
+            session.classStartedAt = startMs;
+            session.inClass = endMs === null;
+            session.closed = endMs !== null;
+        }
+        return { ok: true };
+    } catch (error) {
+        console.error('Error recording class:', error);
+        return { ok: false, error: '記録に失敗しました' };
+    }
+}
+
 // 授業中かどうか（ダッシュボードの表示用）
 function classState(room) {
     const session = latestSession(room);
@@ -232,7 +288,7 @@ function classState(room) {
     return {
         in_class: inClass,
         session_id: inClass ? session.id : null,
-        started_at: inClass ? new Date(session.startedAt).toISOString() : null
+        started_at: inClass ? new Date(session.classStartedAt || session.startedAt).toISOString() : null
     };
 }
 
@@ -254,13 +310,13 @@ function currentSessionEvents(room) {
 function listSessions(room) {
     return listSessionIds(room).map(id => {
         const events = readEvents(sessionFile(room, id));
-        const activity = events.filter(ev => !PRESENCE_TYPES.has(ev.type));
+        const lastAt = lastActivityAt(events);
         const classStart = events.find(ev => ev.type === 'class_start');
         const classEnd = events.find(ev => ev.type === 'class_end');
         return {
             session_id: id,
             started_at: events[0] ? events[0].t : null,
-            last_at: activity.length ? activity[activity.length - 1].t : null,
+            last_at: lastAt === null ? null : new Date(lastAt).toISOString(),
             events: events.length,
             // 配信者が「授業開始」で始めた授業回か（false は授業前の動作確認や授業外の記録）
             class: !!classStart,
@@ -373,6 +429,7 @@ module.exports = {
     logEvent,
     startClass,
     endClass,
+    recordClass,
     classState,
     setPresenceProvider,
     onEvent,

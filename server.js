@@ -549,6 +549,20 @@ io.on('connection', (socket) => {
         io.to(logWatchRoom(room)).emit('class state', eventLog.classState(room));
     });
 
+    // 「授業開始」を押し忘れた授業回を、後から授業として記録する（ダッシュボードから）
+    // data: { session_id, start, end }（start・end は ISO 形式の時刻。end が null なら終了は記録しない）
+    socket.on('class record', (data, ack) => {
+        const reply = typeof ack === 'function' ? ack : () => { };
+        if (!isHostSocket()) return reply({ ok: false, error: '権限がありません' });
+        if (!data || typeof data.start !== 'string') return reply({ ok: false, error: '開始時刻がありません' });
+        const end = typeof data.end === 'string' ? Date.parse(data.end) : null;
+        // suggested: 「授業中のようです」の知らせから記録した
+        const result = eventLog.recordClass(room, data.session_id, Date.parse(data.start), end,
+            data.suggested === true ? { suggested: true } : {});
+        reply(result);
+        if (result.ok) io.to(logWatchRoom(room)).emit('class state', eventLog.classState(room));
+    });
+
 
     socket.on('deactivate_comment_control', (data) => {
         if (!isHostSocket() || !data) {

@@ -114,6 +114,10 @@
             color: #6c757d;
         }
 
+        .log-warning {
+            color: #b8860b;
+        }
+
         /* ドラッグ可能なカードハンドルのスタイル */
         .card-handle {
             cursor: move;
@@ -542,6 +546,23 @@
                                 </div>
                             </div>
                             <div class="card-body">
+                                <div id="class_suggest" class="alert alert-warning small py-2 px-2 mb-2 d-none">
+                                    <div class="mb-1">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span id="class_suggest_text"></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <input type="time" step="60" class="form-control form-control-sm w-auto"
+                                            id="input_class_suggest_start" title="授業の開始時刻">
+                                        <button class="btn btn-sm btn-warning" id="button_class_suggest_accept">
+                                            から授業として記録
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-auto"
+                                            id="button_class_suggest_dismiss" title="この授業回では知らせない">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
                                     <span id="class_state_badge" class="badge bg-secondary">授業外</span>
                                     <span id="class_state_text" class="small text-muted"></span>
@@ -562,6 +583,36 @@
                                     <option value="current">現在の授業回</option>
                                     <option value="all">すべての授業回（合計）</option>
                                 </select>
+                                <div id="class_record_panel" class="border rounded small p-2 mb-2 d-none">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted">この授業回は「授業開始」が記録されていません</span>
+                                        <button class="btn btn-sm btn-outline-primary ms-auto text-nowrap"
+                                            id="button_class_record_toggle">授業として記録…</button>
+                                    </div>
+                                    <div id="class_record_form" class="mt-2 d-none">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <label for="input_class_record_start" class="text-nowrap">開始</label>
+                                            <input type="datetime-local" step="1" class="form-control form-control-sm"
+                                                id="input_class_record_start">
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <label for="input_class_record_end" class="text-nowrap">終了</label>
+                                            <input type="datetime-local" step="1" class="form-control form-control-sm"
+                                                id="input_class_record_end">
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="checkbox_class_record_ongoing">
+                                            <label class="form-check-label" for="checkbox_class_record_ongoing">
+                                                終了を記録しない（いまも授業中）
+                                            </label>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-muted">記録済みのログは書き換えず、授業開始・終了を書き足します</span>
+                                            <button class="btn btn-sm btn-primary ms-auto text-nowrap"
+                                                id="button_class_record_submit">記録する</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <textarea id="textarea_comment_log" readonly class="form-control" rows="6"
                                     placeholder="コメント・リアクション・音声認識・アンケートなどがここに表示されます"></textarea>
                             </div>
@@ -1187,6 +1238,8 @@
             return names;
         }
 
+        const CLASS_TRIGGER_LABELS = { chime: '（チャイム）', recovered: '（後から記録）', merged: '（まとめて記録）' };
+
         // 授業ログの1件を表示用の1行にする（入退室は件数が多いので表示しない）
         function describeLogEvent(ev, names) {
             const name = ev.name || (ev.participant_id && names[ev.participant_id]) || '匿名';
@@ -1194,9 +1247,9 @@
                 case 'session_start':
                     return `──── 授業回 ${ev.session_id} ────`;
                 case 'class_start':
-                    return `──── 授業開始${ev.trigger === 'chime' ? '（チャイム）' : ''} ────`;
+                    return `──── 授業開始${CLASS_TRIGGER_LABELS[ev.trigger] || ''} ────`;
                 case 'class_end':
-                    return `──── 授業終了${ev.trigger === 'chime' ? '（チャイム）' : ''} ────`;
+                    return `──── 授業終了${CLASS_TRIGGER_LABELS[ev.trigger] || ''} ────`;
                 case 'comment': {
                     const label = ev.actor === 'ai' ? '[AI]' : ev.actor === 'host' ? '[配信者]' : '[コメント]';
                     return `${label} ${name}: ${ev.text}`;
@@ -1241,10 +1294,19 @@
             sessionEvents = [...events].sort((a, b) => a.t.localeCompare(b.t));
             sessionEventIds = new Set(sessionEvents.map(ev => ev.event_id));
             renderCommentLog();
+            updateClassRecordPanel();
         }
 
         // サーバーから1件届いたとき（現在の授業回を表示中のときだけ追加）
         function onLogEvent(ev) {
+            trackCurrentSession([ev]);
+            if (ev.trigger === 'recovered') {
+                // 後から記録した授業開始・終了は時刻順の途中に入るので、並べ直して表示する
+                loadLogSessions();
+                const shown = sessionEvents[0] && sessionEvents[0].session_id === ev.session_id;
+                if (shown && !sessionEventIds.has(ev.event_id)) setSessionEvents([...sessionEvents, ev]);
+                return;
+            }
             if (viewingSession !== 'current' || sessionEventIds.has(ev.event_id)) return;
             if (ev.type === 'session_start' && sessionEvents.length > 0 && sessionEvents[0].session_id !== ev.session_id) {
                 // 新しい授業回が始まった
@@ -1255,6 +1317,7 @@
             sessionEvents.push(ev);
             sessionEventIds.add(ev.event_id);
             if (ev.type === 'class_end') loadLogSessions(); // 一覧の終了時刻を更新
+            if (ev.type !== 'join' && ev.type !== 'leave') updateClassRecordPanel();
             const line = formatLogLine(ev, buildNameIndex(sessionEvents));
             if (line) {
                 textareaCommentLog.value += (textareaCommentLog.value ? '\n' : '') + line;
@@ -1309,6 +1372,7 @@
                 classState.in_class && classState.started_at ? `${formatLocalTime(classState.started_at).slice(0, 5)} 〜` : '';
             document.getElementById('button_class_start').classList.toggle('d-none', classState.in_class);
             document.getElementById('button_class_end').classList.toggle('d-none', !classState.in_class);
+            updateClassSuggestion();
         }
 
         function startClass(trigger = 'manual') {
@@ -1328,6 +1392,163 @@
             if (!classState.in_class) return;
             socket.emit('class end', { trigger });
             addLog(`授業終了を記録しました${trigger === 'chime' ? '（チャイム）' : ''}`, 'info');
+        }
+
+        // ========== 授業開始の押し忘れ ==========
+        // 押し忘れた授業回は、記録済みのログを書き換えずに授業開始・終了を書き足して授業にする（サーバーの recordClass）
+
+        function recordClass(sessionId, startMs, endMs, suggested = false) {
+            return new Promise(resolve => {
+                if (!socket || !isConnected) {
+                    resolve({ ok: false, error: 'サーバに接続されていません' });
+                    return;
+                }
+                socket.timeout(10000).emit('class record', {
+                    session_id: sessionId,
+                    start: new Date(startMs).toISOString(),
+                    end: endMs === null ? null : new Date(endMs).toISOString(),
+                    suggested
+                }, (error, result) => resolve(error ? { ok: false, error: 'サーバから応答がありません' } : result));
+            });
+        }
+
+        // datetime-local の入力欄に入れる形式（ローカル時刻）
+        function toLocalInputValue(ms) {
+            const d = new Date(ms);
+            return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+        }
+
+        // 参加者が授業に参加していることを示す出来事
+        const PARTICIPATION_TYPES = new Set(['comment', 'reaction', 'survey_answer']);
+        const isParticipation = ev => ev.actor === 'participant' && PARTICIPATION_TYPES.has(ev.type);
+
+        // --- 表示中の授業回を後から授業として記録する ---
+        function updateClassRecordPanel() {
+            const panel = document.getElementById('class_record_panel');
+            const sessionId = sessionEvents[0] && sessionEvents[0].session_id;
+            const hasClass = sessionEvents.some(ev => ev.type === 'class_start' || ev.type === 'class_end');
+            const show = viewingSession !== 'all' && !!sessionId && !hasClass
+                && sessionEvents.some(ev => ev.type !== 'join' && ev.type !== 'leave' && ev.type !== 'session_start');
+            panel.classList.toggle('d-none', !show);
+            if (!show || panel.dataset.sessionId === sessionId) return;
+            // 授業回が変わったら、参加者の最初と最後の出来事を初期値にする
+            panel.dataset.sessionId = sessionId;
+            document.getElementById('class_record_form').classList.add('d-none');
+            const participation = sessionEvents.filter(isParticipation);
+            const activity = participation.length > 0 ? participation
+                : sessionEvents.filter(ev => ev.type !== 'join' && ev.type !== 'leave');
+            const first = Date.parse(activity[0].t);
+            const last = Date.parse(activity[activity.length - 1].t);
+            document.getElementById('input_class_record_start').value = toLocalInputValue(first);
+            // 入力欄は秒単位なので、最後の出来事が授業の終了より後にならないよう切り上げる
+            document.getElementById('input_class_record_end').value = toLocalInputValue(Math.ceil(last / 1000) * 1000);
+            // いまの授業回で、最近まで出来事があれば授業中として記録する
+            const ongoing = sessionId === currentSessionId && Date.now() - last < 30 * 60 * 1000;
+            document.getElementById('checkbox_class_record_ongoing').checked = ongoing;
+            document.getElementById('input_class_record_end').disabled = ongoing;
+        }
+
+        async function submitClassRecord() {
+            const sessionId = document.getElementById('class_record_panel').dataset.sessionId;
+            const startMs = Date.parse(document.getElementById('input_class_record_start').value);
+            const ongoing = document.getElementById('checkbox_class_record_ongoing').checked;
+            const endMs = ongoing ? null : Date.parse(document.getElementById('input_class_record_end').value);
+            if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+                addLog('授業の開始・終了時刻を入力してください', 'error');
+                return;
+            }
+            const result = await recordClass(sessionId, startMs, endMs);
+            if (!result || !result.ok) {
+                addLog(`授業として記録できませんでした: ${(result && result.error) || '不明なエラー'}`, 'error');
+                return;
+            }
+            addLog(`授業回 ${sessionId} を授業として記録しました（${formatLocalTime(new Date(startMs).toISOString())} 〜${endMs === null ? '' : ' ' + formatLocalTime(new Date(endMs).toISOString())}）`, 'info');
+        }
+
+        // --- 授業開始が押されていないのに授業中のようなときに知らせる ---
+        const SUGGEST_WINDOW_MS = 10 * 60 * 1000;   // 直近この時間に
+        const SUGGEST_MIN_PARTICIPANTS = 3;          // この人数以上が
+        const SUGGEST_MIN_EVENTS = 10;               // この件数以上コメント・リアクションしていたら授業中とみなす
+        const SUGGEST_GAP_MS = 15 * 60 * 1000;       // 参加者の出来事がこの時間途切れていたら、その後を授業の始まりとする
+        const SUGGEST_AFTER_END_MS = 15 * 60 * 1000; // 授業終了の直後（あいさつなど）は知らせない
+
+        let currentSessionId = null;      // サーバーの現在の授業回（表示中の授業回とは別）
+        let currentParticipation = [];    // 現在の授業回の参加者の出来事 { t, pid }
+        let currentHasClass = false;
+        let lastClassEndAt = 0;
+        let dismissedSuggestSession = null;
+
+        // 現在の授業回の出来事を追う（reset はログ一式を受け取り直したとき）
+        function trackCurrentSession(events, reset = false) {
+            if (reset) {
+                currentSessionId = null;
+                currentParticipation = [];
+                currentHasClass = false;
+            }
+            events.forEach(ev => {
+                if (!ev.session_id) return;
+                if (currentSessionId === null || ev.session_id > currentSessionId) {
+                    currentSessionId = ev.session_id;
+                    currentParticipation = [];
+                    currentHasClass = false;
+                } else if (ev.session_id < currentSessionId) {
+                    return; // 過去の授業回を後から記録したもの
+                }
+                if (ev.type === 'class_start') currentHasClass = true;
+                if (ev.type === 'class_end') {
+                    currentHasClass = true;
+                    lastClassEndAt = Math.max(lastClassEndAt, Date.parse(ev.t));
+                }
+                if (isParticipation(ev)) currentParticipation.push({ t: Date.parse(ev.t), pid: ev.participant_id });
+            });
+            updateClassSuggestion();
+        }
+
+        // 授業の始まりと思われる時刻（直近の出来事から、途切れるところまでさかのぼる）。授業中でなさそうなら null
+        function suggestedClassStart(now) {
+            const recent = currentParticipation.filter(a => now - a.t < SUGGEST_WINDOW_MS);
+            if (recent.length < SUGGEST_MIN_EVENTS || new Set(recent.map(a => a.pid)).size < SUGGEST_MIN_PARTICIPANTS) return null;
+            const times = currentParticipation.map(a => a.t).sort((a, b) => a - b);
+            let start = times[times.length - 1];
+            for (let i = times.length - 2; i >= 0 && start - times[i] <= SUGGEST_GAP_MS; i--) start = times[i];
+            return start;
+        }
+
+        function updateClassSuggestion() {
+            const box = document.getElementById('class_suggest');
+            const now = Date.now();
+            const start = classState.in_class || currentHasClass || !currentSessionId
+                || dismissedSuggestSession === currentSessionId || now - lastClassEndAt < SUGGEST_AFTER_END_MS
+                ? null : suggestedClassStart(now);
+            if (start === null) {
+                box.classList.add('d-none');
+                delete box.dataset.sessionId;
+                return;
+            }
+            if (box.dataset.sessionId === currentSessionId) return; // 表示中（入力中の時刻を変えない）
+            box.dataset.sessionId = currentSessionId;
+            const d = new Date(start);
+            document.getElementById('class_suggest_text').textContent =
+                `授業中のようですが「授業開始」が記録されていません（${pad2(d.getHours())}:${pad2(d.getMinutes())} ごろから参加者のコメント・リアクションが続いています）。`;
+            document.getElementById('input_class_suggest_start').value = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+            box.classList.remove('d-none');
+            addLog('授業中のようですが「授業開始」が記録されていません', 'warning');
+        }
+
+        async function acceptClassSuggestion() {
+            const sessionId = currentSessionId;
+            const [h, m] = document.getElementById('input_class_suggest_start').value.split(':').map(Number);
+            const start = new Date();
+            start.setHours(h, m, 0, 0);
+            if (start.getTime() > Date.now()) start.setDate(start.getDate() - 1); // 日付をまたいだ授業
+            const result = await recordClass(sessionId, start.getTime(), null, true);
+            if (!result || !result.ok) {
+                addLog(`授業として記録できませんでした: ${(result && result.error) || '不明なエラー'}`, 'error');
+                return;
+            }
+            dismissedSuggestSession = sessionId;
+            updateClassSuggestion();
+            addLog(`${pad2(h)}:${pad2(m)} からの授業として記録しました`, 'info');
         }
 
         // ========== 設定の保存・リセット ==========
@@ -1895,6 +2116,7 @@
 
         // 接続時などに現在の授業回のログを受け取ったとき（AIの会話履歴もここから作り直す）
         function onLogSnapshot(events) {
+            trackCurrentSession(events, true);
             rebuildConversationHistory(events);
             if (viewingSession === 'current') {
                 setSessionEvents(events);
@@ -3152,6 +3374,19 @@
         document.getElementById('select_log_session').addEventListener('change', loadSelectedSession);
 
         document.getElementById('button_class_start').addEventListener('click', () => startClass());
+
+        document.getElementById('button_class_record_toggle').addEventListener('click', () => {
+            document.getElementById('class_record_form').classList.toggle('d-none');
+        });
+        document.getElementById('checkbox_class_record_ongoing').addEventListener('change', (e) => {
+            document.getElementById('input_class_record_end').disabled = e.target.checked;
+        });
+        document.getElementById('button_class_record_submit').addEventListener('click', submitClassRecord);
+        document.getElementById('button_class_suggest_accept').addEventListener('click', acceptClassSuggestion);
+        document.getElementById('button_class_suggest_dismiss').addEventListener('click', () => {
+            dismissedSuggestSession = currentSessionId;
+            updateClassSuggestion();
+        });
 
         document.getElementById('button_class_end').addEventListener('click', () => {
             if (!confirm('授業を終了しますか？これ以降のコメントなどは次の授業回として記録されます。')) return;
