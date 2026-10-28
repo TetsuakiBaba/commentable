@@ -64,6 +64,10 @@
             return; // 表示しない
         }
 
+        // スクロール位置が最新コメントに近いかどうか判定する
+        const nearBottomMarginPx = 20;
+        const isNearBottom = area.scrollHeight - area.clientHeight - area.scrollTop <= nearBottomMarginPx;
+
         // キャッシュに追加
         state.displayCache += newLine;
         const newLineLength = newLine.length;
@@ -74,7 +78,9 @@
         state.displayCacheLength += newLineLength;
 
         // 最新のコメントにスクロールする
-        area.scrollTop = area.scrollHeight;
+        if (isNearBottom) {
+            area.scrollTop = area.scrollHeight;
+        }
 
         const perfEnd = performance.now();
         if (typeof debugLog === 'function') {
