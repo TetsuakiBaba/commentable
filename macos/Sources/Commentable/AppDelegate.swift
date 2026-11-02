@@ -532,6 +532,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         items.append(submenu("カメラ", buildCameraMenu()))
         items.append(submenu("文字起こし（字幕）", buildTranscriptionMenu()))
         items.append(.separator())
+        items.append(disabled("バージョン \(AppConfig.version)"))
         if let ready = updateChecker.ready {
             items.append(ActionMenuItem("再起動して \(ready.version) に更新") { [weak self] in self?.updateChecker.check(manual: true, installImmediately: true) })
         } else {
