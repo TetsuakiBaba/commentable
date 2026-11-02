@@ -1,6 +1,6 @@
 # commentable-desktop（Swift ネイティブ版 / macOS）
 
-Electron 版（`../electron`）の配信者用アプリを Swift（AppKit + SwiftUI）で書き直したものです。
+Electron 版の配信者用アプリを Swift（AppKit + SwiftUI）で書き直したものです。
 外部ライブラリには依存せず、Xcode のコマンドラインツールだけでビルドできます。
 
 ## 動作環境
@@ -19,7 +19,7 @@ open build/Commentable.app
 開発中は `swift run` でも起動できます。
 
 ## バージョン
-バージョンは [VERSION](VERSION) ファイルで管理しています（Electron 版の `electron/package.json` とは別です）。
+バージョンは [VERSION](VERSION) ファイルで管理しています。
 ビルド時に Info.plist に書き込まれ、リリースのタグは `v<VERSION>` になります。著作権表示の年はビルドした年です。
 
 ## リリース（GitHub）

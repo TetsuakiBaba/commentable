@@ -22,7 +22,7 @@ build/x64/Commentable.exe
 NuGet の取得先は [nuget.config](nuget.config) で nuget.org に固定しています（手元の NuGet の設定は変更しなくてよい）。
 
 ## バージョン
-バージョンは [VERSION](VERSION) ファイルで管理しています（macOS 版の `macos/VERSION`、Electron 版の `electron/package.json` とは別です）。
+バージョンは [VERSION](VERSION) ファイルで管理しています（macOS 版の `macos/VERSION` とは別です）。
 ビルド時に exe に書き込まれ、リリースのタグは `windows-v<VERSION>` になります（macOS 版のタグ `v<VERSION>` と重ならないようにしています）。著作権表示の年はビルドした年です。
 
 ## リリース（GitHub）

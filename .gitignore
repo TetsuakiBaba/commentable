@@ -1,22 +1,22 @@
 /node_modules
-/api_key.json
-/public/api_key.json
 /dashboard-config.js
-/electron/node_modules
-/electron/dist
-out/
-forge.config.js
-/public/textable
-/public/master
+/logs
+/load_test/
 .DS_Store
-*/.DS_Store
-*ignore*
-load_test/
 .vscode/
+CLAUDE.md
+*.ignore/
+
+# サーバーのコメントログ（public/chatlogs）
+public/chatlogs/*
+
+# 不適切語リストの元ファイル（リポジトリには base64 版だけを置く）
 public/inappropriate-words-ja/blocklist.txt
 public/inappropriate-words-ja/Sexual.txt
 public/inappropriate-words-ja/Sexual_with_bopo.txt
 public/inappropriate-words-ja/Sexual_with_mask.txt
-public/chatlogs/*
-/electron/native/*/build
-/logs
+
+# Electron 版はもう使わないのでリポジトリに置かない（手元の forge.config.js には公証用の Apple ID のパスワードが書かれている）
+/electron/
+
+# macos/ と windows/ のビルド成果物は、それぞれの .gitignore で除外している
