@@ -31,10 +31,24 @@ enum TextImage {
         return CGSize(width: ceil(rect.width), height: ceil(rect.height))
     }
 
-    // 返す size は表示する大きさ（ポイント）。縁取りの分だけ余白を付ける
+    // ヒラギノは行間（leading）が 0.5em と大きく、最後の行の下にも付くので背景の下側だけ余白が広くなる。
+    // 背景を付けるときはこの分を除いて上下の余白を揃える
+    private static func trailingLeading(_ font: NSFont) -> CGFloat {
+        max(0, font.leading)
+    }
+
+    // 返す size は表示する大きさ（ポイント）。縁取りの分だけ余白を付ける（背景付きは文字の大きさに合わせた余白）
     static func render(_ text: String, style: TextStyle, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
-        let textSize = measure(text, font: style.font)
-        let pad = style.stroke != nil ? ceil(style.strokeWidth) : 0
+        var textSize = measure(text, font: style.font)
+        let pad: CGFloat
+        var leading: CGFloat = 0
+        if style.background != nil {
+            leading = trailingLeading(style.font)
+            pad = ceil(style.font.pointSize * 0.25)
+        } else {
+            pad = style.stroke != nil ? ceil(style.strokeWidth) : 0
+        }
+        textSize.height -= leading
         let size = CGSize(width: textSize.width + pad * 2, height: textSize.height + pad * 2)
         guard size.width >= 1, size.height >= 1 else { return nil }
 
@@ -55,7 +69,8 @@ enum TextImage {
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-        let rect = CGRect(x: pad, y: pad, width: textSize.width, height: textSize.height)
+        // 最後の行の行間は画像の下にはみ出させる
+        let rect = CGRect(x: pad, y: pad - leading, width: textSize.width, height: textSize.height + leading)
         // p5 と同じく縁取りを先に描いてから塗る（縁取りの外側半分が見える）
         if let stroke = style.stroke, style.strokeWidth > 0 {
             context.setLineJoin(.round)
@@ -83,7 +98,8 @@ enum TextImage {
         }
         guard text.length > 0 else { return nil }
         let bounds = text.boundingRect(with: CGSize(width: maxWidth, height: 1_000_000), options: [.usesLineFragmentOrigin, .usesFontLeading])
-        let textSize = CGSize(width: ceil(bounds.width), height: ceil(bounds.height))
+        let leading = trailingLeading(font)
+        let textSize = CGSize(width: ceil(bounds.width), height: ceil(bounds.height) - leading)
         let pad = CGSize(width: font.pointSize * 0.6, height: font.pointSize * 0.3)
         let size = CGSize(width: textSize.width + pad.width * 2, height: textSize.height + pad.height * 2)
 
@@ -101,7 +117,7 @@ enum TextImage {
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-        text.draw(with: CGRect(x: pad.width, y: pad.height, width: textSize.width, height: textSize.height), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        text.draw(with: CGRect(x: pad.width, y: pad.height - leading, width: textSize.width, height: textSize.height + leading), options: [.usesLineFragmentOrigin, .usesFontLeading])
         NSGraphicsContext.restoreGraphicsState()
 
         guard let image = context.makeImage() else { return nil }
