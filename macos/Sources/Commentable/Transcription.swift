@@ -47,6 +47,7 @@ final class LiveTranscriber: @unchecked Sendable {
     private var startTask: Task<Void, Never>?
     private var resultsTask: Task<Void, Never>?
     private var configurationObserver: NSObjectProtocol?
+    private var activity: NSObjectProtocol?
 
     private struct Failure: LocalizedError {
         let errorDescription: String?
@@ -90,7 +91,9 @@ final class LiveTranscriber: @unchecked Sendable {
         guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: Locale(identifier: "ja-JP")) else {
             throw Failure("この Mac では日本語の音声認識を使えません。")
         }
-        let transcriber = SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults], attributeOptions: [])
+        // fastResults: 文の区切りを待たずに途中結果を出す。これがないと、話し続ける間は音声をため込み、
+        // 結果が数秒〜10 秒ほど遅れてからまとめて届く（実際の時間の速さで流した 3 分の音声で、最大 9.5 秒 → 1.3 秒）
+        let transcriber = SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults, .fastResults], attributeOptions: [])
 
         // 音声認識モデルは OS が管理する。入っていなければダウンロードする（初回だけ）
         if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
@@ -103,10 +106,15 @@ final class LiveTranscriber: @unchecked Sendable {
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
             throw Failure("音声認識に渡す音声の形式を決められませんでした。")
         }
-        let analyzer = SpeechAnalyzer(modules: [transcriber])
+        // 字幕は遅れると意味がないので、認識を優先して動かす。モデルは先に読み込んでおく（話し始めの遅れを減らす）
+        let analyzer = SpeechAnalyzer(modules: [transcriber], options: .init(priority: .userInitiated, modelRetention: .lingering))
+        try await analyzer.prepareToAnalyze(in: format)
+        try Task.checkCancellation()
         let (stream, input) = AsyncStream.makeStream(of: AnalyzerInput.self)
         self.analyzer = analyzer
         self.input = input
+        // 文字起こし中はアプリが App Nap で間引かれないようにする（Dock に出ないアプリなので間引かれやすい）
+        activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical], reason: "文字起こし中")
 
         resultsTask = Task { @MainActor [weak self] in
             do {
@@ -172,6 +180,8 @@ final class LiveTranscriber: @unchecked Sendable {
         }
         resultsTask?.cancel()
         resultsTask = nil
+        if let activity { ProcessInfo.processInfo.endActivity(activity) }
+        activity = nil
         onVolatile?("")
     }
 
