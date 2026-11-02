@@ -5,5 +5,8 @@
 	<!-- Hardened Runtime でカメラを使うために必要 -->
 	<key>com.apple.security.device.camera</key>
 	<true/>
+	<!-- Hardened Runtime でマイクを使うために必要（文字起こし） -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
 </dict>
 </plist>

@@ -521,11 +521,13 @@ io.on('connection', (socket) => {
         socket.to(room).emit('delete comment', data);
     });
 
-    // 配信者の発言（ダッシュボードの音声認識の確定結果）
+    // 配信者の発言（ダッシュボードの音声認識、またはデスクトップアプリの文字起こしの確定結果）
+    // source: 'dashboard' / 'overlay'（ダッシュボードは自分以外で認識した発言だけを AI の文脈に加える）
     socket.on('speech transcript', (data) => {
         const text = data && str(data.text, 2000).trim();
         if (!isHostSocket() || !text) return;
-        eventLog.logEvent(room, { type: 'speech', actor: 'host', text });
+        const source = data.source === 'overlay' ? 'overlay' : 'dashboard';
+        eventLog.logEvent(room, { type: 'speech', actor: 'host', text, source });
     });
 
     // 授業ログの購読（現在の授業回のログを返し、以降は1件ずつ送る）

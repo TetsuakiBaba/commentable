@@ -39,6 +39,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>配信画面に自分のカメラ映像を重ねて表示するために使用します。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>話した内容を文字起こしして、配信画面に字幕として表示するために使用します。音声はこの Mac の中で認識し、外部には送りません。</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>話した内容を文字起こしして、配信画面に字幕として表示するために使用します。</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>授業ログを 書類/Commentable/logs に保存するために使用します。</string>
 	<key>NSAppTransportSecurity</key>

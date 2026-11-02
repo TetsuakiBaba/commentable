@@ -4,8 +4,8 @@ Electron 版（`../electron`）の配信者用アプリを Swift（AppKit + Swif
 外部ライブラリには依存せず、Xcode のコマンドラインツールだけでビルドできます。
 
 ## 動作環境
-  * macOS 12 Monterey 以降（共有用ウィンドウは macOS 12.3 以降）
-  * ビルドには Xcode（または Command Line Tools）の Swift 5.9 以降
+  * macOS 12 Monterey 以降（共有用ウィンドウは macOS 12.3 以降、文字起こし（字幕）は macOS 26 以降）
+  * ビルドには Xcode 26（または Command Line Tools）の Swift 6.2 以降（文字起こしに macOS 26 の SDK を使うため）
 
 ## ビルド
 
@@ -111,6 +111,7 @@ defaults delete com.electron.commentable-desktop serverURL   # 本番に戻す
 
 `--room 部屋名` を付けて起動すると、入室のダイアログを出さずにその部屋に入ります。
 `--share アプリ名`（例: `--share "Microsoft PowerPoint"`）を付けると、そのアプリのウィンドウの共有用ウィンドウを開きます（開発・確認用）。
+`--transcribe` を付けると、起動と同時に文字起こし（字幕）を始めます（開発・確認用）。
 
 ## 共有用ウィンドウ（アプリのウィンドウだけを共有するとき）
 Zoom などでアプリのウィンドウだけを共有すると、共有されるのはそのウィンドウの中身だけなので、画面全体に重ねたコメントは映りません。

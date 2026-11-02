@@ -11,6 +11,7 @@ final class OverlayGroup {
     private var clock = false
     private var adminMessage: (show: Bool, text: String) = (false, "")
     private var cameraFrame: CGImage?
+    private var caption: (committed: String, volatile: String) = ("", "")
 
     var cameraPosition: CameraPosition = .topRight {
         didSet { all.forEach { $0.cameraPosition = cameraPosition } }
@@ -31,6 +32,7 @@ final class OverlayGroup {
         overlay.setClock(clock)
         overlay.setAdminMessage(show: adminMessage.show, text: adminMessage.text)
         overlay.setCameraFrame(cameraFrame)
+        overlay.setCaption(committed: caption.committed, volatile: caption.volatile)
     }
 
     func detach(_ overlay: OverlayView) {
@@ -74,6 +76,11 @@ final class OverlayGroup {
     func setClock(_ enabled: Bool) {
         clock = enabled
         all.forEach { $0.setClock(enabled) }
+    }
+
+    func setCaption(committed: String, volatile: String) {
+        caption = (committed, volatile)
+        all.forEach { $0.setCaption(committed: committed, volatile: volatile) }
     }
 
     func setCameraFrame(_ image: CGImage?) {

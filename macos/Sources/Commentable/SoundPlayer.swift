@@ -1,7 +1,7 @@
 import AVFoundation
 
 // コメントの効果音と読み上げ
-final class SoundPlayer: NSObject, AVAudioPlayerDelegate {
+final class SoundPlayer: NSObject, AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
     // id_sound の番号順。複数あるものはランダムに1つ鳴らす
     private static let soundFiles: [[String]] = [
         ["camera1.mp3", "camera2.mp3", "camera3.mp3"],
@@ -23,8 +23,28 @@ final class SoundPlayer: NSObject, AVAudioPlayerDelegate {
     private var playing = Set<AVAudioPlayer>() // 再生が終わるまで保持する（同じ音を重ねて鳴らせる）
     private let synthesizer = AVSpeechSynthesizer()
 
+    // 鳴らしている間（と余韻）は文字起こしに拾わせない。文字起こしは音声のスレッドから読むのでロックで守る
+    private let outputLock = NSLock()
+    private var speaking = false
+    private var quietAt = Date.distantPast
+    private static let tail: TimeInterval = 0.5
+
+    var isOutputActive: Bool {
+        outputLock.lock()
+        defer { outputLock.unlock() }
+        return speaking || Date() < quietAt
+    }
+
+    private func setOutput(speaking: Bool? = nil, until end: Date? = nil) {
+        outputLock.lock()
+        defer { outputLock.unlock() }
+        if let speaking { self.speaking = speaking }
+        if let end { quietAt = max(quietAt, end) }
+    }
+
     override init() {
         super.init()
+        synthesizer.delegate = self
         // 最初のコメントで遅れないように読み込んでおく
         for name in Self.soundFiles.joined() + ["protofessional.mp3"] {
             if let url = Resources.sound(name), let data = try? Data(contentsOf: url) {
@@ -50,6 +70,7 @@ final class SoundPlayer: NSObject, AVAudioPlayerDelegate {
         player.delegate = self
         playing.insert(player)
         player.play()
+        setOutput(until: Date().addingTimeInterval(player.duration + Self.tail))
     }
 
     func speak(_ text: String) {
@@ -62,5 +83,17 @@ final class SoundPlayer: NSObject, AVAudioPlayerDelegate {
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         playing.remove(player)
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        setOutput(speaking: true)
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        setOutput(speaking: false, until: Date().addingTimeInterval(Self.tail))
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        setOutput(speaking: false, until: Date().addingTimeInterval(Self.tail))
     }
 }

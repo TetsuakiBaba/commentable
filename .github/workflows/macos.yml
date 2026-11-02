@@ -29,7 +29,7 @@ permissions:
 jobs:
   build:
     if: github.event_name != 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-26 # 文字起こし（SpeechAnalyzer）に Xcode 26 の SDK が必要
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,7 +39,7 @@ jobs:
 
   release:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-15
+    runs-on: macos-26 # 文字起こし（SpeechAnalyzer）に Xcode 26 の SDK が必要
     # 署名・公証のシークレットは release 環境に置き、実行のたびに承認してから使う
     environment: release
     permissions:

@@ -278,6 +278,16 @@
                                     </button>
                                 </div>
 
+                                <!-- 配信者の発言（音声認識・デスクトップアプリの文字起こし）はコメントとは別に、新しい方からこの文字数まで AI に渡す -->
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Max Speech</span>
+                                    <input type="number" class="form-control" id="input_speech_history_limit"
+                                        value="3000" min="0" max="20000" step="500">
+                                    <span class="input-group-text bg-light">
+                                        <span id="span_current_speech_chars">0</span>文字
+                                    </span>
+                                </div>
+
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <label for="textarea_system_prompt" class="form-label mb-0">事前知識</label>
@@ -878,6 +888,8 @@
         let selectedMicrophoneId = null;
         let conversationHistory = []; // 会話履歴を保存
         let conversationHistoryLimit = 50; // 履歴保存数の上限
+        let speechHistory = []; // 配信者の発言（音声認識・文字起こし）。コメントに押し出されないように会話履歴とは別に持つ
+        let speechHistoryCharLimit = 3000; // 発言は新しい方からこの文字数まで AI に渡す
         // 授業ログ（サーバーの記録そのもの。表示・ダウンロード・集計はすべてこれを使う）
         let sessionEvents = [];
         let sessionEventIds = new Set();
@@ -944,6 +956,8 @@
         const labelAiNameAutoResponse = document.getElementById('label_ai_name_auto_response');
         const inputConversationHistoryLimit = document.getElementById('input_conversation_history_limit');
         const spanCurrentHistoryCount = document.getElementById('span_current_history_count');
+        const inputSpeechHistoryLimit = document.getElementById('input_speech_history_limit');
+        const spanCurrentSpeechChars = document.getElementById('span_current_speech_chars');
         const buttonClearHistory = document.getElementById('button_clear_history');
 
         // コメントログ関連のDOM要素
@@ -1300,6 +1314,10 @@
         // サーバーから1件届いたとき（現在の授業回を表示中のときだけ追加）
         function onLogEvent(ev) {
             trackCurrentSession([ev]);
+            // デスクトップアプリの文字起こしは、このページの音声認識と同じように扱う（このページで認識した発言は記録済み）
+            if (ev.type === 'speech' && ev.source === 'overlay') {
+                handleHostSpeech(ev.text, '文字起こし');
+            }
             if (ev.trigger === 'recovered') {
                 // 後から記録した授業開始・終了は時刻順の途中に入るので、並べ直して表示する
                 loadLogSessions();
@@ -1563,6 +1581,7 @@
             ['select_text_direction', 'change'],
             ['input_text_color', 'change'],
             ['input_conversation_history_limit', 'change'],
+            ['input_speech_history_limit', 'change'],
             ['checkbox_ai_name_auto_response', 'change'],
             ['select_speech_language', 'change'],
             ['checkbox_continuous_speech', 'change'],
@@ -2125,9 +2144,10 @@
 
         function rebuildConversationHistory(events) {
             conversationHistory = [];
+            speechHistory = [];
             events.forEach(ev => {
                 if (ev.type === 'speech') {
-                    conversationHistory.push({ type: 'user', content: ev.text, timestamp: ev.t, speaker: '配信者' });
+                    speechHistory.push({ content: ev.text, timestamp: ev.t });
                 } else if (ev.type === 'comment' && ev.actor === 'ai') {
                     conversationHistory.push({ type: 'assistant', content: ev.text, timestamp: ev.t });
                 } else if (ev.type === 'comment') {
@@ -2142,6 +2162,7 @@
             if (conversationHistory.length > conversationHistoryLimit) {
                 conversationHistory = conversationHistory.slice(-conversationHistoryLimit);
             }
+            trimSpeechHistory();
             updateCurrentHistoryCount();
         }
 
@@ -2596,6 +2617,41 @@
             }
         }
 
+        // 配信者の発言（このページの音声認識、またはデスクトップアプリの文字起こしの確定結果）を受け取ったとき
+        // label はログに出す由来（'音声認識' / '文字起こし'）
+        function handleHostSpeech(text, label) {
+            // 効果音トリガーをチェック（テキストエリア追加前）
+            checkSoundTriggers(text);
+
+            const currentText = textareaSpeechResult.value;
+            textareaSpeechResult.value = currentText ? currentText + '\n' + text : text;
+            textareaSpeechResult.scrollTop = textareaSpeechResult.scrollHeight;
+
+            addLog(`${label}結果: ${text}`, 'info');
+
+            // AI に渡す配信者の発言に追加
+            addSpeechToHistory(text);
+
+            // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
+            if (isAiNameAutoResponse && aiName && text.includes(aiName)) {
+                addLog(`${label}で「${aiName}」を検出しました。AI処理を開始します。`, 'info');
+
+                setTimeout(async () => {
+                    try {
+                        const aiResponse = await sendToLMStudio(text);
+                        setTimeout(() => {
+                            sendComment(aiResponse, 'speech'); // 音声由来であることを明示
+                            // AIの応答も会話履歴に追加
+                            addToConversationHistory('assistant', aiResponse);
+                            addLog(`${label}からのAI応答: ${aiResponse}`, 'info');
+                        }, 500);
+                    } catch (error) {
+                        addLog(`${label}からのAI応答エラー: ${error.message}`, 'error');
+                    }
+                }, 1000);
+            }
+        }
+
         // Web Speech APIの初期化
         function initializeSpeechRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -2666,49 +2722,17 @@
 
                 // 確定結果をテキストエリアに追加
                 if (finalTranscript) {
-                    // 効果音トリガーをチェック（テキストエリア追加前）
-                    checkSoundTriggers(finalTranscript);
-
                     // 暫定結果をクリア
                     inputSpeechInterim.value = '';
 
-                    const currentText = textareaSpeechResult.value;
-                    const newText = currentText ? currentText + '\n' + finalTranscript : finalTranscript;
-                    textareaSpeechResult.value = newText;
-                    textareaSpeechResult.scrollTop = textareaSpeechResult.scrollHeight;
-
-                    addLog(`音声認識結果: ${finalTranscript}`, 'info');
-
                     // 音声認識結果を授業ログに記録（配信者の発言として）
                     if (socket && isConnected) {
-                        socket.emit('speech transcript', { text: finalTranscript });
+                        socket.emit('speech transcript', { text: finalTranscript, source: 'dashboard' });
                     } else {
                         addLog('サーバに接続されていないため、音声認識結果は授業ログに記録されません', 'error');
                     }
 
-                    // 会話履歴に配信者の発言として追加（ユーザー名なし）
-                    addToConversationHistory('user', finalTranscript, '配信者');
-
-                    // AIアシスタント名が含まれている場合は自動応答（トグル設定による）
-                    if (isAiNameAutoResponse && aiName && finalTranscript.includes(aiName)) {
-                        addLog(`音声認識で「${aiName}」を検出しました。AI処理を開始します。`, 'info');
-
-                        setTimeout(async () => {
-                            try {
-                                const aiResponse = await sendToLMStudio(finalTranscript);
-                                setTimeout(() => {
-                                    sendComment(aiResponse, 'speech'); // 音声認識由来であることを明示
-                                    // AIの応答も会話履歴に追加
-                                    addToConversationHistory('assistant', aiResponse);
-                                    addLog(`音声認識からのAI応答: ${aiResponse}`, 'info');
-                                }, 500);
-                            } catch (error) {
-                                addLog(`音声認識からのAI応答エラー: ${error.message}`, 'error');
-                            }
-                        }, 1000);
-                    }
-
-                    // 自動送信機能は削除されました
+                    handleHostSpeech(finalTranscript, '音声認識');
                 }
             };
 
@@ -2938,6 +2962,33 @@
             if (spanCurrentHistoryCount) {
                 spanCurrentHistoryCount.textContent = conversationHistory.length;
             }
+            if (spanCurrentSpeechChars) {
+                spanCurrentSpeechChars.textContent = speechHistory.reduce((sum, entry) => sum + entry.content.length, 0);
+            }
+        }
+
+        // 配信者の発言を追加
+        function addSpeechToHistory(text) {
+            speechHistory.push({ content: text, timestamp: new Date().toISOString() });
+            trimSpeechHistory();
+            updateCurrentHistoryCount();
+        }
+
+        // 発言は新しい方から上限の文字数までにする（上限が 0 なら渡さない。それ以外は最新の1件は長くても残す）
+        function trimSpeechHistory() {
+            if (speechHistoryCharLimit <= 0) {
+                speechHistory = [];
+                return;
+            }
+            let total = 0;
+            let start = speechHistory.length;
+            while (start > 0) {
+                const length = speechHistory[start - 1].content.length;
+                if (start < speechHistory.length && total + length > speechHistoryCharLimit) break;
+                total += length;
+                start--;
+            }
+            speechHistory = speechHistory.slice(start);
         }
 
         // 会話履歴に追加
@@ -2965,6 +3016,7 @@
         // 会話履歴をクリア
         function clearConversationHistory() {
             conversationHistory = [];
+            speechHistory = [];
             updateCurrentHistoryCount();
             addLog('会話履歴をクリアしました', 'info');
         }
@@ -2977,11 +3029,20 @@
                 systemPrompt = systemPrompt.replace(/{AI_NAME}/g, aiName);
             }
 
-            // アシスタントプロンプト: 過去の会話履歴
+            // アシスタントプロンプト: 配信者の発言と過去の会話履歴
             let assistantPrompt = '';
 
             // ユーザープロンプト: 指示
             let userPrompt = '';
+
+            // 発言とコメントの前後関係が分かるように時刻（時:分）を付ける
+            const timeLabel = (iso) => `[${formatLocalTime(iso).slice(0, 5)}]`;
+            const sections = [];
+
+            if (speechHistory.length > 0) {
+                const speechText = speechHistory.map(entry => `${timeLabel(entry.timestamp)} ${entry.content}`).join('\n');
+                sections.push(`【配信者（教員）の発言（音声の文字起こし。誤認識を含むことがあります）】\n${speechText}`);
+            }
 
             if (conversationHistory.length > 0) {
                 // デバッグ: 会話履歴の内容を確認
@@ -2994,24 +3055,28 @@
                 const historyText = conversationHistory.map(entry => {
                     if (entry.type === 'assistant') {
                         // AIアシスタントの応答
-                        return `アシスタント(${aiName}): ${entry.content}`;
+                        return `${timeLabel(entry.timestamp)} アシスタント(${aiName}): ${entry.content}`;
                     } else {
                         // ユーザーの発言
                         if (entry.speaker) {
                             // speaker フィールドがある場合（配信者 or 参加者）
-                            return `${entry.speaker}: ${entry.content}`;
+                            return `${timeLabel(entry.timestamp)} ${entry.speaker}: ${entry.content}`;
                         } else {
                             // speaker フィールドがない場合（互換性のため）
-                            return `ユーザー: ${entry.content}`;
+                            return `${timeLabel(entry.timestamp)} ユーザー: ${entry.content}`;
                         }
                     }
                 }).join('\n');
 
+                sections.push(`【過去の会話履歴（コメント欄）】\n${historyText}`);
+            }
+
+            if (sections.length > 0) {
                 // 過去ログをアシスタントプロンプトとして設定
-                assistantPrompt = `【過去の会話履歴】\n${historyText}`;
+                assistantPrompt = sections.join('\n\n');
 
                 // 指示をユーザープロンプトとして設定
-                userPrompt = 'これまでの会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。';
+                userPrompt = '配信者の発言とコメント欄の会話の流れを考慮して、自然で適切なコメントをしてください。120文字以内で返答してください。';
             }
 
             // デバッグ: 完成したプロンプトを確認
@@ -3538,6 +3603,14 @@
         checkboxAiNameAutoResponse.addEventListener('change', () => {
             isAiNameAutoResponse = checkboxAiNameAutoResponse.checked;
             addLog(`AIアシスタント名音声認識自動応答: ${isAiNameAutoResponse ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        inputSpeechHistoryLimit.addEventListener('change', () => {
+            const limit = parseInt(inputSpeechHistoryLimit.value);
+            speechHistoryCharLimit = Number.isFinite(limit) && limit >= 0 ? limit : 3000;
+            trimSpeechHistory();
+            updateCurrentHistoryCount();
+            addLog(`AI に渡す発言の上限を${speechHistoryCharLimit}文字に変更しました`, 'info');
         });
 
         inputConversationHistoryLimit.addEventListener('change', () => {

@@ -72,6 +72,41 @@ enum TextImage {
         guard let image = context.makeImage() else { return nil }
         return (image, size)
     }
+
+    // 字幕: 色の違う文字列をつなげ、maxWidth で折り返して角丸の背景に載せる
+    static func renderCaption(_ segments: [(text: String, color: NSColor)], font: NSFont, maxWidth: CGFloat, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let text = NSMutableAttributedString()
+        for segment in segments where !segment.text.isEmpty {
+            text.append(NSAttributedString(string: segment.text, attributes: [.font: font, .foregroundColor: segment.color, .paragraphStyle: paragraph]))
+        }
+        guard text.length > 0 else { return nil }
+        let bounds = text.boundingRect(with: CGSize(width: maxWidth, height: 1_000_000), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        let textSize = CGSize(width: ceil(bounds.width), height: ceil(bounds.height))
+        let pad = CGSize(width: font.pointSize * 0.6, height: font.pointSize * 0.3)
+        let size = CGSize(width: textSize.width + pad.width * 2, height: textSize.height + pad.height * 2)
+
+        let pixelWidth = Int(ceil(size.width * scale))
+        let pixelHeight = Int(ceil(size.height * scale))
+        guard pixelWidth > 0, pixelHeight > 0,
+              let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        context.scaleBy(x: scale, y: scale)
+        context.setFillColor(background.cgColor)
+        context.addPath(CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: font.pointSize * 0.25, cornerHeight: font.pointSize * 0.25, transform: nil))
+        context.fillPath()
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        text.draw(with: CGRect(x: pad.width, y: pad.height, width: textSize.width, height: textSize.height), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let image = context.makeImage() else { return nil }
+        return (image, size)
+    }
 }
 
 extension NSColor {

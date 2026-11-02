@@ -19,7 +19,7 @@ enum CameraPosition: String, CaseIterable {
 // Electron 版は p5.js のキャンバスに毎フレーム描き直していたが、ここではコメントやエフェクトを
 // 1つずつレイヤーにして Core Animation で動かす（描き直しがないので CPU をほとんど使わない）
 //
-// 重なり順（下から）: カメラ, 時計, コメント, 隠しコマンドの演出, フラッシュ, コメントコマンド, 管理者メッセージ, QR コード, 通知
+// 重なり順（下から）: カメラ, 時計, コメント, 隠しコマンドの演出, フラッシュ, コメントコマンド, 字幕, 管理者メッセージ, QR コード, 通知
 final class OverlayView: NSView {
     static let maxComments = 50
     static let commentDuration: CFTimeInterval = 10 // コメント表示時間（秒）
@@ -31,6 +31,7 @@ final class OverlayView: NSView {
     private let effectLayer = CALayer()
     private let flashLayer = CALayer()
     private let commandsLayer = CALayer()
+    private let captionLayer = CALayer()
     private let adminLayer = CALayer()
     private let qrLayer = CALayer()
     private let notificationLayer = CALayer()
@@ -44,6 +45,8 @@ final class OverlayView: NSView {
     private var cameraImageSize: CGSize?
     private var hoverTimer: Timer?
     private var notificationWork: DispatchWorkItem?
+    private var caption: (committed: String, volatile: String) = ("", "")
+    private var captionHideWork: DispatchWorkItem?
 
     var cameraPosition: CameraPosition = .topRight { didSet { layoutCamera() } }
     var cameraScale: CGFloat = 0.15 { didSet { layoutCamera() } } // 画面幅に対する比率
@@ -57,7 +60,7 @@ final class OverlayView: NSView {
         super.init(frame: .zero)
         layer = root
         wantsLayer = true
-        for sublayer in [cameraLayer, clockLayer, commentsLayer, effectLayer, flashLayer, commandsLayer, adminLayer, qrLayer, notificationLayer] {
+        for sublayer in [cameraLayer, clockLayer, commentsLayer, effectLayer, flashLayer, commandsLayer, captionLayer, adminLayer, qrLayer, notificationLayer] {
             sublayer.actions = Self.noActions
             root.addSublayer(sublayer)
         }
@@ -68,6 +71,7 @@ final class OverlayView: NSView {
         clockLayer.isHidden = true
         flashLayer.backgroundColor = NSColor.white.cgColor
         flashLayer.opacity = 0
+        captionLayer.isHidden = true
         adminLayer.isHidden = true
         qrLayer.isHidden = true
         notificationLayer.isHidden = true
@@ -109,6 +113,7 @@ final class OverlayView: NSView {
         commandsLayer.frame = bounds
         renderClock()
         renderAdminMessage()
+        renderCaption(restartTimer: false)
         renderQR(fadeIn: false)
         layoutCamera()
     }
@@ -314,6 +319,57 @@ final class OverlayView: NSView {
         adminLayer.bounds = CGRect(origin: .zero, size: rendered.size)
         adminLayer.position = CGPoint(x: W / 2, y: H / 2)
         adminLayer.isHidden = false
+    }
+
+    // ========== 字幕 ==========
+    // 文字起こしの字幕を画面の下に出す。確定した文は白、確定前の途中結果は薄く表示する
+    func setCaption(committed: String, volatile: String) {
+        caption = (committed, volatile)
+        renderCaption(restartTimer: true)
+    }
+
+    private static let captionHideDelay: TimeInterval = 8 // 更新がなければ消すまでの秒数
+
+    private func renderCaption(restartTimer: Bool) {
+        var (committed, volatile) = caption
+        guard !(committed + volatile).isEmpty, W > 0, H > 0 else {
+            captionHideWork?.cancel()
+            captionLayer.isHidden = true
+            return
+        }
+        // 2 行に収まるように、古い方を削って末尾だけを表示する（日本語は 1 文字がほぼ文字の大きさの幅）
+        let fontSize = H / 24
+        let maxWidth = W * 0.8
+        let limit = max(1, Int(maxWidth / fontSize) - 1) * 2
+        let overflow = committed.count + volatile.count - limit
+        if overflow > 0 {
+            if overflow < committed.count {
+                committed = String(committed.dropFirst(overflow))
+            } else {
+                committed = ""
+                volatile = String(volatile.suffix(limit))
+            }
+        }
+        guard let rendered = TextImage.renderCaption([(committed, .white), (volatile, NSColor(white: 1, alpha: 0.6))],
+                                                     font: TextImage.font(size: fontSize), maxWidth: maxWidth,
+                                                     background: NSColor.black.withAlphaComponent(0.65), scale: scale)
+        else { return }
+        captionLayer.contents = rendered.image
+        captionLayer.contentsScale = scale
+        captionLayer.bounds = CGRect(origin: .zero, size: rendered.size)
+        captionLayer.position = CGPoint(x: W / 2, y: flipY(H - 40 - rendered.size.height / 2))
+        captionLayer.isHidden = false
+
+        guard restartTimer else { return }
+        fade(captionLayer, to: 1, duration: 0)
+        captionHideWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.caption = ("", "")
+            self.fade(self.captionLayer, to: 0, duration: 1)
+        }
+        captionHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.captionHideDelay, execute: work)
     }
 
     // ========== QR コード ==========

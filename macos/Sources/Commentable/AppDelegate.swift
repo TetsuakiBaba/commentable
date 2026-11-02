@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import ScreenCaptureKit
 import SwiftUI
 
@@ -21,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let camera = CameraController()
     private let updateChecker = UpdateChecker()
     private var cameraEnabled = false // 起動時は常に OFF（メニューから ON にする）
+    private var transcriber: AnyObject? // LiveTranscriber（macOS 26 以降）。起動時は常に OFF
+    private var transcriptionStatus = "停止中"
+    private var caption = CaptionText()
 
     // メニューの状態
     private var qrPosition: QRPosition = .topRight
@@ -70,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        stopTranscription()
         session?.stop()
         camera.stop()
         updateChecker.applicationWillTerminate() // 「あとで」を選んだアップデートを入れ替える
@@ -104,6 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             updateChecker.checkInBackground()
         }
         openShareWindowFromArguments()
+        // --transcribe で起動したときは文字起こしを始める（開発・確認用）
+        if CommandLine.arguments.contains("--transcribe"), !transcriptionEnabled, #available(macOS 26.0, *), TranscriptionSettings.isSupported {
+            startTranscription()
+        }
     }
 
     // --share <アプリ名> で起動したときは、そのアプリのウィンドウの共有用ウィンドウを開く（開発・確認用）
@@ -253,6 +262,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         overlay.cameraPosition = CameraSettings.position
         overlay.cameraScale = CameraSettings.scale(for: CameraSettings.size)
         camera.setSegmentation(enabled: CameraSettings.segmentation, quality: CameraSettings.segmentationQuality)
+    }
+
+    // ========== 文字起こし ==========
+    private var transcriptionEnabled: Bool { transcriber != nil }
+
+    private func toggleTranscription() {
+        if transcriptionEnabled {
+            stopTranscription()
+        } else if #available(macOS 26.0, *) {
+            startTranscription()
+        }
+    }
+
+    @available(macOS 26.0, *)
+    private func startTranscription() {
+        let transcriber = LiveTranscriber()
+        transcriber.isInputSuppressed = { [sounds] in sounds.isOutputActive }
+        transcriber.onVolatile = { [weak self] text in
+            guard let self else { return }
+            self.caption.setVolatile(text)
+            self.showCaption()
+        }
+        transcriber.onFinal = { [weak self] text in
+            guard let self else { return }
+            self.caption.appendFinal(text)
+            self.showCaption()
+            self.session?.sendSpeechTranscript(text)
+        }
+        transcriber.onStateChange = { [weak self, weak transcriber] state in
+            guard let self, let transcriber, self.transcriber === transcriber else { return }
+            switch state {
+            case .idle: self.transcriptionStatus = "停止中"
+            case .preparing: self.transcriptionStatus = "準備中..."
+            case .downloading: self.transcriptionStatus = "音声認識モデルをダウンロード中..."
+            case .running: self.transcriptionStatus = "文字起こし中（入力: \(AVCaptureDevice.default(for: .audio)?.localizedName ?? "既定のマイク")）"
+            case .failed(let message):
+                self.transcriber = nil
+                self.transcriptionStatus = "停止中"
+                Dialogs.message(style: .warning, title: "文字起こしを開始できませんでした", detail: message)
+            }
+        }
+        self.transcriber = transcriber
+        transcriber.start()
+    }
+
+    private func stopTranscription() {
+        if #available(macOS 26.0, *) { (transcriber as? LiveTranscriber)?.stop() }
+        transcriber = nil
+        transcriptionStatus = "停止中"
+        caption.clear()
+        showCaption()
+    }
+
+    private func showCaption() {
+        let show = TranscriptionSettings.showCaptions
+        overlay.setCaption(committed: show ? caption.committed : "", volatile: show ? caption.volatile : "")
     }
 
     private func openCameraSettings() {
@@ -465,6 +530,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.open(URL(string: "\(AppConfig.serverURL)/engagement/"))
         })
         items.append(submenu("カメラ", buildCameraMenu()))
+        items.append(submenu("文字起こし（字幕）", buildTranscriptionMenu()))
         items.append(.separator())
         if let ready = updateChecker.ready {
             items.append(ActionMenuItem("再起動して \(ready.version) に更新") { [weak self] in self?.updateChecker.check(manual: true, installImmediately: true) })
@@ -495,6 +561,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ActionMenuItem("保存場所を変更...") { [weak self] in self?.applyMovedKeys(HostKeyStore.chooseDirectory()) },
             reset,
             ActionMenuItem("保存場所を開く") { HostKeyStore.revealKeysFile() },
+        ]
+    }
+
+    private func buildTranscriptionMenu() -> [NSMenuItem] {
+        guard TranscriptionSettings.isSupported else {
+            return [disabled("macOS 26 以降で使えます")]
+        }
+        return [
+            ActionMenuItem("文字起こしON/OFF", checked: transcriptionEnabled) { [weak self] in self?.toggleTranscription() },
+            ActionMenuItem("字幕を表示", checked: TranscriptionSettings.showCaptions) { [weak self] in
+                TranscriptionSettings.showCaptions.toggle()
+                self?.showCaption()
+            },
+            .separator(),
+            disabled(transcriptionStatus),
+            disabled("音声はこの Mac の中で認識し、外部には送りません"),
+            disabled("確定した文は授業ログに記録され、ダッシュボードの AI が文脈に使います"),
         ]
     }
 

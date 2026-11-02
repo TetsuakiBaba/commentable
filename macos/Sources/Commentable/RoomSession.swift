@@ -101,6 +101,11 @@ final class RoomSession {
         socket.emit("deactivate_comment_control", ["key": "dummy", "control": unrestricted])
     }
 
+    // 文字起こしで確定した文を、配信者の発言として授業ログに記録する（ダッシュボードの AI が文脈に使う）
+    func sendSpeechTranscript(_ text: String) {
+        socket.emit("speech transcript", ["text": text, "source": "overlay"])
+    }
+
     // クリップボードの内容を参加者の配布資料欄に送る
     func sendCodeSnippet(_ text: String) {
         let data: [String: Any] = [

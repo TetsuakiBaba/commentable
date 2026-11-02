@@ -18,6 +18,7 @@ let package = Package(
                 .linkedFramework("CoreImage"),
                 .linkedFramework("Carbon"),
                 .linkedFramework("ScreenCaptureKit"),
+                .linkedFramework("Speech"),
             ]
         )
     ]
