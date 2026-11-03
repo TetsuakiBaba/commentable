@@ -289,28 +289,27 @@
                     </button>
                 </div>
 
-                <div class="d-grid gap-2 d-flex justify-content-end position-relative mb-3">
-                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="checkbox_emoji_filter" checked>
-                            <label class="form-check-label small" for="checkbox_emoji_filter">
-                                emoji filter
-                            </label>
-                        </div>
+                <!-- 履歴の文字と重ならないように、スイッチとボタンは履歴の上の帯に並べる -->
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="checkbox_emoji_filter" checked>
+                        <label class="form-check-label small" for="checkbox_emoji_filter">
+                            emoji filter
+                        </label>
                     </div>
-                    <textarea id="textarea_comment_history" readonly class="form-control" rows="4"
-                        placeholder="Comment History"></textarea>
-                    <button type="button"
-                        class="me-2 mb-2 btn btn-sm btn-outline-secondary position-absolute bottom-0 rounded-pill"
-                        id="download_all_comments" style="right: 40px;">
-                        <i class="bi bi-download"></i>
-                    </button>
-                    <button type="button"
-                        class="me-2 mb-2 btn btn-sm btn-outline-primary position-absolute bottom-0 end-0 rounded-pill"
-                        id="sync_comments" title="Sync comments from server">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+                            id="download_all_comments">
+                            <i class="bi bi-download"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
+                            id="sync_comments" title="Sync comments from server">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                 </div>
+                <textarea id="textarea_comment_history" readonly class="form-control mb-3" rows="4"
+                    placeholder="Comment History"></textarea>
 
 
             </div>
@@ -435,6 +434,17 @@
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
                         data-i18n="inappropriate_fix">修正する</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自分のコメントに配信者がスターを付けたときの知らせ -->
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100;">
+        <div id="toast_comment_starred" class="toast align-items-center border-warning" role="status" aria-live="polite"
+            aria-atomic="true" data-bs-delay="6000">
+            <div class="toast-body">
+                <div class="fw-bold mb-1">⭐ <span data-i18n="comment_starred">あなたのコメントにスターが付きました</span></div>
+                <div class="small text-muted text-break" id="toast_comment_starred_text"></div>
             </div>
         </div>
     </div>

@@ -252,6 +252,17 @@
                                     <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
                                 </div>
 
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">モデル</span>
+                                    <select class="form-select" id="select_lm_studio_model">
+                                        <option value="">LM Studio で読み込み中のモデル</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" id="button_refresh_lm_studio_models"
+                                        title="モデル一覧を取得">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+
 
                                 <div class="input-group mb-3">
                                     <span class="input-group-text">AIアシスタント名</span>
@@ -572,6 +583,28 @@
                     </div>
 
                     <div class="col-md-6 col-lg-4 col-xxl-3">
+                        <!-- コメントへのスター -->
+                        <div class="card border-warning mb-3">
+                            <div class="card-header card-handle bg-warning bg-opacity-10 d-flex align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-star-fill text-warning"></i> コメントにスター</h6>
+                                <span class="badge bg-warning text-dark ms-auto" id="star_count" title="スターを付けたコメントの数">0</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-2">
+                                    良いコメントにスターを付けると、配信画面のコメントに ⭐ が付き、書いた人の投稿ページに知らせます。授業参画度でも数えます。
+                                    配信画面（macOS アプリ）では、Option を押しながらコメントをクリックしても付けられます。
+                                </p>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="checkbox_star_only">
+                                    <label class="form-check-label small" for="checkbox_star_only">スターを付けたものだけ表示</label>
+                                </div>
+                                <div id="star_comment_list" class="list-group list-group-flush border rounded overflow-auto"
+                                    style="height: 280px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 col-xxl-3">
                         <!-- アンケート結果カード -->
                         <div class="card mb-3">
                             <div class="card-header card-handle d-flex align-items-center">
@@ -867,6 +900,8 @@
         const buttonConnect = document.getElementById('button_connect');
         const buttonClearLog = document.getElementById('button_clear_log');
         const buttonTestLMStudio = document.getElementById('button_test_lm_studio');
+        const selectLmStudioModel = document.getElementById('select_lm_studio_model');
+        const buttonRefreshLmStudioModels = document.getElementById('button_refresh_lm_studio_models');
 
         // 自動投稿関連のDOM要素
         const checkboxAutoPosting = document.getElementById('checkbox_auto_posting');
@@ -891,6 +926,9 @@
 
         // コメントログ関連のDOM要素
         const textareaCommentLog = document.getElementById('textarea_comment_log');
+        const starCommentList = document.getElementById('star_comment_list');
+        const starCount = document.getElementById('star_count');
+        const checkboxStarOnly = document.getElementById('checkbox_star_only');
         const buttonDownloadComments = document.getElementById('button_download_comments');
         const buttonDownloadCsv = document.getElementById('button_download_csv');
         const buttonClearComments = document.getElementById('button_clear_comments');
@@ -1215,6 +1253,8 @@
                     return `[投稿制限解除] ${ev.unrestricted ? 'ON' : 'OFF'}`;
                 case 'delete_comment':
                     return '[コメント削除]';
+                case 'star':
+                    return `[スター${ev.starred === false ? 'を外す' : ''}] ${name}: ${ev.text}`;
                 case 'name_change':
                     return `[名前変更] ${ev.previous || '（未入力）'} → ${ev.name || '（未入力）'}`;
                 default:
@@ -1237,7 +1277,63 @@
             sessionEvents = [...events].sort((a, b) => a.t.localeCompare(b.t));
             sessionEventIds = new Set(sessionEvents.map(ev => ev.event_id));
             renderCommentLog();
+            renderStarList();
             updateClassRecordPanel();
+        }
+
+        // ========== コメントへのスター ==========
+        // コメントの ID → スターが付いているか（あとから記録したものほど新しい）
+        function starStates(events) {
+            const states = new Map();
+            events.forEach(ev => { if (ev.type === 'star') states.set(ev.target_event_id, ev.starred !== false); });
+            return states;
+        }
+
+        // 参加者のコメントを新しい順に並べ、スターを付け外しできるようにする
+        // スターを付けられるのは現在の授業回のコメントだけ（サーバーが現在の授業回の中から探す）
+        function renderStarList() {
+            const names = buildNameIndex(sessionEvents);
+            const stars = starStates(sessionEvents);
+            const canStar = viewingSession === 'current';
+            let comments = sessionEvents.filter(ev => ev.type === 'comment' && ev.actor === 'participant' && ev.hidden === undefined);
+            starCount.textContent = comments.filter(ev => stars.get(ev.event_id)).length;
+            if (checkboxStarOnly.checked) comments = comments.filter(ev => stars.get(ev.event_id));
+            comments = comments.slice(-300).reverse();
+
+            if (comments.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'text-muted small p-2';
+                empty.textContent = checkboxStarOnly.checked ? 'スターを付けたコメントはまだありません' : '参加者のコメントはまだありません';
+                starCommentList.replaceChildren(empty);
+                return;
+            }
+            starCommentList.replaceChildren(...comments.map(ev => {
+                const starred = !!stars.get(ev.event_id);
+                const row = document.createElement('div');
+                row.className = 'list-group-item d-flex align-items-start gap-2 px-2 py-1';
+                const button = document.createElement('button');
+                button.className = `btn btn-sm ${starred ? 'btn-warning' : 'btn-outline-secondary'}`;
+                button.innerHTML = `<i class="bi ${starred ? 'bi-star-fill' : 'bi-star'}"></i>`;
+                button.title = starred ? 'スターを外す' : 'スターを付ける';
+                button.disabled = !canStar;
+                button.addEventListener('click', () => {
+                    if (!socket || !socket.connected) {
+                        addLog('サーバに接続されていないため、スターを付けられません', 'error');
+                        return;
+                    }
+                    socket.emit('star comment', { comment_id: ev.event_id, starred: !starred, source: 'dashboard' });
+                });
+                const body = document.createElement('div');
+                body.className = 'small text-break';
+                const meta = document.createElement('div');
+                meta.className = 'text-muted';
+                meta.textContent = `${formatLocalTime(ev.t, viewingSession === 'all')}  ${ev.name || names[ev.participant_id] || '匿名'}`;
+                const text = document.createElement('div');
+                text.textContent = ev.text;
+                body.append(meta, text);
+                row.append(button, body);
+                return row;
+            }));
         }
 
         // サーバーから1件届いたとき（現在の授業回を表示中のときだけ追加）
@@ -1263,6 +1359,7 @@
             }
             sessionEvents.push(ev);
             sessionEventIds.add(ev.event_id);
+            if (ev.type === 'comment' || ev.type === 'star') renderStarList();
             if (ev.type === 'class_end') loadLogSessions(); // 一覧の終了時刻を更新
             if (ev.type !== 'join' && ev.type !== 'leave') updateClassRecordPanel();
             const line = formatLogLine(ev, buildNameIndex(sessionEvents));
@@ -1507,6 +1604,7 @@
             ['text_room_name', 'change'],
             ['checkbox_auto_response', 'change'],
             ['text_lm_studio_url', 'change'],
+            ['select_lm_studio_model', 'change'],
             ['select_text_direction', 'change'],
             ['input_text_color', 'change'],
             ['input_conversation_history_limit', 'change'],
@@ -1539,6 +1637,10 @@
             if (el.type === 'checkbox') {
                 el.checked = !!value;
             } else {
+                // 選択肢を後から読み込むもの（LM Studio のモデル）は、保存された値の選択肢を先に作っておく
+                if (el.tagName === 'SELECT' && value && ![...el.options].some(option => option.value === value)) {
+                    el.add(new Option(value, value));
+                }
                 el.value = value;
             }
         }
@@ -2785,6 +2887,31 @@
             }
         }
 
+        // LM Studio のモデル一覧を取得してセレクトに入れる（選んでいたモデルは一覧になくても残す）
+        // LM Studio の設定によって、読み込み済みのモデルだけ、またはダウンロード済みのモデルすべてが返る
+        async function refreshLMStudioModels({ quiet = false } = {}) {
+            const url = textLmStudioUrl.value.trim();
+            try {
+                const response = await fetch(`${url}/models`, { headers: { 'Authorization': 'Bearer lm-studio' } });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const selected = selectLmStudioModel.value; // 取得中に復元・変更された値を使う
+                const ids = (data.data || []).map(model => model.id).filter(id => id && !id.includes('embed'));
+
+                selectLmStudioModel.innerHTML = '<option value="">LM Studio で読み込み中のモデル</option>';
+                ids.forEach(id => selectLmStudioModel.add(new Option(id, id)));
+                if (selected && !ids.includes(selected)) {
+                    selectLmStudioModel.add(new Option(`${selected}（一覧にありません）`, selected));
+                }
+                selectLmStudioModel.value = selected;
+                addLog(`LM Studio のモデルを${ids.length}個取得しました`, 'info');
+            } catch (error) {
+                // 起動時は LM Studio が動いていないことも多いので、ボタンを押したときだけ知らせる
+                addLog(`LM Studio のモデル一覧を取得できませんでした: ${error.message}`, quiet ? 'info' : 'error');
+                if (!quiet) alert(`LM Studio のモデル一覧を取得できませんでした: ${error.message}`);
+            }
+        }
+
         // LM Studio に API リクエストを送信
         async function sendToLMStudio(message) {
             try {
@@ -2849,7 +2976,7 @@
                         'Authorization': 'Bearer lm-studio'
                     },
                     body: JSON.stringify({
-                        model: 'local-model',
+                        model: selectLmStudioModel.value || 'local-model', // local-model は読み込み中のモデル
                         messages: messages,
                         temperature: 0.7,
                         max_tokens: 4096
@@ -3081,6 +3208,8 @@
             }
         });
 
+        checkboxStarOnly.addEventListener('change', renderStarList);
+
         buttonClearLog.addEventListener('click', () => {
             logContainer.innerHTML = '';
         });
@@ -3145,6 +3274,18 @@
 
         buttonTestLMStudio.addEventListener('click', () => {
             testLMStudioConnection();
+        });
+
+        buttonRefreshLmStudioModels.addEventListener('click', () => {
+            refreshLMStudioModels();
+        });
+
+        selectLmStudioModel.addEventListener('change', () => {
+            addLog(`LM Studio のモデル: ${selectLmStudioModel.value || '読み込み中のモデル'}`, 'info');
+        });
+
+        textLmStudioUrl.addEventListener('change', () => {
+            refreshLMStudioModels({ quiet: true });
         });
 
         // AI名前の変更監視
@@ -3295,6 +3436,8 @@
             // 保存された設定を復元（部屋名は URL の指定を優先するので、この後で上書きされる）
             restoreDashboardSettings();
             document.getElementById('button_reset_settings').addEventListener('click', resetDashboardSettings);
+            refreshLMStudioModels({ quiet: true });
+            renderStarList();
 
             // URL パラメータからルーム名を取得
             const params = getURLParams();

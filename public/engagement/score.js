@@ -7,17 +7,19 @@
 //   質       実質コメント数（記号・絵文字・「w」などを除いた本文が一定文字数以上の有効コメント）
 //   回答率   回答数 ÷ 在室中に行われたアンケート数
 //   継続性   授業を一定時間ごとに区切り、有効コメントかアンケート回答があった区間の割合
+//   スター   配信者がスターを付けたコメントの数（その回に誰にもスターを付けなかったときは指標から除く）
 // 各指標を「満点の基準」で 0〜1 に正規化し、重み付き平均 × 100 を授業回の点とする。
 // 複数回の点は、欠席回を 0 点として全授業回で平均する。
 
 (function (global) {
     const DEFAULT_SETTINGS = {
-        weights: { presence: 30, comments: 25, quality: 15, survey: 20, continuity: 10 },
+        weights: { presence: 30, comments: 25, quality: 15, survey: 20, continuity: 10, stars: 10 },
         presenceFull: 80,          // 在室率（%）がこれ以上で満点
         commentsFull: 3,           // 有効コメント数がこれ以上で満点
         qualityFull: 2,            // 実質コメント数がこれ以上で満点
         surveyFull: 100,           // 回答率（%）がこれ以上で満点
         continuityFull: 50,        // 活動のあった区間の割合（%）がこれ以上で満点
+        starsFull: 1,              // スターの付いたコメント数がこれ以上で満点
         commentMinChars: 2,        // これより短いコメントは数えない
         commentMinIntervalSec: 10, // 自分の直前の有効コメントからこれより短い間隔のコメントは数えない
         qualityMinChars: 10,       // 実質コメントとみなす本文の文字数
@@ -31,7 +33,8 @@
         { key: 'comments', label: '発言' },
         { key: 'quality', label: '質' },
         { key: 'survey', label: '回答率' },
-        { key: 'continuity', label: '継続性' }
+        { key: 'continuity', label: '継続性' },
+        { key: 'stars', label: 'スター' }
     ];
 
     function cloneSettings(settings) {
@@ -322,6 +325,11 @@
             else if (ev.type === 'survey_answer') p.answers.push(ev);
         });
 
+        // コメントの ID → スターが付いているか（付け外しを繰り返したときは最後の状態）
+        const starred = new Map();
+        session.events.forEach(ev => { if (ev.type === 'star') starred.set(ev.target_event_id, ev.starred !== false); });
+        const anyStar = [...starred.values()].some(Boolean);
+
         const results = [];
         people.forEach(p => {
             const intervals = clipIntervals(p.intervals, start, end);
@@ -342,20 +350,23 @@
                 activeSlots.add(Math.min(slotCount - 1, Math.max(0, Math.floor((t - start) / slotMs))));
             });
             const continuityRate = activeSlots.size / slotCount;
+            const stars = p.comments.filter(ev => starred.get(ev.event_id)).length;
 
             const raw = {
                 presence: presenceRate,
                 comments: valid.length,
                 quality: substantive.length,
                 survey: surveyRate,
-                continuity: continuityRate
+                continuity: continuityRate,
+                stars
             };
             const normalized = {
                 presence: ratio(presenceRate * 100, settings.presenceFull),
                 comments: ratio(valid.length, settings.commentsFull),
                 quality: ratio(substantive.length, settings.qualityFull),
                 survey: surveyRate === null ? null : ratio(surveyRate * 100, settings.surveyFull),
-                continuity: ratio(continuityRate * 100, settings.continuityFull)
+                continuity: ratio(continuityRate * 100, settings.continuityFull),
+                stars: anyStar ? ratio(stars, settings.starsFull) : null
             };
 
             results.push({
@@ -380,7 +391,7 @@
                 timeline: {
                     intervals: intervals.sort((a, b) => a[0] - b[0]),
                     activeSlots: [...activeSlots].sort((a, b) => a - b),
-                    comments: classified.map(c => ({ t: Date.parse(c.ev.t), text: c.ev.text, status: c.status, reason: c.reason })),
+                    comments: classified.map(c => ({ t: Date.parse(c.ev.t), text: c.ev.text, status: c.status, reason: c.reason, starred: !!starred.get(c.ev.event_id) })),
                     answers: p.answers.map(a => {
                         const survey = surveys.find(s => s.id === a.survey_id);
                         return { t: Date.parse(a.t), question: survey ? survey.question : '', choices: a.choice_labels || [] };
@@ -404,7 +415,7 @@
         };
     }
 
-    // 重み付き平均 × 100（値のない指標＝アンケートのない回の回答率 は除いて割り直す）
+    // 重み付き平均 × 100（値のない指標＝アンケートのない回の回答率・スターを付けなかった回のスター は除いて割り直す）
     function weightedScore(normalized, settings) {
         let sum = 0;
         let weight = 0;

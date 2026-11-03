@@ -178,6 +178,14 @@ function setup() {
         flg_deactivate_comment_control = data.control;
         if (window.CommentApp) CommentApp.state.deactivateControl = flg_deactivate_comment_control;
     });
+    // 自分のコメントに配信者がスターを付けたとき（外したときは知らせない）
+    socket.on('your comment starred', (data) => {
+        if (!data || !data.starred) return;
+        const toastEl = document.getElementById('toast_comment_starred');
+        if (!toastEl || !window.bootstrap) return;
+        document.getElementById('toast_comment_starred_text').textContent = String(data.text || '');
+        bootstrap.Toast.getOrCreateInstance(toastEl).show();
+    });
 
     // 旧 WebRTC (offer/answer) 機能は完全削除済み
     window.onunload = window.onbeforeunload = () => socket.close();

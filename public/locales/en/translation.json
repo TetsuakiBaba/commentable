@@ -47,5 +47,6 @@
     "inappropriate_message": "Your comment (or name) contains inappropriate words and cannot be sent. Please edit it and send again.",
     "inappropriate_fix": "Edit",
     "inappropriate_help_title": "Inappropriate words",
-    "inappropriate_help_description": "Comments and names that contain inappropriate words cannot be sent. Check the words shown in the dialog, edit your text, and send again."
+    "inappropriate_help_description": "Comments and names that contain inappropriate words cannot be sent. Check the words shown in the dialog, edit your text, and send again.",
+    "comment_starred": "Your comment got a star"
 }

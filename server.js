@@ -494,10 +494,41 @@ io.on('connection', (socket) => {
 
         // コメントをログファイルに保存
         saveCommentLog(data, room);
-        eventLog.logEvent(room, commentEventFields(data, socket));
+        const event = eventLog.logEvent(room, commentEventFields(data, socket));
+        // 参加者のコメントには授業ログの ID を付けて配る（配信者がスターを付けるときに使う）
+        if (event && event.type === 'comment' && event.actor === 'participant') data.comment_id = event.event_id;
 
         // 全員に送信
         socket.to(room).emit('comment', data);
+    });
+
+    // 配信者（配信画面・ダッシュボード）が参加者のコメントにスターを付ける・外す
+    // 授業ログに記録して授業参画度で数え、部屋の全員に知らせる（配信画面はコメントに ⭐ を出す）
+    // コメントを書いた本人の投稿ページには、自分のコメントにスターが付いたことを別に知らせる
+    socket.on('star comment', (data) => {
+        if (!isHostSocket() || !data) return;
+        const commentId = str(data.comment_id, 64);
+        const target = commentId && eventLog.currentSessionEvents(room)
+            .find(ev => ev.event_id === commentId && ev.type === 'comment' && ev.actor === 'participant');
+        if (!target) return;
+        const starred = data.starred !== false;
+        eventLog.logEvent(room, {
+            type: 'star',
+            actor: 'host',
+            source: data.source === 'dashboard' ? 'dashboard' : 'overlay',
+            target_event_id: commentId,
+            target_participant_id: target.participant_id,
+            name: target.name,
+            text: target.text,
+            starred
+        });
+        io.to(room).emit('comment star', { comment_id: commentId, starred });
+        for (const id of io.sockets.adapter.rooms.get(room) || []) {
+            const other = io.sockets.sockets.get(id);
+            if (other && other.role === 'participant' && (other.participantId || other.id) === target.participant_id) {
+                other.emit('your comment starred', { text: target.text, starred });
+            }
+        }
     });
 
     // 参加者が名前欄を変更したとき（授業ログで入退室・アンケート回答を本人に結びつけるため）

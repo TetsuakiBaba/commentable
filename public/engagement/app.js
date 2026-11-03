@@ -38,7 +38,7 @@
         }
     }
 
-    const NUMBER_SETTINGS = ['presenceFull', 'commentsFull', 'qualityFull', 'surveyFull', 'continuityFull',
+    const NUMBER_SETTINGS = ['presenceFull', 'commentsFull', 'qualityFull', 'surveyFull', 'continuityFull', 'starsFull',
         'commentMinChars', 'commentMinIntervalSec', 'qualityMinChars', 'slotMinutes'];
 
     function buildWeightInputs() {
@@ -632,7 +632,7 @@
         table.className = 'table table-sm table-borderless mb-0 small';
         table.innerHTML = `<thead><tr>
             <th>授業回</th><th class="num">点</th><th class="num">滞在</th><th class="num">有効コメント</th>
-            <th class="num">実質コメント</th><th class="num">アンケート回答</th><th class="num">活動区間</th><th>メモ</th>
+            <th class="num">実質コメント</th><th class="num">アンケート回答</th><th class="num">活動区間</th><th class="num">スター</th><th>メモ</th>
         </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         result.sessions.forEach((sr, i) => {
@@ -640,7 +640,7 @@
             const row = document.createElement('tr');
             const cells = [`${dateOf(sr.start)} ${timeOf(sr.start)}`];
             if (!r || !r.present) {
-                cells.push('0.0', '欠席', '', '', '', '', '');
+                cells.push('0.0', '欠席', '', '', '', '', '', '');
             } else {
                 const d = r.details;
                 const memo = [];
@@ -654,12 +654,13 @@
                     `${r.raw.quality}`,
                     d.surveysEligible ? `${d.surveysAnswered} / ${d.surveysEligible}` : '—',
                     `${d.activeSlots} / ${d.slotCount}`,
+                    r.normalized.stars === null ? '—' : `${r.raw.stars}`,
                     memo.join('、')
                 );
             }
             cells.forEach((text, j) => {
                 const cell = document.createElement('td');
-                if (j > 0 && j < 7) cell.className = 'num';
+                if (j > 0 && j < 8) cell.className = 'num';
                 cell.textContent = text;
                 row.appendChild(cell);
             });
@@ -818,7 +819,7 @@
         const tl = r.timeline;
         const duration = Math.max(1, sr.end - sr.start);
         const items = [
-            ...tl.comments.map(c => ({ t: c.t, key: COMMENT_STATUS[c.status].marker, text: c.text, note: c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label })),
+            ...tl.comments.map(c => ({ t: c.t, key: COMMENT_STATUS[c.status].marker, text: c.text, note: (c.starred ? '⭐ ' : '') + (c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label) })),
             ...tl.answers.map(a => ({ t: a.t, key: 'tl-mark-answer', text: a.choices.join(' / '), note: a.question ? `回答：${a.question}` : '回答' }))
         ].sort((a, b) => a.t - b.t);
         const active = new Set(tl.activeSlots);
@@ -878,7 +879,7 @@
     function postList(sr, r) {
         const tl = r.timeline;
         const rows = [
-            ...tl.comments.map(c => ({ t: c.t, marker: COMMENT_STATUS[c.status].marker, label: c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label, text: c.text })),
+            ...tl.comments.map(c => ({ t: c.t, marker: COMMENT_STATUS[c.status].marker, label: (c.starred ? '⭐ ' : '') + (c.status === 'invalid' ? `無効（${INVALID_REASON[c.reason]}）` : COMMENT_STATUS[c.status].label), text: c.text })),
             ...tl.answers.map(a => ({ t: a.t, marker: 'tl-mark-answer', label: 'アンケート回答', text: [a.question, a.choices.join(' / ')].filter(Boolean).join(' → ') }))
         ].sort((a, b) => a.t - b.t);
 
@@ -932,13 +933,14 @@
         const total = S.INDICATORS.reduce((sum, { key }) => sum + w[key], 0) || 1;
         const share = key => `${Math.round(w[key] / total * 1000) / 10}%`;
         return [
-            '授業参画度は、授業回ごとに次の5つの指標を0〜1に換算し、重みを付けて平均したものです（100点満点）。',
+            `授業参画度は、授業回ごとに次の${S.INDICATORS.length}つの指標を0〜1に換算し、重みを付けて平均したものです（100点満点）。`,
             '',
             `・滞在（重み ${share('presence')}）：授業時間のうち在室していた割合。${settings.presenceFull}%以上で満点。`,
             `・発言（重み ${share('comments')}）：有効なコメントの数。${settings.commentsFull}件以上で満点。`,
             `・質（重み ${share('quality')}）：記号・絵文字・「w」「草」などを除いた本文が${settings.qualityMinChars}文字以上の有効なコメントの数。${settings.qualityFull}件以上で満点。`,
             `・アンケート回答率（重み ${share('survey')}）：在室中に行われたアンケートのうち回答した割合。${settings.surveyFull}%以上で満点。アンケートがなかった回は、この指標を除いて計算します。`,
             `・継続性（重み ${share('continuity')}）：授業を${settings.slotMinutes}分ごとに区切り、コメントかアンケート回答をした区間の割合。${settings.continuityFull}%以上で満点。`,
+            `・スター（重み ${share('stars')}）：先生がスターを付けた（良いコメントとして選んだ）コメントの数。${settings.starsFull}件以上で満点。誰にもスターを付けなかった回は、この指標を除いて計算します。`,
             '',
             `有効なコメント：${settings.commentMinChars}文字以上で、自分の直前のコメントと同じ文ではなく、直前の有効なコメントから${settings.commentMinIntervalSec}秒以上あいているもの。`,
             '複数の授業回の参画度は、欠席した回を0点として全授業回で平均します。',
@@ -970,6 +972,7 @@
             ['満点：実質コメント数', settings.qualityFull],
             ['満点：回答率(%)', settings.surveyFull],
             ['満点：活動区間(%)', settings.continuityFull],
+            ['満点：スター数', settings.starsFull],
             ['有効コメントの最低文字数', settings.commentMinChars],
             ['有効コメントの間隔(秒)', settings.commentMinIntervalSec],
             ['実質コメントの文字数', settings.qualityMinChars],
@@ -1020,7 +1023,7 @@
     function downloadDetail() {
         const header = ['学修番号', '授業回', '開始', '終了', '出欠', '点',
             '在室率(%)', '全コメント数', '有効コメント数', '実質コメント数',
-            '対象アンケート数', '回答数', '回答率(%)', '活動区間数', '区間数',
+            '対象アンケート数', '回答数', '回答率(%)', '活動区間数', '区間数', 'スター数',
             ...S.INDICATORS.map(({ label }) => `換算:${label}(%)`),
             'ブラウザID', '同じブラウザの別名', '名前を補完'];
         const rows = [];
@@ -1035,7 +1038,7 @@
                 const d = r.details;
                 rows.push([...base, '出席', fixed(r.score),
                     round1(r.raw.presence), d.allComments, d.validComments, r.raw.quality,
-                    d.surveysEligible, d.surveysAnswered, round1(r.raw.survey), d.activeSlots, d.slotCount,
+                    d.surveysEligible, d.surveysAnswered, round1(r.raw.survey), d.activeSlots, d.slotCount, r.raw.stars,
                     ...S.INDICATORS.map(({ key }) => round1(r.normalized[key])),
                     r.pids.join(' '), r.otherNames.join(' / '), r.estimated ? 'はい' : '']);
             });
