@@ -26,9 +26,29 @@ local環境での実行手順を示します。デプロイするときはデプ
 $ git clone https://github.com/TetsuakiBaba/commentable.git
 $ cd commentable
 $ npm install
-$ node server.js
-open http://localhost on Chrome/Firefox browser for student mode
+$ npm run dev        # http://localhost:3000（server.js などを保存すると自動で再起動する）
 ```
+
+ブラウザで http://localhost:3000/?room=test を開くと投稿ページになります。
+
+### ローカルでの動作確認（macOS）
+`./dev.sh` で、ローカルのサーバーと macOS アプリをまとめて起動します。
+アプリをビルドし、部屋「test」に入った状態でローカルのサーバーにつなぎ、ブラウザで投稿ページを開きます。
+Ctrl+C でまとめて終了します。
+
+```
+./dev.sh                 # localhost のサーバーにアプリをつなぐ
+./dev.sh --lan           # LAN の IP アドレスでつなぐ（同じ Wi-Fi のスマホや Windows の PC から QR コードで参加できる）
+./dev.sh --room 部屋名    # 部屋名を変える
+./dev.sh --no-app        # アプリを起動せず、サーバーと投稿ページだけにする
+./dev.sh --fake          # 偽の参加者がコメントとリアクションを流す
+```
+
+- 本番以外のサーバーにつないでいるとき、アプリはメニューバーに「ローカル」と表示します。
+- ダッシュボードは、アプリのメニュー「ダッシュボード」から開きます。管理者ページ（http://localhost:3000/admin/）のパスワードは、`dashboard-config.js` がなければ `admin123` です。
+- 偽の参加者は `npm run fake-comments -- --users 5 --interval 2 --ai-rate 0.2` のように、人数・間隔・AI に呼びかける割合を変えて単体でも動かせます（[tools/fake-comments.js](tools/fake-comments.js)）。
+- `--lan` では、初回に macOS のファイアウォールが node への接続を許可するか確認することがあります。
+- Windows 版は、`$env:COMMENTABLE_SERVER_URL = "http://<Mac の IP>:3000"` を付けて起動すると、`./dev.sh --lan` で動かしている Mac のサーバーにつなげます。
 
 ## Desktop Application
 配信者はデスクトップアプリケーションである commentable-desktop を利用することで、コメントを自身のデスクトップ上に表示することができます。ビルドしたアプリケーションは以下からダウンロードできます。

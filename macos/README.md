@@ -100,7 +100,8 @@ macOS の Electron 版（commentable-desktop）を使っている人は、Swift 
   * `--update-now` を付けて起動すると、新しいバージョンがあれば確認なしで入れ替えて再起動します（動作確認用）。
 
 ## 接続先サーバー
-既定は本番環境（https://commentable.onrender.com）です。ローカルのサーバーで試すときは環境変数か defaults で切り替えます。
+既定は本番環境（https://commentable.onrender.com）です。ローカルのサーバーで試すときは、リポジトリのルートで `./dev.sh` を使うと、サーバーの起動からアプリの接続までをまとめて行えます（[README](../README.md) の「ローカルでの動作確認」）。
+手動で切り替えるときは環境変数か defaults を使います。defaults は設定が残るので、戻し忘れに注意してください（本番以外につないでいるときは、メニューバーに「ローカル」と表示されます）。
 
 ```
 COMMENTABLE_SERVER_URL=http://localhost:3000 build/Commentable.app/Contents/MacOS/Commentable
