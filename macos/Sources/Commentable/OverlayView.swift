@@ -47,6 +47,19 @@ final class OverlayView: NSView {
     private var notificationWork: DispatchWorkItem?
     private var caption: (committed: String, volatile: String) = ("", "")
     private var captionHideWork: DispatchWorkItem?
+    private var stableCaption = StableCaption()
+
+    // 字幕の表示方法（読みやすさ優先のときは、行の区切りを覚えておいて 1 行ずつ送る）
+    var captionStyle: CaptionStyle = .streaming {
+        didSet {
+            stableCaption = StableCaption()
+            renderCaption(restartTimer: false)
+        }
+    }
+    private var hoveredComment: CALayer? // Option を押しながらカーソルを重ねているコメント
+
+    // Option を押しながらコメントをクリックしたとき（コメントの ID を渡す。スターを付ける・外す）
+    var onCommentClick: ((String) -> Void)?
 
     var cameraPosition: CameraPosition = .topRight { didSet { layoutCamera() } }
     var cameraScale: CGFloat = 0.15 { didSet { layoutCamera() } } // 画面幅に対する比率
@@ -155,7 +168,7 @@ final class OverlayView: NSView {
 
     // 表示できたら true（同時に表示できるのは maxComments 件まで）
     @discardableResult
-    func addComment(_ text: String, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
+    func addComment(_ text: String, id: String?, starred: Bool, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
         guard activeCommentCount < Self.maxComments, W > 0, H > 0 else { return false }
 
         let baseSize = H / 20
@@ -170,6 +183,8 @@ final class OverlayView: NSView {
         let y = H > 200 ? CGFloat.random(in: 100...(H - 100)) : H / 2
 
         let layer = addImageLayer(rendered, to: commentsLayer)
+        layer.name = id // スターを付けられるコメント（参加者のコメント）だけ ID がある
+        if starred { setStar(on: layer, starred: true, animated: false) }
         let duration = Self.commentDuration
 
         switch direction {
@@ -226,7 +241,66 @@ final class OverlayView: NSView {
         remove(layer, after: 10)
     }
 
+    // ========== コメントのスター ==========
+    // スターを付けたコメントの左に ⭐ を出す（流れているコメントと一緒に動く）
+    func setStar(commentID: String, starred: Bool) {
+        commentsLayer.sublayers?.filter { $0.name == commentID }.forEach { setStar(on: $0, starred: starred, animated: true) }
+    }
+
+    private func setStar(on layer: CALayer, starred: Bool, animated: Bool) {
+        let existing = layer.sublayers?.first { $0.name == "star" }
+        guard starred else {
+            existing?.removeFromSuperlayer()
+            return
+        }
+        guard existing == nil, let rendered = TextImage.render("⭐", style: TextStyle(font: TextImage.font(size: layer.bounds.height * 0.7), fill: .white), scale: scale)
+        else { return }
+        let star = addImageLayer(rendered, to: layer)
+        star.name = "star"
+        star.position = CGPoint(x: -rendered.size.width / 2, y: layer.bounds.midY)
+        if animated {
+            // ぽんと出る
+            let pop = CAKeyframeAnimation(keyPath: "transform.scale")
+            pop.values = [0.2, 1.4, 0.9, 1.0]
+            pop.keyTimes = [0, 0.4, 0.7, 1]
+            pop.duration = 0.45
+            star.add(pop, forKey: "pop")
+        }
+    }
+
+    // 画面上の位置にあるスターを付けられるコメント（いちばん手前のもの）
+    private func starrableComment(at point: CGPoint) -> CALayer? {
+        commentsLayer.sublayers?.reversed().first { layer in
+            guard layer.name != nil, let shown = layer.presentation() ?? Optional(layer), shown.opacity > 0.2 else { return false }
+            return shown.frame.insetBy(dx: -8, dy: -8).contains(point)
+        }
+    }
+
+    // Option を押しながらコメントに重ねている間だけ、このウィンドウがクリックを受け取る
+    // （それ以外のクリックは今までどおり下のアプリに通す）
+    private func updateCommentHover(at point: CGPoint) {
+        guard let window, onCommentClick != nil else { return }
+        let hovered = NSEvent.modifierFlags.contains(.option) ? starrableComment(at: point) : nil
+        if hovered !== hoveredComment {
+            hoveredComment?.backgroundColor = nil
+            hovered?.backgroundColor = NSColor(white: 1, alpha: 0.25).cgColor
+            hovered?.cornerRadius = 8
+            hoveredComment = hovered
+        }
+        let ignores = hovered == nil
+        if window.ignoresMouseEvents != ignores { window.ignoresMouseEvents = ignores }
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        guard let id = starrableComment(at: point)?.name else { return }
+        onCommentClick?(id)
+    }
+
     func clearComments() {
+        hoveredComment = nil
         commentsLayer.sublayers = nil
         commandsLayer.sublayers = nil
         effectLayer.sublayers = nil
@@ -288,12 +362,13 @@ final class OverlayView: NSView {
         let now = Date()
         let parts = Calendar.current.dateComponents([.hour, .minute, .second, .nanosecond], from: now)
         let text = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
-        let style = TextStyle(font: TextImage.font(size: H / 15, bold: true), fill: .white, stroke: .black, strokeWidth: 5)
-        if let rendered = TextImage.render(text, style: style, scale: scale) {
+        // 字幕と同じ半透明の背景に載せる。数字は等幅にして、分が変わっても幅が変わらないようにする
+        let font = NSFont.monospacedDigitSystemFont(ofSize: H / 20, weight: .semibold)
+        if let rendered = TextImage.renderBadge(text, font: font, color: .white, background: NSColor.black.withAlphaComponent(0.6), scale: scale) {
             clockLayer.contents = rendered.image
             clockLayer.contentsScale = scale
             clockLayer.bounds = CGRect(origin: .zero, size: rendered.size)
-            clockLayer.position = CGPoint(x: 20 - 5, y: flipY(10 - 5))
+            clockLayer.position = CGPoint(x: 20, y: flipY(20))
             clockLayer.isHidden = false
         }
         // 分が変わるときだけ描き直す
@@ -329,35 +404,58 @@ final class OverlayView: NSView {
     }
 
     private static let captionHideDelay: TimeInterval = 8 // 更新がなければ消すまでの秒数
+    private static let captionBottom: CGFloat = 40 // 画面の下端から字幕までの距離
+
+    // 字幕を置ける左右の範囲。既定は画面幅の 80% を中央に取る
+    // カメラ映像が字幕の高さにあるときは、カメラを避けて広く空いている側に寄せる（狭すぎるときは避けない）
+    private func captionArea(fontSize: CGFloat) -> (minX: CGFloat, maxX: CGFloat) {
+        let full = (minX: W * 0.1, maxX: W * 0.9)
+        guard !cameraLayer.isHidden, cameraImageSize != nil else { return full }
+        // 2 行の字幕の高さ（行の高さは文字の大きさの約 1.5 倍で最後の行の行間は除く。上下の余白は 0.3 倍ずつ）
+        let top = Self.captionBottom + fontSize * (1.5 + 1.0 + 0.6)
+        let camera = cameraLayer.frame
+        guard camera.minY < top, camera.maxY > Self.captionBottom else { return full }
+        let gap: CGFloat = 20
+        let left = (minX: full.minX, maxX: min(full.maxX, camera.minX - gap))
+        let right = (minX: max(full.minX, camera.maxX + gap), maxX: full.maxX)
+        let wider = left.maxX - left.minX >= right.maxX - right.minX ? left : right
+        return wider.maxX - wider.minX >= W * 0.3 ? wider : full
+    }
+
+    private static let captionVolatileColor = NSColor(white: 1, alpha: 0.6)
+    private static let captionBackground = NSColor.black.withAlphaComponent(0.65)
 
     private func renderCaption(restartTimer: Bool) {
-        var (committed, volatile) = caption
+        let (committed, volatile) = caption
         guard !(committed + volatile).isEmpty, W > 0, H > 0 else {
             captionHideWork?.cancel()
             captionLayer.isHidden = true
+            stableCaption = StableCaption()
             return
         }
-        // 2 行に収まるように、古い方を削って末尾だけを表示する（日本語は 1 文字がほぼ文字の大きさの幅）
         let fontSize = H / 24
-        let maxWidth = W * 0.8
-        let limit = max(1, Int(maxWidth / fontSize) - 1) * 2
-        let overflow = committed.count + volatile.count - limit
-        if overflow > 0 {
-            if overflow < committed.count {
-                committed = String(committed.dropFirst(overflow))
-            } else {
-                committed = ""
-                volatile = String(volatile.suffix(limit))
+        let font = TextImage.font(size: fontSize)
+        let area = captionArea(fontSize: fontSize)
+        let maxWidth = area.maxX - area.minX
+        let rendered: (image: CGImage, size: CGSize)?
+        switch captionStyle {
+        case .streaming:
+            rendered = renderStreamingCaption(committed: committed, volatile: volatile, font: font, maxWidth: maxWidth)
+        case .stable:
+            let lines = stableCaption.update(committed: committed, volatile: volatile, font: font, width: maxWidth)
+            // 背景の幅を固定し、左寄せにする（行が伸びても文字の位置が動かない）
+            // 行の区切りは自分で決めているので、描画で折り返さないように幅には余裕を持たせる
+            let segments = lines.enumerated().flatMap { index, line in
+                (index > 0 ? [("\n", NSColor.white)] : []) + [(line.committed, NSColor.white), (line.volatile, Self.captionVolatileColor)]
             }
+            rendered = TextImage.renderCaption(segments, font: font, maxWidth: maxWidth + fontSize, background: Self.captionBackground,
+                                               scale: scale, alignment: .left, fixedWidth: maxWidth)
         }
-        guard let rendered = TextImage.renderCaption([(committed, .white), (volatile, NSColor(white: 1, alpha: 0.6))],
-                                                     font: TextImage.font(size: fontSize), maxWidth: maxWidth,
-                                                     background: NSColor.black.withAlphaComponent(0.65), scale: scale)
-        else { return }
+        guard let rendered else { return }
         captionLayer.contents = rendered.image
         captionLayer.contentsScale = scale
         captionLayer.bounds = CGRect(origin: .zero, size: rendered.size)
-        captionLayer.position = CGPoint(x: W / 2, y: flipY(H - 40 - rendered.size.height / 2))
+        captionLayer.position = CGPoint(x: (area.minX + area.maxX) / 2, y: Self.captionBottom + rendered.size.height / 2)
         captionLayer.isHidden = false
 
         guard restartTimer else { return }
@@ -370,6 +468,23 @@ final class OverlayView: NSView {
         }
         captionHideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.captionHideDelay, execute: work)
+    }
+
+    // 逐次表示：2 行に収まるように、古い方を削って末尾だけを表示する（日本語は 1 文字がほぼ文字の大きさの幅）
+    private func renderStreamingCaption(committed: String, volatile: String, font: NSFont, maxWidth: CGFloat) -> (image: CGImage, size: CGSize)? {
+        var (committed, volatile) = (committed, volatile)
+        let limit = max(1, Int(maxWidth / font.pointSize) - 1) * 2
+        let overflow = committed.count + volatile.count - limit
+        if overflow > 0 {
+            if overflow < committed.count {
+                committed = String(committed.dropFirst(overflow))
+            } else {
+                committed = ""
+                volatile = String(volatile.suffix(limit))
+            }
+        }
+        return TextImage.renderCaption([(committed, .white), (volatile, Self.captionVolatileColor)],
+                                       font: font, maxWidth: maxWidth, background: Self.captionBackground, scale: scale)
     }
 
     // ========== QR コード ==========
@@ -410,8 +525,10 @@ final class OverlayView: NSView {
     func setCameraFrame(_ image: CGImage?) {
         guard let image else {
             cameraLayer.contents = nil
+            let wasShown = !cameraLayer.isHidden
             cameraLayer.isHidden = true
             cameraImageSize = nil
+            if wasShown { renderCaption(restartTimer: false) } // 字幕をカメラのあった場所まで広げる
             return
         }
         cameraLayer.contents = image
@@ -420,7 +537,10 @@ final class OverlayView: NSView {
             cameraImageSize = size
             layoutCamera()
         }
-        cameraLayer.isHidden = false
+        if cameraLayer.isHidden {
+            cameraLayer.isHidden = false
+            renderCaption(restartTimer: false) // 字幕をカメラに重ならないように寄せる
+        }
     }
 
     private func layoutCamera() {
@@ -438,6 +558,7 @@ final class OverlayView: NSView {
         let center = positions[cameraPosition] ?? positions[.bottomLeft]!
         cameraLayer.bounds = CGRect(x: 0, y: 0, width: width, height: height)
         cameraLayer.position = CGPoint(x: center.x, y: flipY(center.y))
+        renderCaption(restartTimer: false) // カメラの位置・大きさに合わせて字幕を置き直す
     }
 
     // ========== ホバー ==========
@@ -445,6 +566,7 @@ final class OverlayView: NSView {
     private func updateHover() {
         guard let window, window.isVisible else { return }
         let point = convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+        updateCommentHover(at: point)
         if !cameraLayer.isHidden {
             fade(cameraLayer, to: cameraLayer.frame.contains(point) ? 0 : 1, duration: 0.3)
         }

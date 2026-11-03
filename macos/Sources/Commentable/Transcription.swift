@@ -1,3 +1,4 @@
+import AppKit
 import AVFoundation
 import Speech
 
@@ -9,6 +10,12 @@ enum TranscriptionSettings {
     static var showCaptions: Bool {
         get { defaults.object(forKey: "transcription.showCaptions") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "transcription.showCaptions") }
+    }
+
+    // 字幕の表示方法
+    static var captionStyle: CaptionStyle {
+        get { CaptionStyle(rawValue: defaults.string(forKey: "transcription.captionStyle") ?? "") ?? .streaming }
+        set { defaults.set(newValue.rawValue, forKey: "transcription.captionStyle") }
     }
 
     // この Mac で使えるか（SpeechAnalyzer は macOS 26 以降）
@@ -209,6 +216,19 @@ final class LiveTranscriber: @unchecked Sendable {
     }
 }
 
+// 字幕の表示方法
+enum CaptionStyle: String, CaseIterable {
+    case streaming // 逐次表示：2 行に収まるように古い文字から削る（文字が 1 文字ずつ流れる）
+    case stable    // 読みやすさ優先：行の区切りを固定して 1 行ずつ送り、確定前の文字は書いている行の中だけで直す
+
+    var label: String {
+        switch self {
+        case .streaming: return "逐次表示（1 文字ずつ流れる）"
+        case .stable: return "読みやすさ優先（1 行ずつ送る・表示した行は書き換えない）"
+        }
+    }
+}
+
 // 字幕に出す文字列（確定した文の続きに途中結果を付ける）
 struct CaptionText {
     private(set) var committed = ""
@@ -217,7 +237,9 @@ struct CaptionText {
 
     // しばらく話が途切れたら、前の文は消して新しく始める
     private static let pauseToClear: TimeInterval = 10
-    private static let maxCommitted = 200
+    // 読みやすさ優先の表示は、確定した文を先頭から行に割り付けるので、少しずつ削らずにまとめて削る
+    private static let maxCommitted = 5000
+    private static let keepAfterTrim = 200
 
     mutating func setVolatile(_ text: String) {
         clearIfPaused()
@@ -226,7 +248,8 @@ struct CaptionText {
 
     mutating func appendFinal(_ text: String) {
         clearIfPaused()
-        committed = String((committed + text).suffix(Self.maxCommitted))
+        committed += text
+        if committed.count > Self.maxCommitted { committed = String(committed.suffix(Self.keepAfterTrim)) }
         volatile = ""
         lastFinalAt = Date()
     }
@@ -238,5 +261,66 @@ struct CaptionText {
 
     private mutating func clearIfPaused() {
         if Date().timeIntervalSince(lastFinalAt) > Self.pauseToClear { committed = "" }
+    }
+}
+
+// 読みやすさ優先の字幕の行の割り付け
+// 確定した文は先頭から行に割り付けて、埋まった行の区切りは変えない（新しい行が要るときは 1 行ずつ送る）
+// 確定前の途中結果は、書いている最後の行の中だけで直す。前の行まで変わってしまう直し方は、確定するまで表示に反映しない
+struct StableCaption {
+    struct Line {
+        var committed: String
+        var volatile: String
+    }
+
+    private static let visibleLines = 2
+
+    private var font: NSFont?
+    private var width: CGFloat = 0
+    private var committed = ""         // 行に割り付け済みの確定した文
+    private var lines: [String] = []   // committed を割り付けた行（最後の行は、続きが来ると伸びる）
+    private var volatile = ""          // 表示している途中結果
+
+    // 表示する行（最大 2 行）を返す
+    mutating func update(committed newCommitted: String, volatile newVolatile: String, font newFont: NSFont, width newWidth: CGFloat) -> [Line] {
+        if font != newFont || width != newWidth || !newCommitted.hasPrefix(committed) {
+            // 字幕の幅が変わった（カメラを入れた・切ったなど）か、確定した文が消えた（話が途切れた）
+            font = newFont
+            width = newWidth
+            committed = ""
+            lines = []
+            volatile = ""
+        }
+        if newCommitted.count > committed.count {
+            let appended = String(newCommitted.dropFirst(committed.count))
+            let last = lines.popLast() ?? ""
+            lines += TextImage.wrap(last + appended, font: newFont, width: newWidth)
+            committed = newCommitted
+            volatile = "" // 確定したら途中結果は新しく始まる
+            lines = Array(lines.suffix(Self.visibleLines + 1)) // 表示と続きの割り付けに要る分だけ残す
+        }
+        volatile = stabilizedVolatile(newVolatile)
+
+        let last = lines.last ?? ""
+        let tail = TextImage.wrap(last + volatile, font: newFont, width: newWidth)
+        var result = lines.dropLast().map { Line(committed: $0, volatile: "") }
+        // 最後の確定した行の文字までは白、そこから先は途中結果
+        var remaining = last.count
+        for line in tail {
+            let committedPart = String(line.prefix(remaining))
+            remaining -= committedPart.count
+            result.append(Line(committed: committedPart, volatile: String(line.dropFirst(committedPart.count))))
+        }
+        return Array(result.suffix(Self.visibleLines))
+    }
+
+    // 途中結果が続きを足しただけなら、そのまま出す。前の部分が直されたときは、書いている最後の行の中だけの
+    // 変化なら出し、表示済みの前の行まで変わるなら、確定するまで今の表示のままにする
+    private func stabilizedVolatile(_ candidate: String) -> String {
+        guard !candidate.isEmpty, !volatile.isEmpty, !candidate.hasPrefix(volatile), let font else { return candidate }
+        let last = lines.last ?? ""
+        let shown = TextImage.wrap(last + volatile, font: font, width: width)
+        let revised = TextImage.wrap(last + candidate, font: font, width: width)
+        return shown.dropLast() == revised.prefix(max(0, shown.count - 1)) ? candidate : volatile
     }
 }

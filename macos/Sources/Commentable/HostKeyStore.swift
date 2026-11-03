@@ -76,6 +76,11 @@ enum HostKeyStore {
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
     }
 
+    // 鍵のある部屋の一覧（保存場所が見つからなければ空）
+    static func rooms() -> [String] {
+        Array(readKeys(keysFile()).keys)
+    }
+
     // 部屋の鍵を返す（なければ作る）。保存先のフォルダが見つからないときは例外を投げる
     // （同期前の共有フォルダで新しい鍵を作ると、自分の部屋に入れなくなるため）
     static func key(for room: String) throws -> String {

@@ -89,9 +89,11 @@ enum TextImage {
     }
 
     // 字幕: 色の違う文字列をつなげ、maxWidth で折り返して角丸の背景に載せる
-    static func renderCaption(_ segments: [(text: String, color: NSColor)], font: NSFont, maxWidth: CGFloat, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+    // fixedWidth を指定すると、文字の量によらず背景の幅をその幅にする（行が伸びても背景の大きさが変わらない）
+    static func renderCaption(_ segments: [(text: String, color: NSColor)], font: NSFont, maxWidth: CGFloat, background: NSColor, scale: CGFloat,
+                              alignment: NSTextAlignment = .center, fixedWidth: CGFloat? = nil) -> (image: CGImage, size: CGSize)? {
         let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
+        paragraph.alignment = alignment
         let text = NSMutableAttributedString()
         for segment in segments where !segment.text.isEmpty {
             text.append(NSAttributedString(string: segment.text, attributes: [.font: font, .foregroundColor: segment.color, .paragraphStyle: paragraph]))
@@ -99,7 +101,7 @@ enum TextImage {
         guard text.length > 0 else { return nil }
         let bounds = text.boundingRect(with: CGSize(width: maxWidth, height: 1_000_000), options: [.usesLineFragmentOrigin, .usesFontLeading])
         let leading = trailingLeading(font)
-        let textSize = CGSize(width: ceil(bounds.width), height: ceil(bounds.height) - leading)
+        let textSize = CGSize(width: fixedWidth ?? ceil(bounds.width), height: ceil(bounds.height) - leading)
         let pad = CGSize(width: font.pointSize * 0.6, height: font.pointSize * 0.3)
         let size = CGSize(width: textSize.width + pad.width * 2, height: textSize.height + pad.height * 2)
 
@@ -119,6 +121,53 @@ enum TextImage {
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
         text.draw(with: CGRect(x: pad.width, y: pad.height - leading, width: textSize.width, height: textSize.height + leading), options: [.usesLineFragmentOrigin, .usesFontLeading])
         NSGraphicsContext.restoreGraphicsState()
+
+        guard let image = context.makeImage() else { return nil }
+        return (image, size)
+    }
+}
+
+extension TextImage {
+    // 文字列を width に収まる行に分ける（日本語の禁則も Core Text が扱う）
+    static func wrap(_ text: String, font: NSFont, width: CGFloat) -> [String] {
+        guard !text.isEmpty, width > 0 else { return [] }
+        let typesetter = CTTypesetterCreateWithAttributedString(NSAttributedString(string: text, attributes: [.font: font]))
+        let string = text as NSString
+        var lines: [String] = []
+        var start = 0
+        while start < string.length {
+            let count = max(1, CTTypesetterSuggestLineBreak(typesetter, start, Double(width)))
+            let range = string.rangeOfComposedCharacterSequences(for: NSRange(location: start, length: min(count, string.length - start)))
+            lines.append(string.substring(with: range))
+            start = range.location + range.length
+        }
+        return lines
+    }
+
+    // 時計など短い 1 行の文字を角丸の背景に載せる。数字が上下の真ん中に来るように、行の高さではなく
+    // 大文字の高さ（capHeight）で背景の大きさを決める
+    static func renderBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+        let attributed = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
+        let line = CTLineCreateWithAttributedString(attributed)
+        let textWidth = ceil(CTLineGetTypographicBounds(line, nil, nil, nil))
+        let pad = CGSize(width: font.pointSize * 0.45, height: font.pointSize * 0.3)
+        let size = CGSize(width: textWidth + pad.width * 2, height: ceil(font.capHeight + pad.height * 2))
+
+        let pixelWidth = Int(ceil(size.width * scale))
+        let pixelHeight = Int(ceil(size.height * scale))
+        guard textWidth > 0,
+              let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        context.scaleBy(x: scale, y: scale)
+        context.setFillColor(background.cgColor)
+        let radius = size.height * 0.28
+        context.addPath(CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: radius, cornerHeight: radius, transform: nil))
+        context.fillPath()
+
+        context.textPosition = CGPoint(x: pad.width, y: (size.height - font.capHeight) / 2)
+        CTLineDraw(line, context)
 
         guard let image = context.makeImage() else { return nil }
         return (image, size)

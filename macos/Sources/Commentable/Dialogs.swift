@@ -19,29 +19,41 @@ enum Dialogs {
         message(style: .warning, title: title, detail: detail, buttons: [ok, "キャンセル"]) == 0
     }
 
-    // 部屋名を入力してもらう（キャンセルなら nil）
-    static func askRoomName() -> String? {
+    // 部屋名を入力するか、前に入った部屋（recentRooms。最後に入った順）から選んでもらう（キャンセルなら nil）
+    static func askRoomName(recentRooms: [String] = []) -> String? {
         let alert = NSAlert()
         alert.messageText = "Commentable"
-        alert.informativeText = "部屋名を入力して入室してください"
+        alert.informativeText = recentRooms.isEmpty
+            ? "部屋名を入力して入室してください"
+            : "前に入った部屋を一覧から選ぶか、新しい部屋名を入力して入室してください。\n前に入った部屋は、前回の設定で始まります。"
         alert.addButton(withTitle: "入室")
         alert.addButton(withTitle: "やめる")
+        alert.addButton(withTitle: "新しい部屋名")
         if let icon = NSImage(named: "AppIcon") ?? Resources.image("icon.app.png") {
             alert.icon = icon
         }
 
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        field.stringValue = generateRoomName()
+        let field = NSComboBox(frame: NSRect(x: 0, y: 0, width: 300, height: 26))
+        field.addItems(withObjectValues: recentRooms)
+        field.numberOfVisibleItems = min(max(recentRooms.count, 1), 12)
+        field.completes = true
+        field.stringValue = recentRooms.first ?? generateRoomName()
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
         alert.window.level = .modalPanel
 
         NSApp.activate(ignoringOtherApps: true)
         while true {
-            guard alert.runModal() == .alertFirstButtonReturn else { return nil }
-            let room = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !room.isEmpty { return room }
-            NSSound.beep()
+            switch alert.runModal() {
+            case .alertFirstButtonReturn:
+                let room = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !room.isEmpty { return room }
+                NSSound.beep()
+            case .alertThirdButtonReturn:
+                field.stringValue = generateRoomName()
+            default:
+                return nil
+            }
         }
     }
 

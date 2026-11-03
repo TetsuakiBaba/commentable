@@ -12,12 +12,16 @@ final class OverlayGroup {
     private var adminMessage: (show: Bool, text: String) = (false, "")
     private var cameraFrame: CGImage?
     private var caption: (committed: String, volatile: String) = ("", "")
+    private var starred = Set<String>() // スターを付けたコメントの ID
 
     var cameraPosition: CameraPosition = .topRight {
         didSet { all.forEach { $0.cameraPosition = cameraPosition } }
     }
     var cameraScale: CGFloat = 0.15 {
         didSet { all.forEach { $0.cameraScale = cameraScale } }
+    }
+    var captionStyle: CaptionStyle = .streaming {
+        didSet { all.forEach { $0.captionStyle = captionStyle } }
     }
 
     init(main: OverlayView) {
@@ -28,6 +32,7 @@ final class OverlayGroup {
         extras.append(overlay)
         overlay.cameraPosition = cameraPosition
         overlay.cameraScale = cameraScale
+        overlay.captionStyle = captionStyle
         overlay.setQR(position: qr.position, text: qr.text)
         overlay.setClock(clock)
         overlay.setAdminMessage(show: adminMessage.show, text: adminMessage.text)
@@ -41,10 +46,20 @@ final class OverlayGroup {
 
     // 表示できたら true（同時に表示できる数は画面全体のオーバーレイで判断する）
     @discardableResult
-    func addComment(_ text: String, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
-        guard main.addComment(text, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) else { return false }
-        extras.forEach { $0.addComment(text, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) }
+    func addComment(_ text: String, id: String?, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
+        let isStarred = id.map(starred.contains) ?? false
+        guard main.addComment(text, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) else { return false }
+        extras.forEach { $0.addComment(text, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) }
         return true
+    }
+
+    func isStarred(_ commentID: String) -> Bool {
+        starred.contains(commentID)
+    }
+
+    func setStar(commentID: String, starred isStarred: Bool) {
+        if isStarred { starred.insert(commentID) } else { starred.remove(commentID) }
+        all.forEach { $0.setStar(commentID: commentID, starred: isStarred) }
     }
 
     func addTextCommand(_ text: String, x: CGFloat, y: CGFloat, fill: NSColor, stroke: NSColor) {

@@ -13,6 +13,7 @@ final class RoomSession {
 
     // 同じ部屋名を別の配信者のアプリが使用している（なりすまし防止）
     var onJoinRejected: ((String?) -> Void)?
+    var onJoined: (() -> Void)? // サーバーに入室できたとき（再接続のたびにも呼ぶ）
 
     init(room: String, hostKey: String, overlay: OverlayGroup, sounds: SoundPlayer, surveys: SurveyManager, archiver: LogArchiver) {
         self.room = room
@@ -58,6 +59,9 @@ final class RoomSession {
         socket.on("login") { [weak self] _ in
             guard let self else { return }
             NSLog("you have been connected to %@", self.room)
+            // サーバーは再起動すると投稿制限の状態を忘れるので、入室するたびに送る
+            self.setCommentControl(self.commentControl)
+            self.onJoined?()
             // 授業ログを購読して、この Mac にも保存する（サーバーのログが消えても残るように）
             self.socket.emit("log watch")
         }
@@ -82,6 +86,12 @@ final class RoomSession {
             self?.overlay.setAdminMessage(show: show, text: text)
         }
 
+        // 配信者（この配信画面かダッシュボード）がコメントにスターを付けた・外した
+        socket.on("comment star") { [weak self] data in
+            guard let data = data as? [String: Any], let id = data["comment_id"] as? String else { return }
+            self?.overlay.setStar(commentID: id, starred: Self.bool(data["starred"]))
+        }
+
         // アンケートの回答を集計へ
         socket.on("survey answer") { [weak self] data in
             self?.surveys.record(data)
@@ -97,7 +107,16 @@ final class RoomSession {
         socket.emit("survey end", ["id": survey.id])
     }
 
+    // 投稿制限解除（true なら参加者の連続投稿の制限をなくす）
+    private(set) var commentControl = true
+
+    // Option を押しながらクリックしたコメントのスターを付ける・外す（サーバーから届いた結果で表示する）
+    func toggleStar(commentID: String) {
+        socket.emit("star comment", ["comment_id": commentID, "starred": !overlay.isStarred(commentID), "source": "overlay"])
+    }
+
     func setCommentControl(_ unrestricted: Bool) {
+        commentControl = unrestricted
         socket.emit("deactivate_comment_control", ["key": "dummy", "control": unrestricted])
     }
 
@@ -153,8 +172,8 @@ final class RoomSession {
         if let hidden, hidden >= 1 { return } // 隠しコマンド（1以上）は表示しない
 
         // 表示に空きがあれば
-        guard overlay.addComment(comment, direction: data["text_direction"] as? String, fontSize: data["font_size"] as? String,
-                                 fill: fill, stroke: stroke) else { return }
+        guard overlay.addComment(comment, id: data["comment_id"] as? String, direction: data["text_direction"] as? String,
+                                 fontSize: data["font_size"] as? String, fill: fill, stroke: stroke) else { return }
 
         let flgSound = Self.bool(data["flg_sound"])
         // 数値でない・範囲外の値（nan や 1e300）を Int にすると強制終了するので、範囲を確かめてから変換する

@@ -18,6 +18,8 @@ enum AppConfig {
         }
         return productionServer
     }()
+    // 本番以外（ローカルなど）につないでいるか。メニューバーに「ローカル」と出して取り違えないようにする
+    static let isProductionServer = serverURL == productionServer
 
     // バージョンは macos/VERSION で管理し、build.sh が Info.plist に書き込む
     // swift run で起動したとき（Info.plist がない）は VERSION ファイルを直接読む

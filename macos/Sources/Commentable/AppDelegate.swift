@@ -21,14 +21,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let archiver = LogArchiver()
     private let camera = CameraController()
     private let updateChecker = UpdateChecker()
-    private var cameraEnabled = false // 起動時は常に OFF（メニューから ON にする）
-    private var transcriber: AnyObject? // LiveTranscriber（macOS 26 以降）。起動時は常に OFF
+    private var cameraEnabled = false // 入室したときに、その部屋の前回の設定に合わせる
+    private var transcriber: AnyObject? // LiveTranscriber（macOS 26 以降）。入室したときに、その部屋の前回の設定に合わせる
     private var transcriptionStatus = "停止中"
     private var caption = CaptionText()
 
     // メニューの状態
     private var qrPosition: QRPosition = .topRight
-    private var commentControl = false
+    private var commentControl = true // 投稿制限解除（既定は制限なし）
     private var clock = false
     private var displayID: CGDirectDisplayID?
 
@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var cameraSettingsWindow: FloatingWindow?
     private var cameraSettingsObserver: NSObjectProtocol?
     private var aboutWindow: FloatingWindow?
+    private var roomListWindow: FloatingWindow?
     private var sharePickerWindow: FloatingWindow?
     private var shareWindow: AnyObject? // ShareWindowController（macOS 12.3 以降）
 
@@ -57,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         DispatchQueue.main.async {
             // --room <部屋名> で起動したときは入室のダイアログを出さない
-            guard let room = Self.roomArgument() ?? Dialogs.askRoomName() else {
+            guard let room = Self.roomArgument() ?? Dialogs.askRoomName(recentRooms: RoomSettingsStore.recentRooms()) else {
                 NSLog("user cancelled")
                 NSApp.terminate(nil)
                 return
@@ -74,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        saveRoomSettings() // カメラや文字起こしを止める前に、いまの状態を保存する
         stopTranscription()
         session?.stop()
         camera.stop()
@@ -86,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.terminate(nil)
             return
         }
+        saveRoomSettings() // 別の部屋に入り直すときは、それまでの部屋の設定を残す
         session?.stop()
         overlay.clearComments()
         overlay.setAdminMessage(show: false, text: "")
@@ -96,7 +99,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session.onJoinRejected = { [weak self] reason in
             DispatchQueue.main.async { self?.handleJoinRejected(reason) }
         }
+        // 入室できた部屋だけを「前に入った部屋」として一覧の先頭に出す
+        session.onJoined = { [weak self] in
+            DispatchQueue.main.async { self?.saveRoomSettings(entered: true) }
+        }
         self.session = session
+        applyRoomSettings(RoomSettingsStore.load(room))
         session.start()
 
         overlay.setQR(position: qrPosition, text: qrText())
@@ -131,10 +139,75 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    // ========== 部屋ごとの設定 ==========
+    // 前回その部屋で使っていた設定に戻す（保存していない項目は既定値。カメラの機種や表示位置は、保存していなければ今のまま）
+    private func applyRoomSettings(_ settings: RoomSettings?) {
+        qrPosition = settings?.qrPosition.flatMap(QRPosition.init(rawValue:)) ?? .topRight
+        commentControl = settings?.commentControl ?? true
+        session?.setCommentControl(commentControl)
+        clock = settings?.clock ?? false
+        overlay.setClock(clock)
+        sounds.isMuted = settings?.soundMuted ?? false
+        if let id = settings?.displayID, let screen = NSScreen.screens.first(where: { screenID($0) == id }) {
+            moveWindow(to: screen)
+        }
+
+        if let deviceID = settings?.cameraDeviceID { CameraSettings.deviceID = deviceID }
+        if let position = settings?.cameraPosition.flatMap(CameraPosition.init(rawValue:)) { CameraSettings.position = position }
+        if let size = settings?.cameraSize { CameraSettings.size = size }
+        if let segmentation = settings?.segmentation { CameraSettings.segmentation = segmentation }
+        if let quality = settings?.segmentationQuality.flatMap(SegmentationQuality.init(rawValue:)) { CameraSettings.segmentationQuality = quality }
+        applyCameraDisplaySettings()
+        let camera = (settings?.camera ?? false) && CameraSettings.deviceID != nil
+        if camera != cameraEnabled {
+            cameraEnabled = camera
+            toggleCamera(camera)
+        }
+
+        if let showCaptions = settings?.showCaptions { TranscriptionSettings.showCaptions = showCaptions }
+        if let style = settings?.captionStyle.flatMap(CaptionStyle.init(rawValue:)) { TranscriptionSettings.captionStyle = style }
+        overlay.captionStyle = TranscriptionSettings.captionStyle
+        let transcription = (settings?.transcription ?? false) && TranscriptionSettings.isSupported
+        if transcription != transcriptionEnabled { toggleTranscription() }
+    }
+
+    // いまの設定を入室中の部屋に保存する（entered なら最後に入った日時も更新する）
+    private func saveRoomSettings(entered: Bool = false) {
+        guard let room else { return }
+        var settings = RoomSettingsStore.load(room) ?? RoomSettings()
+        if entered { settings.lastEntered = Date() }
+        settings.qrPosition = qrPosition.rawValue
+        settings.commentControl = commentControl
+        settings.clock = clock
+        settings.soundMuted = sounds.isMuted
+        settings.displayID = displayID
+        settings.camera = cameraEnabled
+        settings.cameraDeviceID = CameraSettings.deviceID
+        settings.cameraPosition = CameraSettings.position.rawValue
+        settings.cameraSize = CameraSettings.size
+        settings.segmentation = CameraSettings.segmentation
+        settings.segmentationQuality = CameraSettings.segmentationQuality.rawValue
+        settings.transcription = transcriptionEnabled
+        settings.showCaptions = TranscriptionSettings.showCaptions
+        settings.captionStyle = TranscriptionSettings.captionStyle.rawValue
+        RoomSettingsStore.save(settings, for: room)
+    }
+
+    private func openRoomListWindow() {
+        roomListWindow?.close()
+        let window = FloatingWindow(title: "部屋の一覧", resizable: false,
+                                    content: RoomListView(currentRoom: room, onClose: { [weak self] in self?.roomListWindow?.close() }))
+        roomListWindow = window
+        window.present()
+    }
+
     // ========== メインウィンドウ ==========
     private func createWindow() {
         let screen = NSScreen.screens.first ?? NSScreen.main!
-        window = NSWindow(contentRect: screen.visibleFrame, styleMask: [.borderless], backing: .buffered, defer: false)
+        // Option を押しながらコメントをクリックしたときも、このアプリが前面に出ない（スライドのアプリのキー操作を奪わない）ようにパネルにする
+        let panel = NSPanel(contentRect: screen.visibleFrame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.hidesOnDeactivate = false
+        window = panel
         window.title = "commentable-desktop"
         window.isOpaque = false
         window.backgroundColor = .clear
@@ -144,6 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.isReleasedWhenClosed = false
         overlay = OverlayGroup(main: OverlayView())
+        overlay.main.onCommentClick = { [weak self] id in self?.session?.toggleStar(commentID: id) }
         window.contentView = overlay.main
         moveWindow(to: screen)
     }
@@ -211,7 +285,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.terminate(nil)
             return
         }
-        guard let newRoom = Dialogs.askRoomName() else {
+        guard let newRoom = Dialogs.askRoomName(recentRooms: RoomSettingsStore.recentRooms().filter { $0 != room }) else {
             NSApp.terminate(nil)
             return
         }
@@ -335,7 +409,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if self.cameraEnabled, let deviceID = CameraSettings.deviceID {
                 self.applyCameraDisplaySettings()
                 self.camera.start(deviceID: deviceID)
+            } else {
+                // カメラを選ばずに閉じたときは OFF に戻す（メニューの表示と実際を合わせる）
+                self.cameraEnabled = false
             }
+            self.saveRoomSettings()
         }
         cameraSettingsWindow = window
         window.present()
@@ -446,6 +524,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = Self.statusIcon()
         item.button?.toolTip = "commentable-desktop"
+        if !AppConfig.isProductionServer {
+            item.button?.title = "ローカル"
+            item.button?.imagePosition = .imageLeft
+            item.button?.toolTip = "commentable-desktop（\(AppConfig.serverURL) に接続）"
+        }
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
@@ -476,11 +559,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuDidClose(_ menu: NSMenu) {
-        if menu === statusItem?.menu { overlay.main.setQRSuppressed(false) }
+        guard menu === statusItem?.menu else { return }
+        overlay.main.setQRSuppressed(false)
+        // 選んだ項目の処理はメニューが閉じた後に動くので、その後で部屋の設定を保存する
+        DispatchQueue.main.async { [weak self] in self?.saveRoomSettings() }
     }
 
     private func buildStatusMenu() -> [NSMenuItem] {
         var items: [NSMenuItem] = []
+        if !AppConfig.isProductionServer {
+            items.append(disabled("⚠︎ 本番ではないサーバー（\(AppConfig.serverURL)）に接続中"))
+            items.append(.separator())
+        }
         items.append(ActionMenuItem("投稿ページを開く") { [weak self] in self?.open(self?.postPageURL()) })
         items.append(ActionMenuItem("投稿ページURLをコピー") { [weak self] in
             guard let url = self?.postPageURL() else { return }
@@ -524,13 +614,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         items.append(ActionMenuItem("アンケート...") { [weak self] in self?.openSurveyWindow() })
         items.append(ActionMenuItem("授業ログのフォルダを開く") { LogArchiver.openFolder() })
         items.append(submenu("配信者の鍵", buildHostKeyMenu()))
+        items.append(ActionMenuItem("部屋の一覧を整理...") { [weak self] in self?.openRoomListWindow() })
         items.append(ActionMenuItem("ダッシュボード") { [weak self] in self?.open(self?.dashboardURL()) })
         // 授業ログはブラウザ内で読み込むので、トークンは渡さない
         items.append(ActionMenuItem("授業参画度") { [weak self] in
             self?.open(URL(string: "\(AppConfig.serverURL)/engagement/"))
         })
-        items.append(submenu("カメラ", buildCameraMenu()))
-        items.append(submenu("文字起こし（字幕）", buildTranscriptionMenu()))
+        // サブメニューを開かなくても、いまオンかオフかが分かるように見出しに状態を出す
+        items.append(submenu("カメラ：\(cameraEnabled ? "ON" : "OFF")", buildCameraMenu()))
+        items.append(submenu(TranscriptionSettings.isSupported ? "文字起こし（字幕）：\(transcriptionEnabled ? "ON" : "OFF")" : "文字起こし（字幕）",
+                             buildTranscriptionMenu()))
         items.append(.separator())
         items.append(disabled("バージョン \(AppConfig.version)"))
         if let ready = updateChecker.ready {
@@ -570,11 +663,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return [disabled("macOS 26 以降で使えます")]
         }
         return [
-            ActionMenuItem("文字起こしON/OFF", checked: transcriptionEnabled) { [weak self] in self?.toggleTranscription() },
+            ActionMenuItem(transcriptionEnabled ? "文字起こしをオフにする" : "文字起こしをオンにする") { [weak self] in self?.toggleTranscription() },
             ActionMenuItem("字幕を表示", checked: TranscriptionSettings.showCaptions) { [weak self] in
                 TranscriptionSettings.showCaptions.toggle()
                 self?.showCaption()
             },
+            submenu("字幕の表示方法", CaptionStyle.allCases.map { style in
+                ActionMenuItem(style.label, checked: TranscriptionSettings.captionStyle == style) { [weak self] in
+                    TranscriptionSettings.captionStyle = style
+                    self?.overlay.captionStyle = style
+                }
+            }),
             .separator(),
             disabled(transcriptionStatus),
             disabled("音声はこの Mac の中で認識し、外部には送りません"),
@@ -584,7 +683,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func buildCameraMenu() -> [NSMenuItem] {
         let segmentationItems: [NSMenuItem] = [
-            ActionMenuItem("人物切り抜きON/OFF", checked: CameraSettings.segmentation) { [weak self] in
+            ActionMenuItem("人物切り抜きを使う", checked: CameraSettings.segmentation) { [weak self] in
                 CameraSettings.segmentation.toggle()
                 self?.applyCameraDisplaySettings()
             },
@@ -597,7 +696,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let positions: [(String, CameraPosition)] = [("左上", .topLeft), ("右上", .topRight), ("左下", .bottomLeft), ("右下", .bottomRight), ("中央", .center)]
         return [
-            ActionMenuItem("カメラON/OFF", checked: cameraEnabled) { [weak self] in
+            ActionMenuItem(cameraEnabled ? "カメラをオフにする" : "カメラをオンにする") { [weak self] in
                 guard let self else { return }
                 self.cameraEnabled.toggle()
                 self.toggleCamera(self.cameraEnabled)
