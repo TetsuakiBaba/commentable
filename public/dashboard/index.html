@@ -178,7 +178,7 @@
                     </p>
                     <p class="mb-2">このアプリケーションは以下の機能でChromeブラウザが必要です:</p>
                     <ul>
-                        <li>LM Studioへのデータ送信</li>
+                        <li>AI（LM Studio / Claude）へのデータ送信</li>
                     </ul>
                     <p class="text-danger mb-0">
                         <i class="bi bi-info-circle"></i>
@@ -246,21 +246,61 @@
                                 </div>
                                 <hr>
                                 <div class="input-group mb-3">
-                                    <span class="input-group-text">LM Studio URL</span>
-                                    <input class="form-control" type="text" id="text_lm_studio_url"
-                                        value="http://127.0.0.1:1234/v1">
-                                    <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
+                                    <span class="input-group-text">接続先</span>
+                                    <select class="form-select" id="select_ai_provider">
+                                        <option value="lmstudio" selected>LM Studio（ローカル）</option>
+                                        <option value="claude">Claude（Anthropic API）</option>
+                                    </select>
                                 </div>
 
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">モデル</span>
-                                    <select class="form-select" id="select_lm_studio_model">
-                                        <option value="">LM Studio で読み込み中のモデル</option>
-                                    </select>
-                                    <button class="btn btn-outline-secondary" id="button_refresh_lm_studio_models"
-                                        title="モデル一覧を取得">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
+                                <div id="lm_studio_settings">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">LM Studio URL</span>
+                                        <input class="form-control" type="text" id="text_lm_studio_url"
+                                            value="http://127.0.0.1:1234/v1">
+                                        <button class="btn btn-outline-secondary" id="button_test_lm_studio">テスト</button>
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">モデル</span>
+                                        <select class="form-select" id="select_lm_studio_model">
+                                            <option value="">LM Studio で読み込み中のモデル</option>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" id="button_refresh_lm_studio_models"
+                                            title="モデル一覧を取得">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="claude_settings" style="display: none;">
+                                    <div class="input-group mb-1">
+                                        <span class="input-group-text">API キー</span>
+                                        <input class="form-control" type="password" id="text_anthropic_api_key"
+                                            placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+                                        <button class="btn btn-outline-secondary" id="button_test_claude">テスト</button>
+                                        <button class="btn btn-outline-secondary" id="button_clear_anthropic_api_key"
+                                            title="このブラウザに保存したキーを消す">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="text-muted small mb-3">
+                                        キーはこのブラウザにだけ保存され、Commentable のサーバーを通らずに Anthropic へ直接送られます。
+                                        共用の PC では使い終わったら消してください。
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">モデル</span>
+                                        <select class="form-select" id="select_claude_model">
+                                            <option value="claude-opus-5-5" selected>claude-opus-5-5</option>
+                                            <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
+                                            <option value="claude-haiku-5-5">claude-haiku-5-5</option>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" id="button_refresh_claude_models"
+                                            title="モデル一覧を取得">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
 
@@ -785,7 +825,7 @@
                                 <canvas id="contextStatsChart" style="max-height: 300px;"></canvas>
                                 <div class="text-muted small mt-2">
                                     <i class="bi bi-info-circle"></i>
-                                    LM Studioに送信するトークン数（推定）がリアルタイムで記録されます
+                                    AI に送信するトークン数（推定）がリアルタイムで記録されます
                                 </div>
                             </div>
                         </div>
@@ -838,6 +878,8 @@
         let isAutoPosting = false;
         let autoPostingTimer = null;
         let lmStudioUrl = 'http://127.0.0.1:1234/v1';
+        // Claude（Anthropic API）の API キーを保存する localStorage のキー（ほかの設定とは分けて持つ）
+        const ANTHROPIC_API_KEY_STORAGE_KEY = 'anthropicApiKey';
         // CSV に書き出す値。Excel などで開いたときに数式として実行されないように、
         // = + - @ などで始まる文字列の先頭に ' を付ける（-1.5 のような数値はそのまま）
         function csvSafe(value) {
@@ -902,6 +944,12 @@
         const buttonTestLMStudio = document.getElementById('button_test_lm_studio');
         const selectLmStudioModel = document.getElementById('select_lm_studio_model');
         const buttonRefreshLmStudioModels = document.getElementById('button_refresh_lm_studio_models');
+        const selectAiProvider = document.getElementById('select_ai_provider');
+        const textAnthropicApiKey = document.getElementById('text_anthropic_api_key');
+        const buttonTestClaude = document.getElementById('button_test_claude');
+        const buttonClearAnthropicApiKey = document.getElementById('button_clear_anthropic_api_key');
+        const selectClaudeModel = document.getElementById('select_claude_model');
+        const buttonRefreshClaudeModels = document.getElementById('button_refresh_claude_models');
 
         // 自動投稿関連のDOM要素
         const checkboxAutoPosting = document.getElementById('checkbox_auto_posting');
@@ -1617,6 +1665,8 @@
             ['checkbox_auto_response', 'change'],
             ['text_lm_studio_url', 'change'],
             ['select_lm_studio_model', 'change'],
+            ['select_ai_provider', 'change'],
+            ['select_claude_model', 'change'],
             ['select_text_direction', 'change'],
             ['input_text_color', 'change'],
             ['input_conversation_history_limit', 'change'],
@@ -1637,6 +1687,7 @@
             'soundTriggers',
             'autoChimeSettings',
             'dashboardPostSettings',
+            ANTHROPIC_API_KEY_STORAGE_KEY,
             'dashboard_card_order',
             'dashboard_card_collapse_state'
         ];
@@ -1649,7 +1700,7 @@
             if (el.type === 'checkbox') {
                 el.checked = !!value;
             } else {
-                // 選択肢を後から読み込むもの（LM Studio のモデル）は、保存された値の選択肢を先に作っておく
+                // 選択肢を後から読み込むもの（LM Studio や Claude のモデル）は、保存された値の選択肢を先に作っておく
                 if (el.tagName === 'SELECT' && value && ![...el.options].some(option => option.value === value)) {
                     el.add(new Option(value, value));
                 }
@@ -2337,7 +2388,7 @@
                 } else {
                     // その他のモードの場合はテキストコメントを生成
                     const prompt = generateAutoPostPrompt(postingStyle);
-                    const aiResponse = await sendToLMStudio(prompt);
+                    const aiResponse = await sendToAI(prompt);
 
                     // 投稿
                     setTimeout(() => {
@@ -2595,7 +2646,7 @@
                 } else {
                     // その他のモードの場合はテキストコメントを生成
                     const prompt = generateAutoPostPrompt(postingStyle);
-                    const aiResponse = await sendToLMStudio(prompt);
+                    const aiResponse = await sendToAI(prompt);
 
                     setTimeout(() => {
                         sendComment(aiResponse, 'auto'); // 自動投稿（テスト）
@@ -2628,7 +2679,7 @@
 
                 setTimeout(async () => {
                     try {
-                        const aiResponse = await sendToLMStudio(text);
+                        const aiResponse = await sendToAI(text);
                         setTimeout(() => {
                             sendComment(aiResponse, 'speech'); // 音声由来であることを明示
                             // AIの応答も会話履歴に追加
@@ -2884,22 +2935,114 @@
             };
         }
 
-        // LM Studio 接続テスト
-        async function testLMStudioConnection() {
-            const testUrl = textLmStudioUrl.value.trim();
-            addLog(`LM Studio 接続テストを開始: ${testUrl}`, 'info');
+        // ========== AI の接続先（LM Studio / Claude） ==========
+        const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
+        const ANTHROPIC_VERSION = '2026-10-21';
+        // モデル一覧を取得できないときに出す候補（先頭が既定）
+        const CLAUDE_FALLBACK_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
+        // 断られた（stop_reason: refusal）ときにサーバー側で別のモデルに引き継げるモデル
+        const CLAUDE_SERVER_FALLBACK_MODELS = ['claude-fable-5-1', 'claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5-5'];
+        // effort（考える深さ）の low を使えるかどうか。モデル一覧の capabilities から作る
+        const claudeEffortSupport = new Map(CLAUDE_FALLBACK_MODELS.map(id => [id, true]));
 
+        function currentAiProvider() {
+            return selectAiProvider.value === 'claude' ? 'claude' : 'lmstudio';
+        }
+
+        function aiProviderLabel(provider = currentAiProvider()) {
+            return provider === 'claude' ? 'Claude' : 'LM Studio';
+        }
+
+        function updateAiProviderVisibility() {
+            const isClaude = currentAiProvider() === 'claude';
+            document.getElementById('lm_studio_settings').style.display = isClaude ? 'none' : '';
+            document.getElementById('claude_settings').style.display = isClaude ? '' : 'none';
+        }
+
+        // API キーはこのブラウザの localStorage にだけ置く（サーバーには送らない）
+        function loadAnthropicApiKey() {
             try {
-                const response = await sendToLMStudio('テスト接続です。120文字以内で簡単に挨拶してください。');
-                addLog('LM Studio 接続テスト成功！', 'info');
-                alert('LM Studio への接続に成功しました！');
+                return localStorage.getItem(ANTHROPIC_API_KEY_STORAGE_KEY) || '';
             } catch (error) {
-                addLog(`LM Studio 接続テスト失敗: ${error.message}`, 'error');
-                alert(`LM Studio への接続に失敗しました: ${error.message}`);
+                return '';
             }
         }
 
-        // LM Studio のモデル一覧を取得してセレクトに入れる（選んでいたモデルは一覧になくても残す）
+        function saveAnthropicApiKey(key) {
+            try {
+                if (key) {
+                    localStorage.setItem(ANTHROPIC_API_KEY_STORAGE_KEY, key);
+                } else {
+                    localStorage.removeItem(ANTHROPIC_API_KEY_STORAGE_KEY);
+                }
+            } catch (error) {
+                // 保存できなくても、このページを開いている間は入力欄のキーを使う
+            }
+        }
+
+        function anthropicHeaders() {
+            const key = textAnthropicApiKey.value.trim();
+            if (!key) throw new Error('Claude の API キーが入力されていません');
+            return {
+                'Content-Type': 'application/json',
+                'x-api-key': key,
+                'anthropic-version': ANTHROPIC_VERSION,
+                // ブラウザから直接呼ぶときに必要（キーはこのページを開いている人のもの）
+                'anthropic-dangerous-direct-browser-access': 'true'
+            };
+        }
+
+        // Anthropic API を呼ぶ。キーがまちがっているときなど、エラーの応答が CORS で読めず
+        // 「Failed to fetch」になることがあるので、考えられる原因を添える
+        async function fetchAnthropic(path, options = {}) {
+            try {
+                return await fetch(`${ANTHROPIC_API_URL}${path}`, options);
+            } catch (error) {
+                throw new Error(`${error.message}（API キーがまちがっているか、インターネットにつながっていない可能性があります）`);
+            }
+        }
+
+        // Anthropic API のエラー応答（{ type: 'error', error: { type, message } }）を読みやすくする
+        async function anthropicErrorMessage(response) {
+            const text = await response.text();
+            try {
+                const data = JSON.parse(text);
+                if (data.error && data.error.message) return `HTTP ${response.status} ${data.error.type}: ${data.error.message}`;
+            } catch (error) {
+                // JSON でなければそのまま返す
+            }
+            return `HTTP ${response.status}: ${text}`;
+        }
+
+        // 接続テスト（いま選んでいる接続先に短い挨拶を頼む）
+        async function testAIConnection() {
+            const label = aiProviderLabel();
+            const target = currentAiProvider() === 'claude' ? (selectClaudeModel.value || '') : textLmStudioUrl.value.trim();
+            addLog(`${label} 接続テストを開始: ${target}`, 'info');
+
+            try {
+                const response = await sendToAI('テスト接続です。120文字以内で簡単に挨拶してください。');
+                addLog(`${label} 接続テスト成功！ 応答: ${response}`, 'info');
+                alert(`${label} への接続に成功しました！\n\n${response}`);
+            } catch (error) {
+                addLog(`${label} 接続テスト失敗: ${error.message}`, 'error');
+                alert(`${label} への接続に失敗しました: ${error.message}`);
+            }
+        }
+
+        // 選択肢を入れ直す（選んでいたモデルは一覧になくても残す）
+        function fillModelSelect(select, ids, { emptyLabel = null, fallbackSelected = '' } = {}) {
+            const selected = select.value || fallbackSelected; // 取得中に復元・変更された値を使う
+            select.innerHTML = '';
+            if (emptyLabel !== null) select.add(new Option(emptyLabel, ''));
+            ids.forEach(id => select.add(new Option(id, id)));
+            if (selected && !ids.includes(selected)) {
+                select.add(new Option(`${selected}（一覧にありません）`, selected));
+            }
+            select.value = selected;
+        }
+
+        // LM Studio のモデル一覧を取得してセレクトに入れる
         // LM Studio の設定によって、読み込み済みのモデルだけ、またはダウンロード済みのモデルすべてが返る
         async function refreshLMStudioModels({ quiet = false } = {}) {
             const url = textLmStudioUrl.value.trim();
@@ -2907,15 +3050,8 @@
                 const response = await fetch(`${url}/models`, { headers: { 'Authorization': 'Bearer lm-studio' } });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                const selected = selectLmStudioModel.value; // 取得中に復元・変更された値を使う
                 const ids = (data.data || []).map(model => model.id).filter(id => id && !id.includes('embed'));
-
-                selectLmStudioModel.innerHTML = '<option value="">LM Studio で読み込み中のモデル</option>';
-                ids.forEach(id => selectLmStudioModel.add(new Option(id, id)));
-                if (selected && !ids.includes(selected)) {
-                    selectLmStudioModel.add(new Option(`${selected}（一覧にありません）`, selected));
-                }
-                selectLmStudioModel.value = selected;
+                fillModelSelect(selectLmStudioModel, ids, { emptyLabel: 'LM Studio で読み込み中のモデル' });
                 addLog(`LM Studio のモデルを${ids.length}個取得しました`, 'info');
             } catch (error) {
                 // 起動時は LM Studio が動いていないことも多いので、ボタンを押したときだけ知らせる
@@ -2924,95 +3060,179 @@
             }
         }
 
-        // LM Studio に API リクエストを送信
-        async function sendToLMStudio(message) {
+        // Claude のモデル一覧を Models API（GET /v1/models）から取得してセレクトに入れる
+        // 取得できないとき（キーが未入力、通信できない など）は最新のモデルを候補に出す
+        async function refreshClaudeModels({ quiet = false } = {}) {
+            if (!textAnthropicApiKey.value.trim()) {
+                fillModelSelect(selectClaudeModel, CLAUDE_FALLBACK_MODELS, { fallbackSelected: CLAUDE_FALLBACK_MODELS[0] });
+                if (!quiet) alert('Claude の API キーを入力してください');
+                return;
+            }
             try {
-                addLog(`LM Studio にメッセージ送信: ${message}`, 'info');
-                updateStatus('processing', 'AI処理中...');
+                const models = [];
+                let afterId = null;
+                do {
+                    const params = new URLSearchParams({ limit: '1000' });
+                    if (afterId) params.set('after_id', afterId);
+                    const response = await fetchAnthropic(`/models?${params}`, { headers: anthropicHeaders() });
+                    if (!response.ok) throw new Error(await anthropicErrorMessage(response));
+                    const data = await response.json();
+                    models.push(...(data.data || []));
+                    afterId = data.has_more ? data.last_id : null;
+                } while (afterId);
 
-                // LM Studio の接続テスト
-                addLog(`接続先: ${lmStudioUrl}`, 'info');
+                // 新しいモデルから順に返ってくる
+                models.forEach(model => {
+                    const effort = model.capabilities && model.capabilities.effort;
+                    claudeEffortSupport.set(model.id, !!(effort && effort.supported && effort.low && effort.low.supported));
+                });
+                const ids = models.map(model => model.id).filter(Boolean);
+                fillModelSelect(selectClaudeModel, ids, { fallbackSelected: ids.includes(CLAUDE_FALLBACK_MODELS[0]) ? CLAUDE_FALLBACK_MODELS[0] : ids[0] });
+                addLog(`Claude のモデルを${ids.length}個取得しました`, 'info');
+            } catch (error) {
+                fillModelSelect(selectClaudeModel, CLAUDE_FALLBACK_MODELS, { fallbackSelected: CLAUDE_FALLBACK_MODELS[0] });
+                addLog(`Claude のモデル一覧を取得できませんでした（最新のモデルを候補に出します）: ${error.message}`, quiet ? 'info' : 'error');
+                if (!quiet) alert(`Claude のモデル一覧を取得できませんでした: ${error.message}\n最新のモデルを候補に出します。`);
+            }
+        }
+
+        function refreshModelsForCurrentProvider(options) {
+            return currentAiProvider() === 'claude' ? refreshClaudeModels(options) : refreshLMStudioModels(options);
+        }
+
+        // LM Studio（OpenAI 互換の API）に送る
+        async function requestLMStudio(prompts, userContent) {
+            const messages = [];
+            // システムプロンプト（事前知識）
+            if (prompts.system) messages.push({ role: 'system', content: prompts.system });
+            // アシスタントプロンプト（過去ログ）
+            if (prompts.assistant) messages.push({ role: 'assistant', content: prompts.assistant });
+            // ユーザープロンプト（指示 + 今回のメッセージ）
+            messages.push({ role: 'user', content: userContent });
+
+            logOutgoingMessages(messages);
+            addLog(`接続先: ${textLmStudioUrl.value.trim()}`, 'info');
+
+            const response = await fetch(`${textLmStudioUrl.value.trim()}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer lm-studio'
+                },
+                body: JSON.stringify({
+                    model: selectLmStudioModel.value || 'local-model', // local-model は読み込み中のモデル
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 4096
+                })
+            });
+
+            addLog(`HTTP レスポンス状態: ${response.status}`, 'info');
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                addLog(`HTTP エラー詳細: ${errorText}`, 'error');
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+
+            const data = await response.json();
+            addLog(`レスポンスデータ: ${JSON.stringify(data)}`, 'info');
+
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                throw new Error('Invalid response format from LM Studio');
+            }
+            return data.choices[0].message.content;
+        }
+
+        // Claude（Anthropic の Messages API）に送る
+        async function requestClaude(prompts, userContent) {
+            const model = selectClaudeModel.value || CLAUDE_FALLBACK_MODELS[0];
+            // Messages API の会話は user から始める必要があるので、過去ログは今回の指示と一緒に user として渡す
+            const content = prompts.assistant ? `${prompts.assistant}\n\n${userContent}` : userContent;
+            const body = {
+                model: model,
+                max_tokens: 16000,
+                messages: [{ role: 'user', content: content }]
+            };
+            if (prompts.system) body.system = prompts.system;
+            // 120文字以内の短いコメントなので、考える深さは浅くして早く返す
+            if (claudeEffortSupport.get(model)) body.output_config = { effort: 'low' };
+
+            const headers = anthropicHeaders();
+            // 安全のための判定で断られたとき、サーバー側で別のモデルに引き継いでもらう
+            if (CLAUDE_SERVER_FALLBACK_MODELS.includes(model)) {
+                headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+                body.fallbacks = 'default';
+            }
+
+            logOutgoingMessages([{ role: 'system', content: body.system || '' }, ...body.messages]);
+            addLog(`接続先: Claude（${model}）`, 'info');
+
+            const response = await fetchAnthropic('/messages', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(body)
+            });
+
+            addLog(`HTTP レスポンス状態: ${response.status}`, 'info');
+
+            if (!response.ok) {
+                const errorMessage = await anthropicErrorMessage(response);
+                addLog(`HTTP エラー詳細: ${errorMessage}`, 'error');
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            if (data.usage) {
+                addLog(`Claude のトークン数: 入力 ${data.usage.input_tokens} / 出力 ${data.usage.output_tokens}（${data.model}）`, 'info');
+            }
+
+            // 断られたときは本文を読まない
+            if (data.stop_reason === 'refusal') {
+                const category = data.stop_details && data.stop_details.category;
+                throw new Error(`Claude が応答を断りました${category ? `（${category}）` : ''}`);
+            }
+
+            // 返事は text ブロックに入っている（thinking ブロックなどは使わない）
+            const text = (data.content || []).filter(block => block.type === 'text').map(block => block.text).join('');
+            if (!text.trim()) {
+                throw new Error(`Claude の応答に本文がありません（stop_reason: ${data.stop_reason}）`);
+            }
+            return text;
+        }
+
+        function logOutgoingMessages(messages) {
+            // トークン数を計算して記録（文字数 ÷ 0.75 で推定）
+            const totalCharLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+            const estimatedTokens = Math.round(totalCharLength / 0.75);
+            updateContextStats(estimatedTokens);
+            addLog(`推定トークン数: ${estimatedTokens} (文字数: ${totalCharLength})`, 'info');
+
+            addLog(`送信メッセージ数: ${messages.length}`, 'info');
+            console.log(`=== ${aiProviderLabel()}に送信するメッセージ ===`);
+            console.log(JSON.stringify(messages, null, 2));
+            console.log('====================================');
+        }
+
+        // AI（いま選んでいる接続先）にメッセージを送り、120文字以内の返事を返す
+        async function sendToAI(message) {
+            const provider = currentAiProvider();
+            const label = aiProviderLabel(provider);
+            try {
+                addLog(`${label} にメッセージ送信: ${message}`, 'info');
+                updateStatus('processing', 'AI処理中...');
 
                 // プロンプトを構築（system, assistant, userを分離）
                 const prompts = buildPrompt();
 
-                // メッセージ配列を構築
-                const messages = [];
+                // ユーザープロンプト（指示 + 今回のメッセージ）。会話履歴がない場合は今回のメッセージのみ
+                const userContent = prompts.user ? prompts.user + '\n\n' + message : message;
 
-                // システムプロンプト（事前知識）を追加
-                if (prompts.system) {
-                    messages.push({
-                        role: 'system',
-                        content: prompts.system
-                    });
-                }
+                const aiResponse = provider === 'claude'
+                    ? await requestClaude(prompts, userContent)
+                    : await requestLMStudio(prompts, userContent);
 
-                // アシスタントプロンプト（過去ログ）を追加
-                if (prompts.assistant) {
-                    messages.push({
-                        role: 'assistant',
-                        content: prompts.assistant
-                    });
-                }
-
-                // ユーザープロンプト（指示 + 今回のメッセージ）を追加
-                let userContent = '';
-                if (prompts.user) {
-                    // 会話履歴がある場合は指示を含める
-                    userContent = prompts.user + '\n\n' + message;
-                } else {
-                    // 会話履歴がない場合は今回のメッセージのみ
-                    userContent = message;
-                }
-
-                messages.push({
-                    role: 'user',
-                    content: userContent
-                });
-
-                // トークン数を計算して記録（文字数 ÷ 0.75 で推定）
-                const totalCharLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
-                const estimatedTokens = Math.round(totalCharLength / 0.75);
-                updateContextStats(estimatedTokens);
-                addLog(`推定トークン数: ${estimatedTokens} (文字数: ${totalCharLength})`, 'info');
-
-                addLog(`送信メッセージ数: ${messages.length}`, 'info');
-                console.log('=== LM Studioに送信するメッセージ ===');
-                console.log(JSON.stringify(messages, null, 2));
-                console.log('====================================');
-
-                const response = await fetch(`${textLmStudioUrl.value.trim()}/chat/completions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer lm-studio'
-                    },
-                    body: JSON.stringify({
-                        model: selectLmStudioModel.value || 'local-model', // local-model は読み込み中のモデル
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 4096
-                    })
-                });
-
-                addLog(`HTTP レスポンス状態: ${response.status}`, 'info');
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    addLog(`HTTP エラー詳細: ${errorText}`, 'error');
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                }
-
-                const data = await response.json();
-                addLog(`レスポンスデータ: ${JSON.stringify(data)}`, 'info');
-
-                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                    throw new Error('Invalid response format from LM Studio');
-                }
-
-                const aiResponse = data.choices[0].message.content;
-
-                addLog(`LM Studio からの応答: ${aiResponse}`, 'info');
+                addLog(`${label} からの応答: ${aiResponse}`, 'info');
 
                 // 文字数制限を適用（120文字以内に切り詰め）
                 let finalResponse = aiResponse.trim();
@@ -3041,10 +3261,10 @@
 
                 return finalResponse;
             } catch (error) {
-                addLog(`LM Studio エラー: ${error.message}`, 'error');
+                addLog(`${label} エラー: ${error.message}`, 'error');
 
                 // CORS エラーの場合の特別なメッセージ
-                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+                if (provider === 'lmstudio' && (error.message.includes('CORS') || error.message.includes('NetworkError'))) {
                     addLog('CORS エラーの可能性があります。LM Studio の設定を確認してください。', 'error');
                     addLog('LM Studio で CORS を有効にするか、プロキシサーバを使用してください。', 'info');
                 }
@@ -3103,7 +3323,7 @@
                 addLog(`「${aiName}」を検出しました。AI処理を開始します。`, 'info');
 
                 try {
-                    const aiResponse = await sendToLMStudio(data.comment);
+                    const aiResponse = await sendToAI(data.comment);
 
                     // AI の応答をサーバに送信
                     setTimeout(() => {
@@ -3286,7 +3506,7 @@
         });
 
         buttonTestLMStudio.addEventListener('click', () => {
-            testLMStudioConnection();
+            testAIConnection();
         });
 
         buttonRefreshLmStudioModels.addEventListener('click', () => {
@@ -3299,6 +3519,40 @@
 
         textLmStudioUrl.addEventListener('change', () => {
             refreshLMStudioModels({ quiet: true });
+        });
+
+        selectAiProvider.addEventListener('change', () => {
+            updateAiProviderVisibility();
+            refreshModelsForCurrentProvider({ quiet: true });
+            addLog(`AI の接続先: ${aiProviderLabel()}`, 'info');
+        });
+
+        buttonTestClaude.addEventListener('click', () => {
+            testAIConnection();
+        });
+
+        buttonRefreshClaudeModels.addEventListener('click', () => {
+            refreshClaudeModels();
+        });
+
+        selectClaudeModel.addEventListener('change', () => {
+            addLog(`Claude のモデル: ${selectClaudeModel.value}`, 'info');
+        });
+
+        textAnthropicApiKey.addEventListener('change', () => {
+            const key = textAnthropicApiKey.value.trim();
+            textAnthropicApiKey.value = key;
+            saveAnthropicApiKey(key);
+            addLog(key ? 'Claude の API キーをこのブラウザに保存しました' : 'Claude の API キーを消しました', 'info');
+            if (key) refreshClaudeModels({ quiet: true });
+        });
+
+        buttonClearAnthropicApiKey.addEventListener('click', () => {
+            if (!textAnthropicApiKey.value && !loadAnthropicApiKey()) return;
+            if (!confirm('このブラウザに保存した Claude の API キーを消しますか？')) return;
+            textAnthropicApiKey.value = '';
+            saveAnthropicApiKey('');
+            addLog('Claude の API キーを消しました', 'info');
         });
 
         // AI名前の変更監視
@@ -3447,9 +3701,12 @@
             captureTokenFromUrl();
 
             // 保存された設定を復元（部屋名は URL の指定を優先するので、この後で上書きされる）
+            // API キーはモデル一覧の取得に使うので、接続先などより先に戻しておく
+            textAnthropicApiKey.value = loadAnthropicApiKey();
             restoreDashboardSettings();
             document.getElementById('button_reset_settings').addEventListener('click', resetDashboardSettings);
-            refreshLMStudioModels({ quiet: true });
+            updateAiProviderVisibility();
+            refreshModelsForCurrentProvider({ quiet: true });
             renderStarList();
 
             // URL パラメータからルーム名を取得
