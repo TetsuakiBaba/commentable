@@ -39,6 +39,7 @@ function saveCommentLog(data, room) {
             timestamp,
             room,
             username: data.my_name || 'Anonymous',
+            display_name: data.display_name || '', // 参加者の履歴同期ではこちらを名前として返す（ID は返さない）
             comment: data.comment,
             emoji: data.flg_emoji || false,
             sound: data.flg_sound || false,
@@ -264,6 +265,7 @@ function str(value, max = 500) {
 // ========== コメントの検証 ==========
 // 受け取ったコメントは、知っている項目だけを型と長さを確かめてから記録・中継する
 // （以前は受け取ったものをそのまま全員に送っていたので、巨大なデータや想定外の型で受け取る側が落ちることがあった）
+const DISPLAY_NAME_MAX = 20;  // 表示名（投稿ページは 12 文字まで）
 const COMMENT_MAX = 300;      // 通常のコメント（投稿ページは 80 文字まで、AI の返事は 120 文字まで）
 const MATERIAL_MAX = 20000;   // 配布資料欄（hidden=100）。コードなどの長い文章を送るため
 const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
@@ -283,6 +285,7 @@ function sanitizeComment(data, socket) {
     const comment_data = {
         room_name: str(data.room_name, ROOM_NAME_MAX),
         my_name: str(data.my_name, 100),
+        display_name: str(data.display_name, DISPLAY_NAME_MAX).trim(),
         comment,
         flg_speech: !!data.flg_speech,
         flg_emoji: !!data.flg_emoji,
@@ -304,6 +307,8 @@ function sanitizeComment(data, socket) {
         comment_data.origin = data.origin;
         if (data.origin === 'ai') comment_data.trigger = str(data.trigger, 20) || undefined;
     }
+    // 配信者側（配信画面・ダッシュボード・AI）のコメントは、送り主の名前（管理人や AI の名前）をそのまま表示名にする
+    if (socket.isHost && !comment_data.display_name) comment_data.display_name = comment_data.my_name;
     return comment_data;
 }
 
@@ -347,7 +352,8 @@ function commentEventFields(data, socket) {
     const base = {
         actor,
         participant_id: actor === 'participant' ? (socket.participantId || socket.id) : null,
-        name: str(data.my_name, 100)
+        name: str(data.my_name, 100),
+        display_name: str(data.display_name, DISPLAY_NAME_MAX) || undefined
     };
     if (hidden === 100) {
         return { ...base, type: 'material', text };
@@ -498,8 +504,14 @@ io.on('connection', (socket) => {
         // 参加者のコメントには授業ログの ID を付けて配る（配信者がスターを付けるときに使う）
         if (event && event.type === 'comment' && event.actor === 'participant') data.comment_id = event.event_id;
 
-        // 全員に送信
-        socket.to(room).emit('comment', data);
+        // 部屋の全員に送る。参加者の ID（学修番号など）は配信者側にだけ届け、
+        // ほかの参加者には表示名だけを渡す（古い投稿ページは my_name を名前として表示するので、表示名に置き換える）
+        const forParticipants = socket.role === 'participant' ? { ...data, my_name: data.display_name } : data;
+        for (const id of io.sockets.adapter.rooms.get(room) || []) {
+            if (id === socket.id) continue;
+            const other = io.sockets.sockets.get(id);
+            if (other) other.emit('comment', other.isHost ? data : forParticipants);
+        }
     });
 
     // 配信者（配信画面・ダッシュボード）が参加者のコメントにスターを付ける・外す
@@ -519,6 +531,7 @@ io.on('connection', (socket) => {
             target_event_id: commentId,
             target_participant_id: target.participant_id,
             name: target.name,
+            display_name: target.display_name,
             text: target.text,
             starred
         });

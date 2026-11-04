@@ -69,14 +69,20 @@ function setup() {
         document.getElementById("select_font_size").value = savedFontSize;
     }
 
-    // 保存された名前をlocalStorageから読み込み
+    // 保存された ID（学修番号など）と表示名を localStorage から読み込み
+    // 以前の初期値（匿名 / Anonymous）が保存されていたら、未入力として扱う
+    const nameInput = document.getElementById('text_my_name');
+    const displayNameInput = document.getElementById('text_display_name');
     const savedName = localStorage.getItem('commentable_user_name');
-    if (savedName) {
-        document.getElementById('text_my_name').value = savedName;
+    if (savedName && nameInput && !CommentApp.isDefaultName(savedName)) {
+        nameInput.value = savedName;
+    }
+    const savedDisplayName = localStorage.getItem('commentable_display_name');
+    if (savedDisplayName && displayNameInput) {
+        displayNameInput.value = savedDisplayName.slice(0, displayNameInput.maxLength > 0 ? displayNameInput.maxLength : 12);
     }
 
-    // 名前入力フィールドの変更を監視してlocalStorageに保存
-    const nameInput = document.getElementById('text_my_name');
+    // ID 欄の変更を監視して localStorage に保存
     if (nameInput) {
         nameInput.addEventListener('input', function () {
             const name = this.value.trim();
@@ -84,15 +90,45 @@ function setup() {
                 localStorage.setItem('commentable_user_name', name);
             }
             updateNameWarning();
+            updateDisplayNameWarning();
         });
-        // 入力が確定したらサーバーに知らせる（授業ログで入退室・アンケート回答を本人に結びつけるため）
+        // 入力が確定したらサーバーに知らせ（授業ログで入退室・アンケート回答を本人に結びつけるため）、
+        // ID 欄を小さくまとめる
         nameInput.addEventListener('change', function () {
             if (socket && currentRoom) {
                 socket.emit('profile', { name: CommentApp.currentName() });
             }
+            setIdCollapsed(!CommentApp.isDefaultName(this.value));
+        });
+        nameInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.isComposing) this.blur();
         });
     }
+    document.getElementById('id_chip')?.addEventListener('click', () => {
+        setIdCollapsed(false);
+        nameInput?.focus();
+        nameInput?.select();
+    });
+    setIdCollapsed(nameInput ? !CommentApp.isDefaultName(nameInput.value) : false);
+
+    // 表示名欄の変更を監視して localStorage に保存（空にしたら消す）
+    if (displayNameInput) {
+        displayNameInput.addEventListener('input', function () {
+            const displayName = this.value.trim();
+            if (displayName) {
+                localStorage.setItem('commentable_display_name', displayName);
+            } else {
+                localStorage.removeItem('commentable_display_name');
+            }
+            updateDisplayNameWarning();
+        });
+        displayNameInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.isComposing) this.blur();
+        });
+    }
+
     updateNameWarning();
+    updateDisplayNameWarning();
     // 言語ファイルの読み込み後に初期値（Anonymous など）が入ることがあるので、そのあとにも確認する
     if (window.i18next) {
         window.i18next.on('initialized', () => setTimeout(updateNameWarning, 0));
@@ -380,7 +416,7 @@ async function newComment(data) {
         card_body.setAttribute("class", "card-body");
         let card_header = document.createElement("small");
         card_header.setAttribute("class", "card-header d-flex justify-content-between align-items-center");
-        card_header.textContent = `${data.my_name}`;
+        card_header.textContent = CommentApp.displayLabel(data);
         card.appendChild(card_header);
         let card_code;
         if (data.comment.match(/^https?:\/\//)) {
@@ -416,7 +452,7 @@ async function newComment(data) {
     }
 }
 
-// 名前が未入力・初期値のままなら注意を表示する
+// ID が未入力・初期値のままなら注意を表示する（ID 欄を開いて入力を促す）
 function updateNameWarning() {
     const input = document.getElementById('text_my_name');
     const warning = document.getElementById('name_warning');
@@ -424,6 +460,33 @@ function updateNameWarning() {
     const missing = CommentApp.isDefaultName(input.value);
     input.classList.toggle('is-invalid', missing);
     warning.classList.toggle('d-none', !missing);
+    if (missing && document.activeElement !== input) setIdCollapsed(false);
+}
+
+// ID 欄を「🔒 2310xxxx ✎」のボタンに小さくまとめる・開く
+function setIdCollapsed(collapsed) {
+    const editor = document.getElementById('id_editor');
+    const chip = document.getElementById('id_chip');
+    const chipText = document.getElementById('id_chip_text');
+    if (!editor || !chip) return;
+    editor.classList.toggle('d-none', collapsed);
+    chip.classList.toggle('d-none', !collapsed);
+    if (chipText) chipText.textContent = CommentApp.currentName();
+}
+
+// 表示名が ID と同じか、学修番号のように見える（数字が多い）ときは、みんなの画面に出ることを知らせる
+function looksLikeStudentID(displayName, id) {
+    const value = displayName.trim();
+    if (!value) return false;
+    if (id && value.toLowerCase() === id.trim().toLowerCase()) return true;
+    const digits = (value.match(/[0-9０-９]/g) || []).length;
+    return digits >= 5 && digits * 2 >= value.length;
+}
+
+function updateDisplayNameWarning() {
+    const warning = document.getElementById('display_name_warning');
+    if (!warning) return;
+    warning.classList.toggle('d-none', !looksLikeStudentID(CommentApp.currentDisplayName(), CommentApp.currentName()));
 }
 
 function pushedSendButton() {
@@ -445,7 +508,7 @@ function pushedSendButton() {
 
 // _hidden: 隠しコマンド、-1のときはなし、0以上がコマンドのidとなる。
 function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, _flg_sound, _id_sound, _hidden) {
-    const result = CommentApp.sendComment({ comment: _str_comment, myName: _str_my_name, emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
+    const result = CommentApp.sendComment({ comment: _str_comment, myName: _str_my_name, displayName: CommentApp.currentDisplayName(), emoji: _flg_emoji, sound: _flg_sound, idSound: _id_sound, hidden: _hidden });
     if (!result.ok) {
         if (result.reason === 'inappropriate') {
             // 入力はそのまま残して、直してから送り直してもらう
@@ -474,6 +537,7 @@ function sendComment(_str_comment, _flg_emoji, _str_my_name, _flg_img, _id_img, 
         const selfCommentData = {
             comment: _str_comment,
             my_name: _str_my_name,
+            display_name: CommentApp.currentDisplayName(),
             hidden: _hidden
         };
         // newComment関数を直接呼び出して同じDOM処理を実行

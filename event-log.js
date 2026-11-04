@@ -391,7 +391,7 @@ function createRouter({ legacyCommentLogFile, authorize }) {
 
     // 今の授業回のコメント（参加者ページの履歴同期用。従来と同じ形式）
     // 部屋名を知っていれば誰でも読めるので、過去の授業回の分（最大 21 日分）は返さず、
-    // 途中から参加した人が今の授業のコメントを見られる範囲にとどめる。接続 ID も返さない
+    // 途中から参加した人が今の授業のコメントを見られる範囲にとどめる。接続 ID と参加者の ID も返さない
     router.get('/api/rooms/:room/comments', (req, res) => {
         const room = req.params.room;
         const file = legacyCommentLogFile(room);
@@ -408,6 +408,9 @@ function createRouter({ legacyCommentLogFile, authorize }) {
                 const entry = JSON.parse(line);
                 if (Date.parse(entry.timestamp) < since) continue;
                 delete entry.socketid;
+                // ID（学修番号など）は返さず、表示名を名前として返す（表示名を記録する前のコメントは名前なし）
+                entry.username = entry.display_name || '';
+                delete entry.display_name;
                 lines.push(JSON.stringify(entry));
             } catch (error) {
                 // 壊れた行は飛ばす

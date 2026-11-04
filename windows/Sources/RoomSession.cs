@@ -158,7 +158,7 @@ sealed partial class RoomSession
         if (hidden >= 1) return; // 隠しコマンド（1以上）は表示しない
 
         // 表示に空きがあれば
-        if (!overlay.AddComment(comment, SocketIOClient.String(data["text_direction"]), SocketIOClient.String(data["font_size"]), fill, stroke)) return;
+        if (!overlay.AddComment(comment, DisplayName(data), SocketIOClient.String(data["text_direction"]), SocketIOClient.String(data["font_size"]), fill, stroke)) return;
 
         var flgSound = SocketIOClient.Bool(data["flg_sound"]);
         var soundID = SocketIOClient.Number(data["id_sound"]) is { } id ? (int?)(int)id : null;
@@ -209,6 +209,15 @@ sealed partial class RoomSession
     }
 
     private const int MaxCommentLength = 300;
+
+    // コメントに付ける表示名。参加者の文字のコメントだけに付ける（リアクションや配信者・AI のコメントには付けない）
+    // ID（my_name）は画面に出さない
+    private static string? DisplayName(JsonObject data)
+    {
+        if (data["origin"] is not null || SocketIOClient.Bool(data["flg_emoji"])) return null;
+        var name = SocketIOClient.String(data["display_name"])?.Trim();
+        return string.IsNullOrEmpty(name) ? null : Truncate(name, 20);
+    }
 
     // 先頭から max 文字（絵文字などを途中で切らないように、見た目の 1 文字ずつ数える）
     private static string Truncate(string text, int max)

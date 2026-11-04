@@ -172,7 +172,7 @@ final class RoomSession {
         if let hidden, hidden >= 1 { return } // 隠しコマンド（1以上）は表示しない
 
         // 表示に空きがあれば
-        guard overlay.addComment(comment, id: data["comment_id"] as? String, direction: data["text_direction"] as? String,
+        guard overlay.addComment(comment, name: Self.displayName(data), id: data["comment_id"] as? String, direction: data["text_direction"] as? String,
                                  fontSize: data["font_size"] as? String, fill: fill, stroke: stroke) else { return }
 
         let flgSound = Self.bool(data["flg_sound"])
@@ -215,6 +215,14 @@ final class RoomSession {
     }
 
     private static let maxCommentLength = 300
+
+    // コメントに付ける表示名。参加者の文字のコメントだけに付ける（リアクションや配信者・AI のコメントには付けない）
+    // ID（my_name）は画面に出さない
+    private static func displayName(_ data: [String: Any]) -> String? {
+        guard data["origin"] == nil, !bool(data["flg_emoji"]),
+              let name = (data["display_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        return String(name.prefix(20))
+    }
 
     // JSON の値を JavaScript の比較と同じように読む
     private static func number(_ value: Any?) -> Double? {

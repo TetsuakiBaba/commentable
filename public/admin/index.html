@@ -606,6 +606,13 @@
             }
         }
 
+        // 送り主の表示：「表示名 (ID)」。表示名がない（または ID と同じ）ときは ID だけ
+        function commentSender(comment) {
+            const id = comment.username || 'Anonymous';
+            const displayName = String(comment.display_name || '').trim();
+            return displayName && displayName !== id ? `${displayName} (${id})` : id;
+        }
+
         // 表示中のログのコメント（新しい順）
         let currentLogComments = [];
 
@@ -615,6 +622,7 @@
             const comments = keyword
                 ? currentLogComments.filter(comment =>
                     String(comment.username || '').toLowerCase().includes(keyword) ||
+                    String(comment.display_name || '').toLowerCase().includes(keyword) ||
                     String(comment.comment || '').toLowerCase().includes(keyword))
                 : currentLogComments;
             document.getElementById('modalCommentListCount').textContent = keyword
@@ -622,7 +630,7 @@
                 : `（全${currentLogComments.length.toLocaleString()}件・新しい順）`;
             document.getElementById('modalCommentList').innerHTML = comments.map(comment => `
                     <div class="comment-entry">
-                        <div class="comment-username">${escapeHtml(comment.username || 'Anonymous')}</div>
+                        <div class="comment-username">${escapeHtml(commentSender(comment))}</div>
                         <div>${escapeHtml(comment.comment || '')}</div>
                         <div class="comment-timestamp">
                             <i class="bi bi-clock"></i> ${new Date(comment.timestamp).toLocaleString('ja-JP')}

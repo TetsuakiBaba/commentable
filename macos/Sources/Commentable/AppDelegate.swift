@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var qrPosition: QRPosition = .topRight
     private var commentControl = true // 投稿制限解除（既定は制限なし）
     private var clock = false
+    private var showNames = true // コメントに参加者の表示名を付ける
     private var displayID: CGDirectDisplayID?
 
     private var surveyWindow: FloatingWindow?
@@ -147,6 +148,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session?.setCommentControl(commentControl)
         clock = settings?.clock ?? false
         overlay.setClock(clock)
+        showNames = settings?.showNames ?? true
+        overlay.showNames = showNames
         sounds.isMuted = settings?.soundMuted ?? false
         if let id = settings?.displayID, let screen = NSScreen.screens.first(where: { screenID($0) == id }) {
             moveWindow(to: screen)
@@ -179,6 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settings.qrPosition = qrPosition.rawValue
         settings.commentControl = commentControl
         settings.clock = clock
+        settings.showNames = showNames
         settings.soundMuted = sounds.isMuted
         settings.displayID = displayID
         settings.camera = cameraEnabled
@@ -606,6 +610,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let self else { return }
             self.clock.toggle()
             self.overlay.setClock(self.clock)
+        })
+        items.append(ActionMenuItem("コメントに表示名を付ける", checked: showNames) { [weak self] in
+            guard let self else { return }
+            self.showNames.toggle()
+            self.overlay.showNames = self.showNames
         })
         let clipboard = ActionMenuItem("クリップボード内容を配布資料欄に送信") { [weak self] in self?.sendClipboardToCodeSnippet() }
         clipboard.keyEquivalent = "v"

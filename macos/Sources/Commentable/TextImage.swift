@@ -174,6 +174,37 @@ extension TextImage {
     }
 }
 
+extension TextImage {
+    // コメントに付ける表示名のバッジ。日本語も入るので、大文字の高さではなく行の高さ（ascent + descent）で背景の大きさを決める
+    static func renderNameBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+        let attributed = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
+        let line = CTLineCreateWithAttributedString(attributed)
+        var ascent: CGFloat = 0, descent: CGFloat = 0
+        let textWidth = ceil(CTLineGetTypographicBounds(line, &ascent, &descent, nil))
+        let pad = CGSize(width: font.pointSize * 0.5, height: font.pointSize * 0.2)
+        let size = CGSize(width: textWidth + pad.width * 2, height: ceil(ascent + descent + pad.height * 2))
+
+        let pixelWidth = Int(ceil(size.width * scale))
+        let pixelHeight = Int(ceil(size.height * scale))
+        guard textWidth > 0,
+              let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        context.scaleBy(x: scale, y: scale)
+        context.setFillColor(background.cgColor)
+        let radius = size.height / 2 // 両端を丸くする（ピル型）
+        context.addPath(CGPath(roundedRect: CGRect(origin: .zero, size: size), cornerWidth: radius, cornerHeight: radius, transform: nil))
+        context.fillPath()
+
+        context.textPosition = CGPoint(x: pad.width, y: pad.height + descent)
+        CTLineDraw(line, context)
+
+        guard let image = context.makeImage() else { return nil }
+        return (image, size)
+    }
+}
+
 extension NSColor {
     // "#rgb" / "#rrggbb" / "#rrggbbaa"（読めなければ nil）
     convenience init?(hex: String?) {

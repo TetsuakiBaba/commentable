@@ -63,10 +63,38 @@
             <div class="col-lg-12 col-xl-6">
 
 
+                <!-- ID（学修番号など。先生だけが見る）と表示名（コメントと一緒に画面に流れる） -->
+                <div class="row g-2 mb-2">
+                    <div class="col-sm-6" id="id_editor">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill me-1"></i><span
+                                    data-i18n="id_label">ID</span></span>
+                            <input class="form-control" type="text" id="text_my_name" maxlength="100"
+                                autocomplete="off" data-i18n="[placeholder]id_placeholder" placeholder="学修番号など">
+                        </div>
+                        <div class="form-text" data-i18n="id_help">先生だけが見ます（出席・記録用）</div>
+                    </div>
+                    <div class="col">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-megaphone-fill me-1"></i><span
+                                    data-i18n="display_name_label">表示名</span></span>
+                            <input class="form-control" type="text" id="text_display_name" maxlength="12"
+                                autocomplete="nickname" data-i18n="[placeholder]display_name_placeholder"
+                                placeholder="ニックネーム（任意）">
+                        </div>
+                        <div class="form-text" data-i18n="display_name_help">コメントと一緒に画面に流れます（12文字まで）</div>
+                    </div>
+                </div>
+                <div id="display_name_warning" class="small text-warning-emphasis mb-2 d-none">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span data-i18n="display_name_warning">表示名はみんなの画面に出ます。学修番号は ID 欄に入れてください。</span>
+                </div>
                 <div class="input-group">
-                    <span class="input-group-text" id="name" data-i18n="name">名前</span>
-                    <input class="form-control" size="5" type="text" id="text_my_name" data-i18n="[value]anonymous"
-                        value="匿名"></input>
+                    <!-- ID を入れたあとは、ここに小さくまとめて表示する（押すと ID 欄を開く） -->
+                    <button type="button" class="btn btn-outline-secondary d-none" id="id_chip"
+                        data-i18n="[title]id_edit" title="ID を変更">
+                        <i class="bi bi-lock-fill"></i> <span id="id_chip_text"></span> <i class="bi bi-pencil"></i>
+                    </button>
                     <span class="input-group-text" id="icon_number_of_joined"><i class="fas fa-user-friends"></i></span>
                     <input class="form-control" size="1" type="text" id="text_number_of_joined"
                         placeholder="Number of connected user" readonly></input>
@@ -82,7 +110,7 @@
                 </div>
                 <div id="name_warning" class="small text-danger mt-1 d-none">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span data-i18n="name_warning">名前が未入力か、初期設定（匿名）のままです。授業では指定された名前（学修番号など）を入力してください。出席やアンケート回答の記録に使われます。</span>
+                    <span data-i18n="name_warning">ID が未入力です。授業では指定された ID（学修番号など）を入力してください。出席やアンケート回答の記録に使われます。</span>
                 </div>
                 <!-- Modal -->
                 <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false"

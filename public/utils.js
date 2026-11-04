@@ -76,7 +76,9 @@ async function syncCommentsFromServer(showAlert = true) {
           const emoji = entry.emoji ? '[emoji]' : '';
           const sound = entry.sound ? '[sound]' : '';
           // CommentApp.formatTimestampと同じ形式に合わせる
-          const formattedLine = `[${timestamp}] ${entry.comment}${emoji}${sound}[${entry.username}]\n`;
+          // サーバーは参加者の ID ではなく表示名を username として返す（表示名がなければ空 →「匿名」）
+          const username = window.CommentApp.displayLabel({ display_name: entry.username });
+          const formattedLine = `[${timestamp}] ${entry.comment}${emoji}${sound}[${username}]\n`;
           window.CommentApp.state.allHistory.push(formattedLine);
         } catch (e) {
           debugError(`Skipping invalid log entry at line ${index + 1}:`, line.substring(0, 100), e.message);

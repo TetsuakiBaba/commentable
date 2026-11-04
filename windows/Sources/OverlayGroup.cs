@@ -15,6 +15,7 @@ sealed class OverlayGroup(OverlayView main)
 
     private (QRPosition Position, string Text) qr = (QRPosition.None, "");
     private bool clock;
+    public bool ShowNames { get; set; } = true; // コメントに参加者の表示名を付けるか
     private (bool Show, string Text) adminMessage = (false, "");
     private BitmapSource? cameraFrame;
 
@@ -58,10 +59,11 @@ sealed class OverlayGroup(OverlayView main)
     }
 
     // 表示できたら true（同時に表示できる数は画面全体のオーバーレイで判断する）
-    public bool AddComment(string text, string? direction, string? fontSize, Color fill, Color stroke)
+    public bool AddComment(string text, string? name, string? direction, string? fontSize, Color fill, Color stroke)
     {
-        if (!Main.AddComment(text, direction, fontSize, fill, stroke)) return false;
-        foreach (var overlay in extras.ToList()) overlay.AddComment(text, direction, fontSize, fill, stroke);
+        if (!ShowNames) name = null;
+        if (!Main.AddComment(text, name, direction, fontSize, fill, stroke)) return false;
+        foreach (var overlay in extras.ToList()) overlay.AddComment(text, name, direction, fontSize, fill, stroke);
         return true;
     }
 

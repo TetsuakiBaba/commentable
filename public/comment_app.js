@@ -275,10 +275,11 @@
         return (performance.now() - state.lastSend) > state.intervalMs || state.deactivateControl;
     }
 
-    function buildData({ comment, myName, emoji = false, sound = false, idSound = 0, hidden = -1 }) {
+    function buildData({ comment, myName, displayName = '', emoji = false, sound = false, idSound = 0, hidden = -1 }) {
         return {
             key: undefined, // api key 使うなら後で注入
-            my_name: myName,
+            my_name: myName,           // ID（学修番号など）。配信者側にだけ届く
+            display_name: displayName, // 表示名。コメントと一緒に画面に流れる
             comment,
             flg_speech: state.speech,
             color_text: state.colorText,
@@ -294,10 +295,11 @@
 
     function recordSend() { state.lastSend = performance.now(); }
 
-    // コメントと名前に含まれる不適切な語（リアクションボタンの定型文は調べないが、名前は調べる）
+    // コメントと名前に含まれる不適切な語（リアクションボタンの定型文は調べないが、ID と表示名は調べる）
     function findInappropriate(params) {
         if (!global.WordFilter) return [];
-        const found = global.WordFilter.find(params.myName);
+        const found = global.WordFilter.find(params.myName || '');
+        found.push(...global.WordFilter.find(params.displayName || ''));
         if (!params.emoji) found.push(...global.WordFilter.find(params.comment));
         return [...new Set(found)];
     }
@@ -317,7 +319,7 @@
         let out = ts + data.comment;
         if (data.flg_emoji) out += '[emoji]';
         if (data.flg_sound) out += '[sound]';
-        out += '[' + data.my_name + ']\n';
+        out += '[' + displayLabel(data) + ']\n';
         appendHistory(out);
         recordSend();
         return { ok: true, data };
@@ -329,14 +331,14 @@
         let out = ts + data.comment;
         if (data.flg_emoji) out += '[emoji]';
         if (data.flg_sound) out += '[sound]';
-        out += '[' + data.my_name + ']\n';
+        out += '[' + displayLabel(data) + ']\n';
         appendHistory(out);
 
         // JSON形式でも保存（ダウンロード用）
         const jsonData = {
             timestamp: new Date().toISOString(),
             room: data.room || window.currentRoom || '',
-            username: data.my_name || '',
+            username: displayLabel(data),
             comment: data.comment || '',
             emoji: data.flg_emoji || false,
             sound: data.flg_sound || false,
@@ -346,6 +348,16 @@
     }
 
     function attachSocket(ioSocket) { state.socket = ioSocket; }
+
+    // 履歴欄に出す名前。参加者のコメントは表示名（学修番号は参加者には届かない）、配信者のコメントは送り主の名前
+    // 表示名がなければ「匿名」（ランキングにも数えない）
+    function anonymousLabel() {
+        return global.i18next ? String(global.i18next.t('anonymous')) : '匿名';
+    }
+    function displayLabel(data) {
+        const name = data.display_name !== undefined ? data.display_name : data.my_name;
+        return String(name || '').trim() || anonymousLabel();
+    }
 
     // ブラウザごとの匿名ID（授業ログで同じ人の投稿・アンケート回答を結びつけるのに使う）
     const PARTICIPANT_ID_KEY = 'commentable_voter_id';
@@ -367,6 +379,12 @@
     // 名前欄の値（授業ログで入退室・アンケート回答を本人に結びつけるのに使う）
     function currentName() {
         const input = document.getElementById('text_my_name');
+        return input ? input.value.trim() : '';
+    }
+
+    // 表示名欄の値（コメントと一緒に画面に流れる）
+    function currentDisplayName() {
+        const input = document.getElementById('text_display_name');
         return input ? input.value.trim() : '';
     }
 
@@ -392,6 +410,8 @@
         attachSocket,
         getParticipantId,
         currentName,
+        currentDisplayName,
+        displayLabel,
         isDefaultName,
         joinInfo,
         setEmojiFilter,

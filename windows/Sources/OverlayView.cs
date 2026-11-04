@@ -202,14 +202,33 @@ sealed class OverlayView : Grid
     public int ActiveCommentCount => commentsLayer.Children.Count;
 
     // 表示できたら true（同時に表示できるのは MaxComments 件まで）
-    public bool AddComment(string text, string? direction, string? fontSize, Color fill, Color stroke)
+    // name があれば、コメントの左上に表示名のバッジを付ける（コメントの色を反転させた角丸の札）
+    public bool AddComment(string text, string? name, string? direction, string? fontSize, Color fill, Color stroke)
     {
         if (ActiveCommentCount >= MaxComments || W <= 0 || H <= 0) return false;
 
         var baseSize = H / 20;
         var multiplier = fontSize == "small" ? 0.7 : fontSize == "large" ? 1.5 : 1.0;
-        var element = new OutlinedText(text, new TextStyle(baseSize * multiplier, fill, stroke, 5), PixelsPerDip);
-        if (element.IsEmpty) return false;
+        var commentText = new OutlinedText(text, new TextStyle(baseSize * multiplier, fill, stroke, 5), PixelsPerDip);
+        if (commentText.IsEmpty) return false;
+        FrameworkElement element = commentText;
+        if (!string.IsNullOrEmpty(name) && NameBadge(name, baseSize * multiplier * 0.45, fill, stroke) is { } badge)
+        {
+            var panel = new Canvas
+            {
+                Width = Math.Max(badge.Width + 5, commentText.Width),
+                Height = badge.Height + commentText.Height,
+                IsHitTestVisible = false,
+            };
+            // コメントの縁取りの余白の分だけ内側に寄せる
+            Canvas.SetLeft(badge, 5);
+            Canvas.SetTop(badge, 0);
+            Canvas.SetLeft(commentText, 0);
+            Canvas.SetTop(commentText, badge.Height);
+            panel.Children.Add(badge);
+            panel.Children.Add(commentText);
+            element = panel;
+        }
         double width = element.Width, height = element.Height;
 
         // 表示位置（p5 版と同じく標準サイズの文字幅で決める）
@@ -261,6 +280,28 @@ sealed class OverlayView : Grid
         }
         RemoveAfter(element, commentsLayer, CommentDuration);
         return true;
+    }
+
+    // 表示名のバッジ：背景をコメントの文字色、文字をコメントの縁取りの色にした両端の丸い札
+    private Border? NameBadge(string name, double fontSize, Color fill, Color stroke)
+    {
+        var text = new OutlinedText(name, new TextStyle(fontSize, stroke, null, 0, bold: true), PixelsPerDip);
+        if (text.IsEmpty) return null;
+        var padX = fontSize * 0.5;
+        var padY = fontSize * 0.1;
+        var height = text.Height + padY * 2;
+        var background = new SolidColorBrush(fill);
+        background.Freeze();
+        return new Border
+        {
+            Width = text.Width + padX * 2,
+            Height = height,
+            Padding = new Thickness(padX, padY, padX, padY),
+            CornerRadius = new CornerRadius(height / 2),
+            Background = background,
+            Child = text,
+            IsHitTestVisible = false,
+        };
     }
 
     // コメントコマンド =text("文字", x, y)（位置は画面に対する比率、10 秒間表示）

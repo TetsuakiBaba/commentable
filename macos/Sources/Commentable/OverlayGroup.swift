@@ -13,6 +13,7 @@ final class OverlayGroup {
     private var cameraFrame: CGImage?
     private var caption: (committed: String, volatile: String) = ("", "")
     private var starred = Set<String>() // スターを付けたコメントの ID
+    var showNames = true // コメントに参加者の表示名を付けるか
 
     var cameraPosition: CameraPosition = .topRight {
         didSet { all.forEach { $0.cameraPosition = cameraPosition } }
@@ -46,10 +47,11 @@ final class OverlayGroup {
 
     // 表示できたら true（同時に表示できる数は画面全体のオーバーレイで判断する）
     @discardableResult
-    func addComment(_ text: String, id: String?, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
+    func addComment(_ text: String, name: String?, id: String?, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
         let isStarred = id.map(starred.contains) ?? false
-        guard main.addComment(text, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) else { return false }
-        extras.forEach { $0.addComment(text, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) }
+        let name = showNames ? name : nil
+        guard main.addComment(text, name: name, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) else { return false }
+        extras.forEach { $0.addComment(text, name: name, id: id, starred: isStarred, direction: direction, fontSize: fontSize, fill: fill, stroke: stroke) }
         return true
     }
 

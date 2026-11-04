@@ -168,7 +168,8 @@ final class OverlayView: NSView {
 
     // 表示できたら true（同時に表示できるのは maxComments 件まで）
     @discardableResult
-    func addComment(_ text: String, id: String?, starred: Bool, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
+    // name があれば、コメントの左上に表示名のバッジを付ける（コメントの色を反転させた角丸の札）
+    func addComment(_ text: String, name: String?, id: String?, starred: Bool, direction: String?, fontSize: String?, fill: NSColor, stroke: NSColor) -> Bool {
         guard activeCommentCount < Self.maxComments, W > 0, H > 0 else { return false }
 
         let baseSize = H / 20
@@ -185,6 +186,14 @@ final class OverlayView: NSView {
         let layer = addImageLayer(rendered, to: commentsLayer)
         layer.name = id // スターを付けられるコメント（参加者のコメント）だけ ID がある
         if starred { setStar(on: layer, starred: true, animated: false) }
+        if let name, !name.isEmpty,
+           let badge = TextImage.renderNameBadge(name, font: TextImage.font(size: baseSize * multiplier * 0.45, bold: true),
+                                                 color: stroke, background: fill, scale: scale) {
+            let nameLayer = addImageLayer(badge, to: layer)
+            // コメントの縁取りの余白の分だけ内側に寄せる（レイヤーの座標は下が 0）
+            nameLayer.position = CGPoint(x: style.strokeWidth + badge.size.width / 2,
+                                         y: size.height + badge.size.height / 2)
+        }
         let duration = Self.commentDuration
 
         switch direction {

@@ -8,6 +8,7 @@ struct RoomSettings: Codable {
     var qrPosition: String?
     var commentControl: Bool? // 投稿制限解除（既定は制限なし）
     var clock: Bool?
+    var showNames: Bool? // コメントに参加者の表示名を付ける（既定は付ける）
     var soundMuted: Bool?
     var displayID: UInt32?
     var camera: Bool?

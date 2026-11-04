@@ -439,6 +439,7 @@ sealed class AppController(string[] args)
             clock = !clock;
             overlay.SetClock(clock);
         }, clock);
+        yield return Item("コメントに表示名を付ける", () => overlay.ShowNames = !overlay.ShowNames, overlay.ShowNames);
         var clipboard = Item("クリップボード内容を配布資料欄に送信", SendClipboardToCodeSnippet);
         clipboard.ShortcutKeyDisplayString = "Ctrl+Alt+V";
         yield return clipboard;

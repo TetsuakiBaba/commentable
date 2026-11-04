@@ -1221,9 +1221,21 @@
 
         const CLASS_TRIGGER_LABELS = { chime: '（チャイム）', recovered: '（後から記録）', merged: '（まとめて記録）' };
 
+        // 参加者の名前は「表示名 (ID)」、表示名がなければ ID だけ（配信者・AI は送り主の名前）
+        function participantLabel(ev, names) {
+            const id = ev.name || (ev.participant_id && names[ev.participant_id]) || '匿名';
+            const displayName = ev.actor === 'participant' ? (ev.display_name || '').trim() : '';
+            return displayName && displayName !== id ? `${displayName} (${id})` : id;
+        }
+
+        // AI に渡す名前。参加者の ID（学修番号など）は渡さず表示名を使う（AI が画面で呼びかけるため）
+        function speakerNameForAI(name, displayName, isParticipant) {
+            return (isParticipant ? displayName : (displayName || name)) || '匿名';
+        }
+
         // 授業ログの1件を表示用の1行にする（入退室は件数が多いので表示しない）
         function describeLogEvent(ev, names) {
-            const name = ev.name || (ev.participant_id && names[ev.participant_id]) || '匿名';
+            const name = participantLabel(ev, names);
             switch (ev.type) {
                 case 'session_start':
                     return `──── 授業回 ${ev.session_id} ────`;
@@ -1327,7 +1339,7 @@
                 body.className = 'small text-break';
                 const meta = document.createElement('div');
                 meta.className = 'text-muted';
-                meta.textContent = `${formatLocalTime(ev.t, viewingSession === 'all')}  ${ev.name || names[ev.participant_id] || '匿名'}`;
+                meta.textContent = `${formatLocalTime(ev.t, viewingSession === 'all')}  ${participantLabel(ev, names)}`;
                 const text = document.createElement('div');
                 text.textContent = ev.text;
                 body.append(meta, text);
@@ -2182,7 +2194,7 @@
                 } else if (ev.type === 'comment') {
                     conversationHistory.push({
                         type: 'user',
-                        content: `${ev.name || '匿名'}: ${ev.text}`,
+                        content: `${speakerNameForAI(ev.name, ev.display_name, ev.actor === 'participant')}: ${ev.text}`,
                         timestamp: ev.t,
                         speaker: ev.actor === 'host' ? '配信者' : '参加者'
                     });
@@ -3072,7 +3084,8 @@
 
         // 新しいコメントを受信したときの処理
         async function onNewComment(data) {
-            addLog(`受信: [${data.my_name}] ${data.comment}`, 'received');
+            const sender = data.display_name && data.display_name !== data.my_name ? `${data.display_name} (${data.my_name})` : data.my_name;
+            addLog(`受信: [${sender}] ${data.comment}`, 'received');
             await handleCommentForAssistant(data);
         }
 
@@ -3082,7 +3095,7 @@
             // すべてのコメントを会話履歴に追加（自分のコメント以外、絵文字のみは除外）
             if (data.my_name !== aiName && !data.flg_emoji) {
                 const speaker = data.origin === 'host' ? '配信者' : '参加者';
-                addToConversationHistory('user', `${data.my_name}: ${data.comment}`, speaker);
+                addToConversationHistory('user', `${speakerNameForAI(data.my_name, data.display_name, !data.origin)}: ${data.comment}`, speaker);
             }
 
             // AI名前が含まれているかチェック
