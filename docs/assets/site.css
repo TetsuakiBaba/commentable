@@ -1,0 +1,116 @@
+/*
+ * 読みやすさの調整（Carrd から書き出した main.css の上に重ねる）
+ * - 本文の色を濃くし、細字（300）をやめる。和文フォントを明示する
+ * - FAQ の回答の斜体（和文では読みにくい）をやめ、Q と A を見分けやすくする
+ * 色や配置は main.css のまま変えず、サイトの印象はそのままにする
+ */
+
+:root {
+	--font-ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Yu Gothic', 'Meiryo', sans-serif;
+	--text-body: #56546B;
+	--text-strong: #3A394D;
+	--accent: #4B6EF0;
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}
+
+/* 見出し（Manrope に和文フォントを続ける） */
+.text-component.style-1,
+.text-component.style-5,
+.text-component.style-6 {
+	font-family: 'Manrope', var(--font-ja);
+}
+
+.text-component.style-5 {
+	font-weight: 400;
+}
+
+.text-component.style-6 {
+	color: var(--text-strong);
+	font-weight: 500;
+}
+
+.text-component.style-2 {
+	font-family: 'Manrope', var(--font-ja);
+	font-weight: 500;
+}
+
+/* 本文と箇条書き */
+.text-component.style-4,
+.list-component.style-3 {
+	color: var(--text-body);
+	font-family: 'Roboto', var(--font-ja);
+	font-weight: 400;
+	letter-spacing: 0.03rem;
+}
+
+.text-component.style-4 a,
+.list-component.style-3 a {
+	color: var(--accent);
+	text-underline-offset: 0.2em;
+}
+
+.text-component.style-4 strong {
+	color: var(--text-strong);
+	font-weight: 600;
+}
+
+.text-component.style-8 {
+	color: #8C8AA0;
+	font-family: 'Roboto', var(--font-ja);
+	font-weight: 400;
+}
+
+.buttons-component.style-1 > li > a,
+.buttons-component.style-3 > li > a {
+	font-family: 'Manrope', var(--font-ja);
+	font-weight: 500;
+}
+
+/* 機能の対応環境などの小さな札 */
+.tag {
+	display: inline-block;
+	margin-left: 0.5em;
+	padding: 0 0.6em;
+	border-radius: 1em;
+	background-color: rgba(89, 126, 252, 0.12);
+	color: var(--accent);
+	font-family: 'Roboto', var(--font-ja);
+	font-size: 0.55em;
+	font-weight: 500;
+	letter-spacing: 0.03rem;
+	line-height: 1.8;
+	vertical-align: 0.3em;
+	white-space: nowrap;
+}
+
+/* FAQ：Q は濃く太く、A は斜体にせず少し字下げする */
+.faq span.p.q {
+	color: var(--text-strong);
+	font-weight: 600;
+	margin-top: 1.5rem;
+}
+
+.faq span.p.q:first-child {
+	margin-top: 0;
+}
+
+.faq span.p.a {
+	margin-top: 0.25rem;
+	padding-left: 1.4em;
+	text-indent: -1.4em;
+}
+
+/* 画像の下の説明 */
+.caption {
+	margin-top: 0.75rem !important;
+	color: #8C8AA0;
+	font-family: 'Roboto', var(--font-ja);
+	font-size: 0.8em;
+	line-height: 1.7;
+	letter-spacing: 0.03rem;
+}

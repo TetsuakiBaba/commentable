@@ -27,6 +27,7 @@
 		<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png" />
 		<link href="https://fonts.googleapis.com/css2?display=swap&family=Manrope:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Roboto:ital,wght@0,300;0,400;1,300;1,400" rel="stylesheet" type="text/css" />
 		<link rel="stylesheet" href="assets/main.css" />
+		<link rel="stylesheet" href="assets/site.css" />
 		<noscript><link rel="stylesheet" href="assets/noscript.css" /></noscript>
 	</head>
 	<body class="is-loading">
@@ -43,7 +44,7 @@
 								<h1 id="text02" class="text-component instance-2 style-1">Commentable</h1>
 								<ul id="buttons04" class="buttons-component instance-4 style-1">
 									<li>
-										<a href="#whatsnew" class="n01" role="button"><svg aria-labelledby="buttons04-icon-1-title"><title id="buttons04-icon-1-title">Apparel</title><use xlink:href="assets/icons.svg#apparel"></use></svg><span class="label">NEW: v2.0 Zoom などのアプリ共有でもコメントを表示できるようになりました</span></a>
+										<a href="#whatsnew" class="n01" role="button"><svg aria-labelledby="buttons04-icon-1-title"><title id="buttons04-icon-1-title">Apparel</title><use xlink:href="assets/icons.svg#apparel"></use></svg><span class="label">NEW: v2.1 字幕・コメントへのスター・表示名に対応しました</span></a>
 									</li>
 								</ul>
 								<p id="text05" class="text-component instance-5 style-4">Commentable（コメンタブル）は，授業の参加者が音やリアクションを使ってコメント参加を楽しめるコメント共有アプリケーションです．遠隔授業でも対面授業でも使えます．授業以外にも学会，表彰式，発表会などでもご活用いただけます．</p>
@@ -74,7 +75,7 @@
 								</div>
 								<div>
 									<h2 id="text04" class="text-component instance-4 style-5">先生方へ（配信者）</h2>
-									<p id="text06" class="text-component instance-6 style-4"><span class="p">配信者用のデスクトップアプリ commentable-desktop をインストールして起動し，部屋名を入力して入室しましょう．画面に表示された QR コードを学生に見せるだけで，すぐに Commentable を始められます．コメントは画面全体に重ねて表示されるので，スライドや資料を表示したまま使えます．（オンラインで画面を共有するときは，デスクトップ音声の共有も忘れずに）</span><span class="p">各種設定は画面上部のメニューバー（Windows では画面右下のタスクトレイ）にある Commentable のアイコンから行います．参加者が PC から接続する場合は，メニューの「投稿ページURLをコピー」をクリックして，配信ソフトのチャット欄などから URL を共有してください．複数の画面を使っている場合は，「表示ディスプレイ選択」からコメントを表示する画面を選べます．</span><span class="p">最新版（v2.0）は macOS 12 以降（Apple Silicon / Intel）と Windows 10（バージョン 2004 以降）/ 11 向けです．macOS で以前の版（commentable-desktop）をお使いの場合は，自動アップデートで新しい版に入れ替わります．Windows で以前の版（v1.6.3 まで）をお使いの場合は，新しい版を手動でインストールしてください（zip を展開して Commentable.exe を起動します．「Windows によって PC が保護されました」と表示されたときは，「詳細情報」→「実行」を選びます）．</span></p>
+									<p id="text06" class="text-component instance-6 style-4"><span class="p">配信者用のデスクトップアプリ commentable-desktop をインストールして起動し，部屋名を入力して入室しましょう．画面に表示された QR コードを学生に見せるだけで，すぐに Commentable を始められます．コメントは画面全体に重ねて表示されるので，スライドや資料を表示したまま使えます．（オンラインで画面を共有するときは，デスクトップ音声の共有も忘れずに）</span><span class="p">各種設定は画面上部のメニューバー（Windows では画面右下のタスクトレイ）にある Commentable のアイコンから行います．参加者が PC から接続する場合は，メニューの「投稿ページURLをコピー」をクリックして，配信ソフトのチャット欄などから URL を共有してください．複数の画面を使っている場合は，「表示ディスプレイ選択」からコメントを表示する画面を選べます．</span><span class="p">2 回目からは，起動したときに前に入った部屋を一覧から選べます．部屋ごとに前回の設定（QR コード，投稿制限，表示ディスプレイ，カメラ，字幕など）で始まります．</span><span class="p">最新版は macOS 版 v2.1（macOS 12 以降，Apple Silicon / Intel）と Windows 版 v2.0（Windows 10 バージョン 2004 以降 / 11）です．どちらも新しいバージョンが出ると自動でアップデートされます（macOS 版の v2.0.0・v2.0.1，Windows 版の v1.6.3 以前をお使いの場合だけ，一度手動で入れ替えてください）．Windows 版は zip を展開して Commentable.exe を起動します．「Windows によって PC が保護されました」と表示されたときは，「詳細情報」→「実行」を選びます．</span></p>
 									<ul id="buttons05" class="buttons-component instance-5 style-3">
 										<li>
 											<a href="https://github.com/TetsuakiBaba/commentable/releases/latest" class="n01" role="button"><svg aria-labelledby="buttons05-icon-1-title"><title id="buttons05-icon-1-title">Download</title><use xlink:href="assets/icons.svg#download"></use></svg><span class="label">Download（macOS 12 以降）</span></a>
@@ -91,12 +92,13 @@
 							<div class="inner">
 								<div>
 									<div id="image02" class="image-component instance-2 style-2">
-										<span class="frame"><img src="assets/images/image02.jpg" alt="スマートフォンの投稿画面" /></span>
+										<span class="frame"><img src="assets/images/image02.jpg?v=2" alt="投稿ページ（ID と表示名の欄，リアクションボタン，コメント欄）" /></span>
 									</div>
+									<p class="caption">投稿ページ．ID は確定すると 🔒 の札に小さくまとまります．上の「あなたのコメントにスターが付きました」は，先生がスターを付けたときの知らせです．</p>
 								</div>
 								<div>
 									<h2 id="text03" class="text-component instance-3 style-5">学生のみなさんへ（視聴者）</h2>
-									<p id="text27" class="text-component instance-27 style-4"><span class="p">先生から提示された QR コードをスマートフォンで読み取ってみましょう．左のような画面になったら，ボタンを試しに押してみましょう．緑のボタンは音なしのリアクション，赤いボタンを押すと先生の画面で音が鳴ります．詳しくは画面上部の使い方ボタンを押してみましょう．</span><span class="p">送信ボタン横のオプションから，文字や縁取りの色，文字の大きさ，コメントの流れる向きを変えられます．音声読み上げをオンにすると，あなたのコメントを先生の PC が読み上げてくれます．先生がアンケートを始めると，回答画面が自動で表示されます．</span><span class="p">名前欄には自分の名前を入れておきましょう．出席やアンケートの回答の記録に使われます．</span><span class="p">PC から利用したい場合は，先生に「URL をください」と伝えてください．先生から送られてきた URL を好きなブラウザで開いてください．</span></p>
+									<p id="text27" class="text-component instance-27 style-4"><span class="p">先生から提示された QR コードをスマートフォンで読み取ってみましょう．左のような画面になったら，ボタンを試しに押してみましょう．緑のボタンは音なしのリアクション，赤いボタンを押すと先生の画面で音が鳴ります．詳しくは画面上部の使い方ボタンを押してみましょう．</span><span class="p">送信ボタン横のオプションから，文字や縁取りの色，文字の大きさ，コメントの流れる向きを変えられます．音声読み上げをオンにすると，あなたのコメントを先生の PC が読み上げてくれます．先生がアンケートを始めると，回答画面が自動で表示されます．先生があなたのコメントにスター⭐を付けると，「あなたのコメントにスターが付きました」と表示されます．</span><span class="p">画面上部には「ID」と「表示名」の 2 つの欄があります．<strong>ID</strong> には学修番号など，先生に指定されたものを入れましょう．ID は先生だけが見るもので，出席やアンケートの回答の記録に使われます．<strong>表示名</strong>（12 文字まで，空欄でも構いません）は，コメントと一緒にみんなの画面に表示されます．ニックネームなど，みんなに見られてもよい名前にしてください．</span><span class="p">PC から利用したい場合は，先生に「URL をください」と伝えてください．先生から送られてきた URL を好きなブラウザで開いてください．</span></p>
 								</div>
 							</div>
 						</div>
@@ -136,16 +138,22 @@
 							<div class="inner">
 								<div>
 									<h2 id="text30" class="text-component instance-30 style-5">新機能</h2>
-									<h3 id="text59" class="text-component instance-59 style-6">共有用ウィンドウ（v2.0）</h3>
-									<p id="text60" class="text-component instance-60 style-4">Zoom などで PowerPoint などのアプリのウィンドウだけを共有すると，画面全体に重ねたコメントは映りません．そんなときはメニューの「共有用ウィンドウ（アプリの共有）」から対象のウィンドウを選んでください．そのウィンドウにコメントを重ねた「共有用ウィンドウ」が開くので，Zoom ではこちらをアプリのウィンドウとして共有します．初回は「画面収録」の許可が必要です．v2.0 から macOS 版は Swift で書き直したネイティブアプリになり，動作も軽くなりました．</p>
+									<h3 id="text61" class="text-component instance-61 style-6">文字起こし（字幕）<span class="tag">macOS 26 以降</span></h3>
+									<p id="text62" class="text-component instance-62 style-4"><span class="p">メニューの「文字起こし（字幕）」を ON にすると，話した内容を配信画面に字幕で表示します．音声はその Mac の中で認識し，外部には送りません．</span><span class="p">字幕の表示方法は，話したそばから表示する「逐次表示」と，1 行ずつ送って表示した行を書き換えない「読みやすさ優先」から選べます．確定した文は授業ログに記録され，ダッシュボードの AI アシスタントが話の流れをつかむのにも使われます．</span></p>
+									<h3 id="text63" class="text-component instance-63 style-6">コメントにスター<span class="tag">v2.1</span></h3>
+									<p id="text64" class="text-component instance-64 style-4">よいコメントには ⭐ を付けましょう．macOS 版では，Option キーを押しながら流れてくるコメントをクリックすると ⭐ が付きます（もう一度クリックすると外れます）．ダッシュボードの「コメントにスター」カードからも付けられます．書いた人の投稿ページに知らせが届き，スターは授業ログと授業参画度にも反映されます．</p>
+									<h3 id="text65" class="text-component instance-65 style-6">表示名のバッジ<span class="tag">macOS v2.1.1</span></h3>
+									<p id="text66" class="text-component instance-66 style-4">参加者が投稿ページで「表示名」を入れると，コメントの左上に表示名の札が付きます．ID（学修番号など）は画面には出ません．メニューの「コメントに表示名を付ける」で出すかどうかを切り替えられます（部屋ごとに覚えます）．</p>
+									<h3 id="text59" class="text-component instance-59 style-6">共有用ウィンドウ<span class="tag">v2.0</span></h3>
+									<p id="text60" class="text-component instance-60 style-4">Zoom などで PowerPoint などのアプリのウィンドウだけを共有すると，画面全体に重ねたコメントは映りません．そんなときはメニューの「共有用ウィンドウ（アプリの共有）」から対象のウィンドウを選んでください．選んだウィンドウの真後ろに，コメントを重ねた「Commentable 共有用」ウィンドウが開くので，Zoom ではこちらを共有します．配信者は選んだウィンドウをそのまま操作できます．macOS では初回に「画面収録」の許可が必要です．</p>
+								</div>
+								<div>
 									<h3 id="text47" class="text-component instance-47 style-6">アンケート</h3>
 									<p id="text48" class="text-component instance-48 style-4">メニューの「アンケート...」から質問と選択肢（単一選択・複数選択）を作って開始すると，参加者の画面に回答画面が表示されます．回答は1人1回で，集計結果はリアルタイムで確認できます．途中から参加した人にも表示されます．</p>
 									<h3 id="text49" class="text-component instance-49 style-6">授業ログ</h3>
-									<p id="text50" class="text-component instance-50 style-4"><span class="p">コメント，リアクション，入退室，名前の変更，アンケートの回答などを，授業回ごとに記録します．ダッシュボードの「授業開始」「授業終了」で授業回を区切れます（区切らない場合は，3時間操作がないと次の授業回になります）．</span><span class="p">サーバーの授業ログは21日で自動的に削除されますが，配信中に受け取ったログはデスクトップアプリが自動で「書類/Commentable/logs」に保存します．メニューの「授業ログのフォルダを開く」から確認できます．</span></p>
+									<p id="text50" class="text-component instance-50 style-4"><span class="p">コメント，リアクション，スター，入退室，ID や表示名の変更，アンケートの回答，字幕などを，授業回ごとに記録します．ダッシュボードの「授業開始」「授業終了」で授業回を区切れます（区切らない場合は，3時間操作がないと次の授業回になります）．授業開始を押し忘れたときも，あとからダッシュボードで授業として記録し直せます．</span><span class="p">サーバーの授業ログは21日で自動的に削除されますが，配信中に受け取ったログはデスクトップアプリが自動で「書類/Commentable/logs」に保存します．メニューの「授業ログのフォルダを開く」から確認できます．</span></p>
 									<h3 id="text51" class="text-component instance-51 style-6">授業参画度</h3>
-									<p id="text52" class="text-component instance-52 style-4">メニューの「授業参画度」から，授業ログをもとに学生ごとの参画度を算出できます．滞在時間・発言・発言の質・アンケートの回答率・継続性の5つの観点を，重みを調整しながら集計し，CSV で書き出せます．ログファイルはブラウザの中だけで処理され，サーバーには送信されません．</p>
-								</div>
-								<div>
+									<p id="text52" class="text-component instance-52 style-4">メニューの「授業参画度」から，授業ログをもとに学生ごとの参画度を算出できます．滞在時間・発言・発言の質・アンケートの回答率・継続性・スターの6つの観点を，重みを調整しながら集計し，CSV で書き出せます．ログファイルはブラウザの中だけで処理され，サーバーには送信されません．</p>
 									<h3 id="text53" class="text-component instance-53 style-6">配信者の鍵（なりすまし防止）</h3>
 									<p id="text54" class="text-component instance-54 style-4"><span class="p">部屋ごとに配信者の鍵を作り，最初に入室したアプリだけがその部屋の配信画面になれるようにしました．同じ部屋名で別の人が配信画面として入室することはできません．30日間使われなかった部屋名は，また誰でも使えるようになります．</span><span class="p">自分の別の Mac / PC から同じ部屋で配信したいときは，メニューの「配信者の鍵」→「保存場所を変更...」で，Dropbox や iCloud Drive などの同じフォルダを選んでください．</span></p>
 									<h3 id="text55" class="text-component instance-55 style-6">カメラと人物切り抜き</h3>
@@ -160,7 +168,9 @@
 											</li><li>
 												<p>コメントコマンド =text("文字", x, y) で好きな位置に文字を表示</p>
 											</li><li>
-												<p>時刻表示，サウンドコメントのミュート，投稿制限の解除</p>
+												<p>時刻表示，サウンドコメントのミュート，投稿制限（既定は制限なし）</p>
+											</li><li>
+												<p>メニューの「部屋の一覧を整理...」で，使っていない部屋を一覧から削除</p>
 											</li>
 										</ul>
 									</div>
@@ -173,12 +183,24 @@
 							<div class="inner">
 								<div>
 									<h2 id="text58" class="text-component instance-58 style-5">ダッシュボードと AI アシスタント</h2>
-									<p id="text31" class="text-component instance-31 style-4"><span class="p">メニューの「ダッシュボード」から，配信者専用の管理画面をブラウザで開けます（Chrome を推奨します）．ダッシュボードの URL には部屋の鍵から作ったトークンが含まれているので，他の人には共有しないでください．</span><span class="p">ダッシュボードでは，画面中央へのメッセージ表示（「15:00から再開します」など），コメントログの閲覧と書き出し（学生ごとの集計 CSV を含む），アンケート結果，参加者数の推移を確認できます．効果音パネルからは，チャイムやドラムロールなどの効果音を鳴らせます．音声認識と組み合わせると，「正解」「すごい」などの言葉に合わせて自動で効果音を鳴らしたり，決まった時刻に自動でチャイムを鳴らしたりすることもできます．</span><span class="p">ダッシュボードには AI アシスタント「米太郎」（名前は変更できます）が入っています．音声認識を併用すると，配信者のこれまでの話を聞いた上で，参加者からの質問に答えたり，定期的に雑談やリアクションをしたりします．例えば「米太郎，さっき先生が話していたデザイナーの名前って誰だっけ？」といった問いかけにも答えられます．</span><span class="p">AI アシスタントを使うには，<a href="https://lmstudio.ai/">LM Studio</a> でローカルサーバーを起動し，設定で CORS を有効にしてください．ダッシュボードの「AI設定」で LM Studio のアドレス（既定は http://127.0.0.1:1234/v1）を指定します．gpt-oss-20b でも十分実用的な支援を受けられます．</span></p>
+									<p id="text31" class="text-component instance-31 style-4"><span class="p">メニューの「ダッシュボード」から，配信者専用の管理画面をブラウザで開けます（Chrome を推奨します）．ダッシュボードの URL には部屋の鍵から作ったトークンが含まれているので，他の人には共有しないでください．</span><span class="p">ダッシュボードでは，画面中央へのメッセージ表示（「15:00から再開します」など），コメントログの閲覧と書き出し（学生ごとの集計 CSV を含む），コメントへのスター，アンケート結果，参加者数の推移を確認できます．コメントの送り主は「表示名 (ID)」の形で表示されます．</span><span class="p">効果音パネルからは，チャイムやドラムロールなどの効果音を鳴らせます．決まった時刻に自動でチャイムを鳴らしたり，文字起こし（macOS 26 以降）と組み合わせて「正解」「すごい」などの言葉に合わせて自動で効果音を鳴らしたりすることもできます．</span></p>
+									<h3 id="text67" class="text-component instance-67 style-6">AI アシスタント</h3>
+									<p id="text68" class="text-component instance-68 style-4"><span class="p">ダッシュボードには AI アシスタント「米太郎」（名前は変更できます）が入っています．参加者からの質問に答えたり，定期的に雑談やリアクションをしたりします．文字起こしを ON にしていれば，配信者のこれまでの話もふまえて答えるので，「米太郎，さっき先生が話していたデザイナーの名前って誰だっけ？」といった問いかけにも答えられます．</span><span class="p">AI の接続先は，「AI設定」で <a href="https://lmstudio.ai/">LM Studio</a>（ローカル）と <a href="https://www.anthropic.com/claude">Claude</a>（Anthropic API）から選べます．</span></p>
+									<div id="list06" class="list-component instance-6 style-3">
+										<ul>
+											<li>
+												<p><strong>LM Studio</strong>：LM Studio でローカルサーバーを起動し，設定で CORS を有効にします．「AI設定」で LM Studio のアドレス（既定は http://127.0.0.1:1234/v1）を入れ，読み込み中のモデルを選びます．gpt-oss-20b でも十分実用的です．コメントはこの PC の外に出ません．</p>
+											</li><li>
+												<p><strong>Claude</strong>：Anthropic の API キーを入れてモデルを選びます．API キーはそのブラウザの中だけに保存され，Commentable のサーバーには送られません．コメントや字幕の内容は Anthropic に送られ，API の利用料金は API キーの持ち主の負担になります．</p>
+											</li>
+										</ul>
+									</div>
 								</div>
 								<div>
 									<div id="image09" class="image-component instance-9 style-2">
-										<span class="frame deferred"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjAiIHk9IjAiIHZpZXdCb3g9IjAgMCA5NjkgMTE5NSIgd2lkdGg9Ijk2OSIgaGVpZ2h0PSIxMTk1IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj48cmVjdCBmaWxsPSIjZWNlZGVlIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIi8%2BPC9zdmc%2B" data-src="assets/images/image09.jpg" alt="ダッシュボードの画面" /></span>
+										<span class="frame deferred"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjAiIHk9IjAiIHZpZXdCb3g9IjAgMCAxNjAwIDEzMjUiIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjEzMjUiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiPjxyZWN0IGZpbGw9IiNlY2VkZWQiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiLz48L3N2Zz4%3D" data-src="assets/images/image09.jpg?v=2" alt="ダッシュボードの画面" /></span>
 									</div>
+									<p class="caption">ダッシュボード．AI設定，文字起こし，コメントにスター，メッセージ表示，コメントログなどのカードが並びます．コメントの送り主は「表示名 (ID)」で表示されます．</p>
 								</div>
 							</div>
 						</div>
@@ -241,12 +263,12 @@
 									<h2 id="text13" class="text-component instance-13 style-5">FAQ</h2>
 									<p id="text10" class="text-component instance-10 style-4">配信者</p>
 									<hr id="divider04" class="divider-component instance-4">
-									<p id="text09" class="text-component instance-9 style-4"><span class="p">Q: 不適切な単語や用語が画面に表示されてしまいませんか？</span><span class="p"><em>A: コメントや名前に明らかに不適切な用語が含まれている場合は，送信する前に参加者に知らせ，修正するまで送信できないようにしています．ただしすべての表現を防げるわけではありません．コメントは名前とともに授業ログに記録されますので，利用の前に参加者へ利用のルールを伝えてください．</em></span><span class="p">Q: 途中から参加した学生がそれ以前のコメントを見ることはできますか？</span><span class="p"><em>A: はい，できます．特別な操作は不要です．</em></span><span class="p">Q: 音がうるさくて授業になりません</span><span class="p"><em>A: メニューにある「サウンドコメントのミュート」をお試しください．全てのサウンドコメントの音が鳴らなくなります．</em></span><span class="p">Q: 「部屋に入室できません」と表示されました</span><span class="p"><em>A: その部屋名は別の配信者のアプリが使用しています．別の部屋名で入室してください．自分の別の Mac / PC で使っていた部屋の場合は，メニューの「配信者の鍵」で，そちらと同じ保存場所（Dropbox など）を選んでから入り直してください．</em></span><span class="p">Q: 授業ログはどこに保存されますか？</span><span class="p"><em>A: サーバーには21日間保存され，その後自動で削除されます．配信中に受け取ったログは，デスクトップアプリが「書類/Commentable/logs」に保存しています．ダッシュボードの「コメントログ」からも書き出せます．</em></span></p>
+									<p id="text09" class="text-component instance-9 style-4 faq"><span class="p q">Q. 不適切な単語や用語が画面に表示されてしまいませんか？</span><span class="p a">A. コメントや名前に明らかに不適切な用語が含まれている場合は，送信する前に参加者に知らせ，修正するまで送信できないようにしています．ただしすべての表現を防げるわけではありません．コメントは ID・表示名とともに授業ログに記録されますので，利用の前に参加者へ利用のルールを伝えてください．</span><span class="p q">Q. 途中から参加した学生がそれ以前のコメントを見ることはできますか？</span><span class="p a">A. はい，できます．特別な操作は不要です．</span><span class="p q">Q. 音がうるさくて授業になりません</span><span class="p a">A. メニューにある「サウンドコメントのミュート」をお試しください．全てのサウンドコメントの音が鳴らなくなります．</span><span class="p q">Q. 学生の ID（学修番号など）がほかの学生に見えてしまいませんか？</span><span class="p a">A. いいえ．ID は授業ログとダッシュボードにだけ届き，配信画面やほかの参加者には表示名だけが表示されます．表示名に学修番号のようなものが入っていると，投稿ページで本人に注意を出します．</span><span class="p q">Q. 字幕（文字起こし）を使うには？</span><span class="p a">A. macOS 26 以降の macOS 版で，メニューの「文字起こし（字幕）」を ON にします．Windows 版ではまだ使えません．</span><span class="p q">Q. 「部屋に入室できません」と表示されました</span><span class="p a">A. その部屋名は別の配信者のアプリが使用しています．別の部屋名で入室してください．自分の別の Mac / PC で使っていた部屋の場合は，メニューの「配信者の鍵」で，そちらと同じ保存場所（Dropbox など）を選んでから入り直してください．</span><span class="p q">Q. 授業ログはどこに保存されますか？</span><span class="p a">A. サーバーには21日間保存され，その後自動で削除されます．配信中に受け取ったログは，デスクトップアプリが「書類/Commentable/logs」に保存しています．ダッシュボードの「コメントログ」からも書き出せます．</span></p>
 								</div>
 								<div>
 									<p id="text11" class="text-component instance-11 style-4">視聴者</p>
 									<hr id="divider01" class="divider-component instance-1">
-									<p id="text14" class="text-component instance-14 style-4"><span class="p">Q: 誤って記入途中のコメントを送ってしまいました．削除できますか？</span><span class="p"><em>A: 投稿されたコメントは即時に配信者画面に表示され，相手に送信されたログは削除することができません．</em></span><span class="p">Q: コメントを表示させる位置は変更できますか？</span><span class="p"><em>A: コメントコマンド機能を使うことで任意の位置にテキストを表示できます（詳細は投稿ページ内の使い方を参照してください）．また，送信ボタン横にあるオプションからコメントの色や文字の大きさ，表示方式（右から左へ流すなど）を変更できますのでお試しください．</em></span><span class="p">Q: 名前は入力しないといけませんか？</span><span class="p"><em>A: 名前がなくても投稿できますが，先生は名前を使って出席やアンケートの回答を確認します．授業で使うときは自分の名前を入力しておきましょう．</em></span><span class="p">Q: アンケートの回答をやり直せますか？</span><span class="p"><em>A: 回答は1人1回です．送信した回答は変更できません．</em></span></p>
+									<p id="text14" class="text-component instance-14 style-4 faq"><span class="p q">Q. 誤って記入途中のコメントを送ってしまいました．削除できますか？</span><span class="p a">A. 投稿されたコメントは即時に配信者画面に表示され，相手に送信されたログは削除することができません．</span><span class="p q">Q. コメントを表示させる位置は変更できますか？</span><span class="p a">A. コメントコマンド機能を使うことで任意の位置にテキストを表示できます（詳細は投稿ページ内の使い方を参照してください）．また，送信ボタン横にあるオプションからコメントの色や文字の大きさ，表示方式（右から左へ流すなど）を変更できますのでお試しください．</span><span class="p q">Q. ID と表示名は入力しないといけませんか？</span><span class="p a">A. どちらも空欄のままでも投稿できますが，先生は ID を使って出席やアンケートの回答を確認します．授業で使うときは，先生に指定された ID（学修番号など）を入れておきましょう．表示名は任意です．</span><span class="p q">Q. 表示名には何を入れればよいですか？</span><span class="p a">A. 表示名はコメントと一緒にみんなの画面に出ます．ニックネームなど，みんなに見られてもよい名前にしましょう．学修番号は ID の欄に入れてください．</span><span class="p q">Q. アンケートの回答をやり直せますか？</span><span class="p a">A. 回答は1人1回です．送信した回答は変更できません．</span></p>
 								</div>
 							</div>
 						</div>
