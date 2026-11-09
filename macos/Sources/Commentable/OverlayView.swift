@@ -65,6 +65,11 @@ final class OverlayView: NSView {
     var cameraScale: CGFloat = 0.15 { didSet { layoutCamera() } } // 画面幅に対する比率
 
     private var scale: CGFloat { window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2 }
+    // 文字などの画像は、このウィンドウ（画面）の色空間で描く（表示のたびに色変換させないため。TextImage を参照）
+    private var colorSpace: CGColorSpace {
+        if let space = (window?.colorSpace ?? NSScreen.main?.colorSpace)?.cgColorSpace, space.model == .rgb { return space }
+        return TextImage.sRGB
+    }
     private var W: CGFloat { bounds.width }
     private var H: CGFloat { bounds.height }
 
@@ -117,7 +122,7 @@ final class OverlayView: NSView {
         layoutOverlay()
     }
 
-    // 画面サイズや倍率が変わったときに置き直す（流れているコメントはそのまま）
+    // 画面サイズや倍率・色空間が変わったときに置き直す（流れているコメントはそのまま）
     private func layoutOverlay() {
         flashLayer.frame = bounds
         effectLayer.frame = bounds
@@ -175,7 +180,7 @@ final class OverlayView: NSView {
         let baseSize = H / 20
         let multiplier: CGFloat = fontSize == "small" ? 0.7 : fontSize == "large" ? 1.5 : 1.0
         let style = TextStyle(font: TextImage.font(size: baseSize * multiplier), fill: fill, stroke: stroke, strokeWidth: 5)
-        guard let rendered = TextImage.render(text, style: style, scale: scale) else { return false }
+        guard let rendered = TextImage.render(text, style: style, scale: scale, colorSpace: colorSpace) else { return false }
         let size = rendered.size
 
         // 表示位置（p5 版と同じく標準サイズの文字幅で決める）
@@ -188,7 +193,7 @@ final class OverlayView: NSView {
         if starred { setStar(on: layer, starred: true, animated: false) }
         if let name, !name.isEmpty,
            let badge = TextImage.renderNameBadge(name, font: TextImage.font(size: baseSize * multiplier * 0.45, bold: true),
-                                                 color: stroke, background: fill, scale: scale) {
+                                                 color: stroke, background: fill, scale: scale, colorSpace: colorSpace) {
             let nameLayer = addImageLayer(badge, to: layer)
             // コメントの縁取りの余白の分だけ内側に寄せる（レイヤーの座標は下が 0）
             nameLayer.position = CGPoint(x: style.strokeWidth + badge.size.width / 2,
@@ -244,7 +249,7 @@ final class OverlayView: NSView {
         // 同時に表示できるのは 20 件まで（大量に送られても重くならないように）
         guard (commandsLayer.sublayers?.count ?? 0) < 20 else { return }
         let style = TextStyle(font: TextImage.font(size: H / 15), fill: fill, stroke: stroke, strokeWidth: 5)
-        guard let rendered = TextImage.render(text, style: style, scale: scale) else { return }
+        guard let rendered = TextImage.render(text, style: style, scale: scale, colorSpace: colorSpace) else { return }
         let layer = addImageLayer(rendered, to: commandsLayer)
         layer.position = CGPoint(x: x * W, y: flipY(y * H))
         remove(layer, after: 10)
@@ -262,7 +267,7 @@ final class OverlayView: NSView {
             existing?.removeFromSuperlayer()
             return
         }
-        guard existing == nil, let rendered = TextImage.render("⭐", style: TextStyle(font: TextImage.font(size: layer.bounds.height * 0.7), fill: .white), scale: scale)
+        guard existing == nil, let rendered = TextImage.render("⭐", style: TextStyle(font: TextImage.font(size: layer.bounds.height * 0.7), fill: .white), scale: scale, colorSpace: colorSpace)
         else { return }
         let star = addImageLayer(rendered, to: layer)
         star.name = "star"
@@ -328,7 +333,7 @@ final class OverlayView: NSView {
         background.backgroundColor = NSColor.black.cgColor
         container.addSublayer(background)
         let style = TextStyle(font: TextImage.font(size: H / 20), fill: .white)
-        if let rendered = TextImage.render(text, style: style, scale: scale) {
+        if let rendered = TextImage.render(text, style: style, scale: scale, colorSpace: colorSpace) {
             addImageLayer(rendered, to: container).position = CGPoint(x: W / 2, y: H / 2)
         }
         effectLayer.addSublayer(container)
@@ -373,7 +378,7 @@ final class OverlayView: NSView {
         let text = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
         // 字幕と同じ半透明の背景に載せる。数字は等幅にして、分が変わっても幅が変わらないようにする
         let font = NSFont.monospacedDigitSystemFont(ofSize: H / 20, weight: .semibold)
-        if let rendered = TextImage.renderBadge(text, font: font, color: .white, background: NSColor.black.withAlphaComponent(0.6), scale: scale) {
+        if let rendered = TextImage.renderBadge(text, font: font, color: .white, background: NSColor.black.withAlphaComponent(0.6), scale: scale, colorSpace: colorSpace) {
             clockLayer.contents = rendered.image
             clockLayer.contentsScale = scale
             clockLayer.bounds = CGRect(origin: .zero, size: rendered.size)
@@ -393,7 +398,7 @@ final class OverlayView: NSView {
 
     private func renderAdminMessage() {
         guard let text = adminMessage, H > 0,
-              let rendered = TextImage.render(text, style: TextStyle(font: TextImage.font(size: H / 20), fill: .white, background: .black), scale: scale)
+              let rendered = TextImage.render(text, style: TextStyle(font: TextImage.font(size: H / 20), fill: .white, background: .black), scale: scale, colorSpace: colorSpace)
         else {
             adminLayer.isHidden = true
             return
@@ -458,7 +463,7 @@ final class OverlayView: NSView {
                 (index > 0 ? [("\n", NSColor.white)] : []) + [(line.committed, NSColor.white), (line.volatile, Self.captionVolatileColor)]
             }
             rendered = TextImage.renderCaption(segments, font: font, maxWidth: maxWidth + fontSize, background: Self.captionBackground,
-                                               scale: scale, alignment: .left, fixedWidth: maxWidth)
+                                               scale: scale, alignment: .left, fixedWidth: maxWidth, colorSpace: colorSpace)
         }
         guard let rendered else { return }
         captionLayer.contents = rendered.image
@@ -493,7 +498,7 @@ final class OverlayView: NSView {
             }
         }
         return TextImage.renderCaption([(committed, .white), (volatile, Self.captionVolatileColor)],
-                                       font: font, maxWidth: maxWidth, background: Self.captionBackground, scale: scale)
+                                       font: font, maxWidth: maxWidth, background: Self.captionBackground, scale: scale, colorSpace: colorSpace)
     }
 
     // ========== QR コード ==========
@@ -516,7 +521,7 @@ final class OverlayView: NSView {
             return
         }
         let size = qrPosition == .center ? W / 3 : W / 10
-        guard let image = QRCodeRenderer.render(qrText, size: size, scale: scale) else { return }
+        guard let image = QRCodeRenderer.render(qrText, size: size, scale: scale, colorSpace: colorSpace) else { return }
         qrLayer.contents = image
         qrLayer.contentsScale = scale
         qrLayer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
@@ -593,7 +598,7 @@ final class OverlayView: NSView {
 
         let fontSize = max(24, min(48, W / 40))
         let style = TextStyle(font: NSFont.systemFont(ofSize: fontSize, weight: .bold), fill: .white)
-        guard let rendered = TextImage.render("ⓘ \(text)", style: style, scale: scale) else { return }
+        guard let rendered = TextImage.render("ⓘ \(text)", style: style, scale: scale, colorSpace: colorSpace) else { return }
         let padding = CGSize(width: fontSize * 0.65, height: fontSize * 0.35)
         notificationLayer.bounds = CGRect(x: 0, y: 0, width: rendered.size.width + padding.width * 2, height: rendered.size.height + padding.height * 2)
         notificationLayer.backgroundColor = NSColor(srgbRed: 0x19 / 255, green: 0x87 / 255, blue: 0x54 / 255, alpha: 1).cgColor

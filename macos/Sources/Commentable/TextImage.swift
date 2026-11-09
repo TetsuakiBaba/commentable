@@ -10,6 +10,10 @@ struct TextStyle {
 }
 
 enum TextImage {
+    static let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
+
+    // 画像を描く色空間は、表示する画面（ウィンドウ）の色空間に合わせる（colorSpace 引数）。
+    // 違うと Core Animation が表示するたびにメインスレッドで色変換をやり直す（字幕は話している間ずっと描き直すので重い）
     // p5 版は Google Fonts の Noto Sans JP を使っている。入っていなければヒラギノ、なければシステムフォント
     static func font(size: CGFloat, bold: Bool = false) -> NSFont {
         let names = bold ? ["NotoSansJP-Bold", "HiraginoSans-W6"] : ["NotoSansJP-Regular", "HiraginoSans-W3"]
@@ -38,7 +42,7 @@ enum TextImage {
     }
 
     // 返す size は表示する大きさ（ポイント）。縁取りの分だけ余白を付ける（背景付きは文字の大きさに合わせた余白）
-    static func render(_ text: String, style: TextStyle, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+    static func render(_ text: String, style: TextStyle, scale: CGFloat, colorSpace: CGColorSpace = sRGB) -> (image: CGImage, size: CGSize)? {
         var textSize = measure(text, font: style.font)
         let pad: CGFloat
         var leading: CGFloat = 0
@@ -57,7 +61,7 @@ enum TextImage {
         let pixelWidth = Int(ceil(size.width * renderScale))
         let pixelHeight = Int(ceil(size.height * renderScale))
         guard let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      space: colorSpace,
                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         context.scaleBy(x: renderScale, y: renderScale)
@@ -91,7 +95,7 @@ enum TextImage {
     // 字幕: 色の違う文字列をつなげ、maxWidth で折り返して角丸の背景に載せる
     // fixedWidth を指定すると、文字の量によらず背景の幅をその幅にする（行が伸びても背景の大きさが変わらない）
     static func renderCaption(_ segments: [(text: String, color: NSColor)], font: NSFont, maxWidth: CGFloat, background: NSColor, scale: CGFloat,
-                              alignment: NSTextAlignment = .center, fixedWidth: CGFloat? = nil) -> (image: CGImage, size: CGSize)? {
+                              alignment: NSTextAlignment = .center, fixedWidth: CGFloat? = nil, colorSpace: CGColorSpace = sRGB) -> (image: CGImage, size: CGSize)? {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = alignment
         let text = NSMutableAttributedString()
@@ -109,7 +113,7 @@ enum TextImage {
         let pixelHeight = Int(ceil(size.height * scale))
         guard pixelWidth > 0, pixelHeight > 0,
               let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      space: colorSpace,
                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         context.scaleBy(x: scale, y: scale)
@@ -146,7 +150,7 @@ extension TextImage {
 
     // 時計など短い 1 行の文字を角丸の背景に載せる。数字が上下の真ん中に来るように、行の高さではなく
     // 大文字の高さ（capHeight）で背景の大きさを決める
-    static func renderBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+    static func renderBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat, colorSpace: CGColorSpace = sRGB) -> (image: CGImage, size: CGSize)? {
         let attributed = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
         let line = CTLineCreateWithAttributedString(attributed)
         let textWidth = ceil(CTLineGetTypographicBounds(line, nil, nil, nil))
@@ -157,7 +161,7 @@ extension TextImage {
         let pixelHeight = Int(ceil(size.height * scale))
         guard textWidth > 0,
               let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      space: colorSpace,
                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         context.scaleBy(x: scale, y: scale)
@@ -176,7 +180,7 @@ extension TextImage {
 
 extension TextImage {
     // コメントに付ける表示名のバッジ。日本語も入るので、大文字の高さではなく行の高さ（ascent + descent）で背景の大きさを決める
-    static func renderNameBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat) -> (image: CGImage, size: CGSize)? {
+    static func renderNameBadge(_ text: String, font: NSFont, color: NSColor, background: NSColor, scale: CGFloat, colorSpace: CGColorSpace = sRGB) -> (image: CGImage, size: CGSize)? {
         let attributed = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
         let line = CTLineCreateWithAttributedString(attributed)
         var ascent: CGFloat = 0, descent: CGFloat = 0
@@ -188,7 +192,7 @@ extension TextImage {
         let pixelHeight = Int(ceil(size.height * scale))
         guard textWidth > 0,
               let context = CGContext(data: nil, width: pixelWidth, height: pixelHeight, bitsPerComponent: 8, bytesPerRow: 0,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      space: colorSpace,
                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         context.scaleBy(x: scale, y: scale)

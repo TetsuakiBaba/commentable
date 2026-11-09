@@ -6,12 +6,12 @@ enum QRCodeRenderer {
     private static let dotColor = NSColor(srgbRed: 0x33 / 255, green: 0x33 / 255, blue: 0x33 / 255, alpha: 1).cgColor
     private static let ciContext = CIContext()
 
-    static func render(_ text: String, size: CGFloat, scale: CGFloat) -> CGImage? {
+    static func render(_ text: String, size: CGFloat, scale: CGFloat, colorSpace: CGColorSpace = TextImage.sRGB) -> CGImage? {
         guard size >= 1, let modules = modules(for: text) else { return nil }
         let count = modules.count
         let pixels = Int(ceil(size * scale))
         guard let context = CGContext(data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: 0,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      space: colorSpace,
                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         context.scaleBy(x: scale, y: scale)
