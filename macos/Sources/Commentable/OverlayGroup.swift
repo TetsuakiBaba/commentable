@@ -10,7 +10,7 @@ final class OverlayGroup {
     private var qr: (position: QRPosition, text: String) = (.none, "")
     private var clock = false
     private var adminMessage: (show: Bool, text: String) = (false, "")
-    private var cameraFrame: CGImage?
+    private var cameraFrame: CameraFrame?
     private var caption: (committed: String, volatile: String) = ("", "")
     private var starred = Set<String>() // スターを付けたコメントの ID
     var showNames = true // コメントに参加者の表示名を付けるか
@@ -100,9 +100,9 @@ final class OverlayGroup {
         all.forEach { $0.setCaption(committed: committed, volatile: volatile) }
     }
 
-    func setCameraFrame(_ image: CGImage?) {
-        cameraFrame = image
-        all.forEach { $0.setCameraFrame(image) }
+    func setCameraFrame(_ frame: CameraFrame?) {
+        cameraFrame = frame
+        all.forEach { $0.setCameraFrame(frame) }
     }
 
     // 配信者向けの通知（資料欄に送信しました など）は画面全体のオーバーレイにだけ出す

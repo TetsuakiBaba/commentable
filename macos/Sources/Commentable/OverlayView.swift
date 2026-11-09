@@ -531,8 +531,8 @@ final class OverlayView: NSView {
     }
 
     // ========== カメラ ==========
-    func setCameraFrame(_ image: CGImage?) {
-        guard let image else {
+    func setCameraFrame(_ frame: CameraFrame?) {
+        guard let frame else {
             cameraLayer.contents = nil
             let wasShown = !cameraLayer.isHidden
             cameraLayer.isHidden = true
@@ -540,8 +540,8 @@ final class OverlayView: NSView {
             if wasShown { renderCaption(restartTimer: false) } // 字幕をカメラのあった場所まで広げる
             return
         }
-        cameraLayer.contents = image
-        let size = CGSize(width: image.width, height: image.height)
+        cameraLayer.contents = frame.surface // IOSurface をそのまま表示する（CPU での変換やコピーをしない）
+        let size = frame.size
         if cameraImageSize != size {
             cameraImageSize = size
             layoutCamera()
