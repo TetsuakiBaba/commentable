@@ -18,24 +18,52 @@ struct CameraFrame {
     }
 }
 
-enum SegmentationQuality: String, CaseIterable {
+// 人物の切り抜き方。fast / balanced / accurate は Vision で人物を見つける（その品質）。
+// chromaKey は人物を探さず、単色の背景を透過する
+// （もとは品質だけだったので、保存するときの名前は segmentationQuality のまま）
+enum SegmentationMethod: String, CaseIterable {
     case fast
     case balanced
     case accurate
+    case chromaKey
 
     var label: String {
         switch self {
         case .fast: return "高速"
         case .balanced: return "標準"
         case .accurate: return "高精度"
+        case .chromaKey: return "背景の色を透過（クロマキー）"
         }
     }
 
-    var visionLevel: VNGeneratePersonSegmentationRequest.QualityLevel {
+    // Vision を使わない方法なら nil
+    var visionLevel: VNGeneratePersonSegmentationRequest.QualityLevel? {
         switch self {
         case .fast: return .fast
         case .balanced: return .balanced
         case .accurate: return .accurate
+        case .chromaKey: return nil
+        }
+    }
+}
+
+// カメラから取り込む解像度。下げると軽くなるのは映像の変換と合成（主に GPU）で、
+// 人物切り抜きの推論は入力を決まった大きさに縮めてから行われるので、ほとんど変わらない
+enum CameraResolution: String, CaseIterable {
+    case hd720
+    case vga480
+
+    var label: String {
+        switch self {
+        case .hd720: return "720p（標準）"
+        case .vga480: return "480p（軽い）"
+        }
+    }
+
+    var preset: AVCaptureSession.Preset {
+        switch self {
+        case .hd720: return .hd1280x720
+        case .vga480: return .vga640x480
         }
     }
 }
@@ -60,9 +88,13 @@ enum CameraSettings {
         get { defaults.bool(forKey: "camera.segmentation") }
         set { defaults.set(newValue, forKey: "camera.segmentation") }
     }
-    static var segmentationQuality: SegmentationQuality {
-        get { SegmentationQuality(rawValue: defaults.string(forKey: "camera.segmentationQuality") ?? "") ?? .balanced }
+    static var segmentationMethod: SegmentationMethod {
+        get { SegmentationMethod(rawValue: defaults.string(forKey: "camera.segmentationQuality") ?? "") ?? .balanced }
         set { defaults.set(newValue.rawValue, forKey: "camera.segmentationQuality") }
+    }
+    static var resolution: CameraResolution {
+        get { CameraResolution(rawValue: defaults.string(forKey: "camera.resolution") ?? "") ?? .hd720 }
+        set { defaults.set(newValue.rawValue, forKey: "camera.resolution") }
     }
 
     static let sizes: [(label: String, value: String, scale: CGFloat)] = [
@@ -110,19 +142,20 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     // 以下は queue 上で読み書きする
     private var activeGeneration: Int? // 動いているセッションの世代（停止中は nil）
     private var segmentationEnabled = false
-    private var quality: SegmentationQuality = .balanced
+    private var method: SegmentationMethod = .balanced
+    private let chromaKey = ChromaKey()
     private var sequenceHandler = VNSequenceRequestHandler()
     private var segmentationRequest: VNGeneratePersonSegmentationRequest?
 
     private(set) var isRunning = false
 
-    func setSegmentation(enabled: Bool, quality: SegmentationQuality) {
+    func setSegmentation(enabled: Bool, method: SegmentationMethod) {
         queue.async {
-            if self.quality != quality || !enabled {
+            if self.method != method || !enabled {
                 self.resetSegmentation()
             }
             self.segmentationEnabled = enabled
-            self.quality = quality
+            self.method = method
         }
     }
 
@@ -130,6 +163,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     private func resetSegmentation() {
         segmentationRequest = nil
         sequenceHandler = VNSequenceRequestHandler()
+        chromaKey.reset()
     }
 
     static func requestAccess(_ completion: @escaping (Bool) -> Void) {
@@ -143,7 +177,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
 
-    func start(deviceID: String) {
+    func start(deviceID: String, resolution: CameraResolution) {
         stop()
         generation += 1
         let currentGeneration = generation
@@ -159,17 +193,14 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
                 Dialogs.message(style: .warning, title: "カメラが見つかりません", detail: "カメラ設定でカメラを選び直してください。")
                 return
             }
-            self.queue.async { self.configure(device: device, generation: currentGeneration) }
+            self.queue.async { self.configure(device: device, resolution: resolution, generation: currentGeneration) }
         }
     }
 
-    private func configure(device: AVCaptureDevice, generation: Int) {
+    private func configure(device: AVCaptureDevice, resolution: CameraResolution, generation: Int) {
         session.beginConfiguration()
         session.inputs.forEach { session.removeInput($0) }
         session.outputs.forEach { session.removeOutput($0) }
-        if session.canSetSessionPreset(.hd1280x720) {
-            session.sessionPreset = .hd1280x720
-        }
         do {
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) { session.addInput(input) }
@@ -177,6 +208,11 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             NSLog("Error starting camera: %@", error.localizedDescription)
             session.commitConfiguration()
             return
+        }
+        // カメラをつないでから選ぶ（つなぐ前だと、そのカメラが対応していない解像度でも選べてしまう）
+        // 対応していなければ 720p、それも無理ならカメラ任せにする
+        if let preset = [resolution.preset, .hd1280x720].first(where: session.canSetSessionPreset) {
+            session.sessionPreset = preset
         }
         let output = AVCaptureVideoDataOutput()
         // カメラに近い YUV の形式で受け取る（BGRA を指定すると、カメラの処理の中で CPU を使って変換される）
@@ -225,6 +261,9 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
                let frame = CameraFrame(pixelBuffer: pixelBuffer) { return frame }
             return render(image)
         }
+        guard let visionLevel = method.visionLevel else {
+            return render(chromaKey.apply(to: image, context: ciContext))
+        }
 
         // 動画用に VNSequenceRequestHandler を使い回す（フレーム間で結果が安定する）
         let request: VNGeneratePersonSegmentationRequest
@@ -232,7 +271,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             request = existing
         } else {
             request = VNGeneratePersonSegmentationRequest()
-            request.qualityLevel = quality.visionLevel
+            request.qualityLevel = visionLevel
             request.outputPixelFormat = kCVPixelFormatType_OneComponent8
             segmentationRequest = request
         }

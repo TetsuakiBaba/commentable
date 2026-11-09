@@ -131,10 +131,13 @@ Zoom ではこの共有用ウィンドウを、アプリのウィンドウとし
   * **配信者の鍵は Electron 版と共有**します（`~/Library/Application Support/commentable-desktop` の `app-settings.json` と鍵ファイル）。
     Electron 版と Swift 版を切り替えても同じ部屋で配信できます。
   * 授業ログの保存先も同じ（`書類/Commentable/logs/<部屋キー>/<授業回ID>.jsonl`）です。
-  * カメラの設定（デバイス・表示位置・サイズ・人物切り抜き）は、デバイス ID の形式が違うので Swift 版だけで保存します（UserDefaults）。
+  * カメラの設定（デバイス・解像度・表示位置・サイズ・人物切り抜き）は、デバイス ID の形式が違うので Swift 版だけで保存します（UserDefaults）。
   * 描画は p5.js のキャンバスではなく、コメントやエフェクトをレイヤーにして Core Animation で動かします。
     コメントが流れていない間は CPU をほとんど使いません。
   * 人物切り抜きは Vision（`VNGeneratePersonSegmentationRequest`）を直接使うので、ネイティブアドオンのビルドは不要です。
+  * 人物切り抜きの「背景の色を透過（クロマキー）」は、人物を探さずに単色の背景を透過します。
+    macOS のビデオエフェクトの「背景」に緑一色の画像を指定して使います（画像はメニューから保存できます）。
+    切り抜きを macOS に任せるので、輪郭がちらつかず、CPU もほとんど使いません。
   * Socket.IO は WebSocket だけで接続する最小限のクライアントを同梱しています（`SocketIOClient.swift`）。
   * カメラ映像と QR コードは、マウスを重ねると消えます（クリックは下のアプリにそのまま届きます）。
   * 効果音・画像は `Resources/` に置いています（Electron 版から使っているものだけを複製）。
@@ -150,6 +153,7 @@ Zoom ではこの共有用ウィンドウを、アプリのウィンドウとし
 | `HostKeyStore.swift` | 配信者の鍵とダッシュボードのトークン |
 | `LogArchiver.swift` | 授業ログの保存 |
 | `CameraController.swift` | カメラの取り込みと人物切り抜き |
+| `ChromaKey.swift` | 単色の背景の透過（クロマキー）と、背景に使う画像の書き出し |
 | `Survey.swift` | アンケートの集計と作成・結果ウィンドウ |
 | `SettingsWindows.swift` | カメラ設定・About ウィンドウ |
 | `QRCodeRenderer.swift` / `TextImage.swift` | QR コードと縁取り文字の画像化 |

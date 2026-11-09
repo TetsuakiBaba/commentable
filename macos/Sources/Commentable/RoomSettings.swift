@@ -17,6 +17,7 @@ struct RoomSettings: Codable {
     var cameraSize: String?
     var segmentation: Bool?
     var segmentationQuality: String?
+    var cameraResolution: String?
     var transcription: Bool?
     var showCaptions: Bool?
     var captionStyle: String?

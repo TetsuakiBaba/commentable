@@ -159,12 +159,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let position = settings?.cameraPosition.flatMap(CameraPosition.init(rawValue:)) { CameraSettings.position = position }
         if let size = settings?.cameraSize { CameraSettings.size = size }
         if let segmentation = settings?.segmentation { CameraSettings.segmentation = segmentation }
-        if let quality = settings?.segmentationQuality.flatMap(SegmentationQuality.init(rawValue:)) { CameraSettings.segmentationQuality = quality }
+        if let quality = settings?.segmentationQuality.flatMap(SegmentationMethod.init(rawValue:)) { CameraSettings.segmentationMethod = quality }
+        let previousResolution = CameraSettings.resolution
+        if let resolution = settings?.cameraResolution.flatMap(CameraResolution.init(rawValue:)) { CameraSettings.resolution = resolution }
         applyCameraDisplaySettings()
         let camera = (settings?.camera ?? false) && CameraSettings.deviceID != nil
         if camera != cameraEnabled {
             cameraEnabled = camera
             toggleCamera(camera)
+        } else if camera, CameraSettings.resolution != previousResolution {
+            toggleCamera(true) // 動いているカメラを部屋の解像度で取り込み直す
         }
 
         if let showCaptions = settings?.showCaptions { TranscriptionSettings.showCaptions = showCaptions }
@@ -190,7 +194,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settings.cameraPosition = CameraSettings.position.rawValue
         settings.cameraSize = CameraSettings.size
         settings.segmentation = CameraSettings.segmentation
-        settings.segmentationQuality = CameraSettings.segmentationQuality.rawValue
+        settings.segmentationQuality = CameraSettings.segmentationMethod.rawValue
+        settings.cameraResolution = CameraSettings.resolution.rawValue
         settings.transcription = transcriptionEnabled
         settings.showCaptions = TranscriptionSettings.showCaptions
         settings.captionStyle = TranscriptionSettings.captionStyle.rawValue
@@ -328,7 +333,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         if let deviceID = CameraSettings.deviceID {
             applyCameraDisplaySettings()
-            camera.start(deviceID: deviceID)
+            camera.start(deviceID: deviceID, resolution: CameraSettings.resolution)
         } else {
             // デバイスが選ばれていなければ設定画面を開く
             openCameraSettings()
@@ -339,7 +344,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func applyCameraDisplaySettings() {
         overlay.cameraPosition = CameraSettings.position
         overlay.cameraScale = CameraSettings.scale(for: CameraSettings.size)
-        camera.setSegmentation(enabled: CameraSettings.segmentation, quality: CameraSettings.segmentationQuality)
+        camera.setSegmentation(enabled: CameraSettings.segmentation, method: CameraSettings.segmentationMethod)
     }
 
     // ========== 文字起こし ==========
@@ -412,7 +417,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self.cameraSettingsWindow = nil
             if self.cameraEnabled, let deviceID = CameraSettings.deviceID {
                 self.applyCameraDisplaySettings()
-                self.camera.start(deviceID: deviceID)
+                self.camera.start(deviceID: deviceID, resolution: CameraSettings.resolution)
             } else {
                 // カメラを選ばずに閉じたときは OFF に戻す（メニューの表示と実際を合わせる）
                 self.cameraEnabled = false
@@ -691,18 +696,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func buildCameraMenu() -> [NSMenuItem] {
+        func methodItem(_ method: SegmentationMethod) -> NSMenuItem {
+            ActionMenuItem(method.label, checked: CameraSettings.segmentationMethod == method) { [weak self] in
+                CameraSettings.segmentationMethod = method
+                self?.applyCameraDisplaySettings()
+            }
+        }
         let segmentationItems: [NSMenuItem] = [
             ActionMenuItem("人物切り抜きを使う", checked: CameraSettings.segmentation) { [weak self] in
                 CameraSettings.segmentation.toggle()
                 self?.applyCameraDisplaySettings()
             },
             .separator(),
-        ] + SegmentationQuality.allCases.map { quality in
-            ActionMenuItem(quality.label, checked: CameraSettings.segmentationQuality == quality) { [weak self] in
-                CameraSettings.segmentationQuality = quality
-                self?.applyCameraDisplaySettings()
-            }
-        }
+        ] + SegmentationMethod.allCases.filter { $0.visionLevel != nil }.map(methodItem) + [
+            .separator(),
+            methodItem(.chromaKey),
+            disabled("背景を単色にして使います（macOS の「背景」やグリーンバック）"),
+            ActionMenuItem("クロマキー用の背景画像を保存...") { ChromaKey.saveBackgroundImage() },
+        ]
         let positions: [(String, CameraPosition)] = [("左上", .topLeft), ("右上", .topRight), ("左下", .bottomLeft), ("右下", .bottomRight), ("中央", .center)]
         return [
             ActionMenuItem(cameraEnabled ? "カメラをオフにする" : "カメラをオンにする") { [weak self] in
@@ -713,6 +724,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .separator(),
             ActionMenuItem("カメラ設定...") { [weak self] in self?.openCameraSettings() },
             submenu("人物切り抜き", segmentationItems),
+            submenu("解像度", CameraResolution.allCases.map { resolution in
+                ActionMenuItem(resolution.label, checked: CameraSettings.resolution == resolution) { [weak self] in
+                    guard let self, CameraSettings.resolution != resolution else { return }
+                    CameraSettings.resolution = resolution
+                    // 動いていれば新しい解像度で取り込み直す
+                    if self.cameraEnabled { self.toggleCamera(true) }
+                }
+            }),
             .separator(),
             submenu("表示位置", positions.map { label, value in
                 ActionMenuItem(label, checked: CameraSettings.position == value) { [weak self] in
